@@ -1374,15 +1374,14 @@ def api_get_audit_logs(request):
 # ============================================================================
 
 def user_portal_root(request):
-    """Main landing entry for staff/users: redirect to dashboard if logged in, else login."""
-    if 'staff_emp_id' in request.session or request.user.is_authenticated:
-        return redirect('user_dashboard')
-    return redirect('user_login')
+    """Main landing entry for staff/users: redirect directly to the Mobile QR incident report portal."""
+    return redirect('mobile_report')
 
 
 def is_admin_authenticated(request):
     """Check if the current session or user has active administrator privileges."""
-    if request.session.get('admin_logged_in'):
+    session = getattr(request, 'session', {})
+    if session.get('admin_logged_in'):
         return True
     if hasattr(request, 'user') and request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
         return True
@@ -1576,82 +1575,8 @@ def admin_logout_view(request):
 
 
 def user_login_view(request):
-    """Staff & Users Sign In view."""
-    ensure_sample_complaints()
-
-    if request.method == 'POST':
-        # Check if 1-click Quick Staff login was selected
-        demo_staff_id = request.POST.get('demo_staff_id')
-        if demo_staff_id:
-            staff_member = next((s for s in SAMPLE_STAFF if s['empId'] == demo_staff_id), None)
-            if staff_member:
-                request.session['staff_emp_id'] = staff_member['empId']
-                request.session['staff_name'] = staff_member['fullName']
-                request.session['staff_org'] = staff_member['orgId']
-                request.session['staff_org_name'] = staff_member['orgName']
-                request.session['staff_dept'] = staff_member['department']
-                request.session['staff_email'] = staff_member['email']
-                request.session['staff_asset'] = staff_member['assignedAssetId']
-                messages.success(request, f"Welcome back, {staff_member['fullName']}!")
-                return redirect('user_dashboard')
-
-        # Standard Username / Password authentication
-        login_id = request.POST.get('login_id', '').strip()
-        password = request.POST.get('password', '').strip()
-
-        # Check in SAMPLE_STAFF first
-        matched = next((s for s in SAMPLE_STAFF if s['empId'].lower() == login_id.lower() or s['username'].lower() == login_id.lower() or s['email'].lower() == login_id.lower()), None)
-        if matched:
-            request.session['staff_emp_id'] = matched['empId']
-            request.session['staff_name'] = matched['fullName']
-            request.session['staff_org'] = matched['orgId']
-            request.session['staff_org_name'] = matched['orgName']
-            request.session['staff_dept'] = matched['department']
-            request.session['staff_email'] = matched['email']
-            request.session['staff_asset'] = matched['assignedAssetId']
-            messages.success(request, f"Logged in successfully as {matched['fullName']}!")
-            return redirect('user_dashboard')
-
-        # Check Django User / UserProfile by username, email, or employee ID
-        target_user = User.objects.filter(username__iexact=login_id).first()
-        if not target_user:
-            target_user = User.objects.filter(email__iexact=login_id).first()
-        if not target_user:
-            prof = UserProfile.objects.filter(emp_id__iexact=login_id).first()
-            if prof:
-                target_user = prof.user
-
-        user = None
-        if target_user:
-            user = authenticate(request, username=target_user.username, password=password)
-        else:
-            user = authenticate(request, username=login_id, password=password)
-
-        if user is not None:
-            login(request, user)
-            profile = getattr(user, 'profile', None)
-            if profile:
-                profile.password = password
-                profile.save()
-
-            request.session['staff_emp_id'] = profile.emp_id if profile else f"MED-{user.id:04d}"
-            request.session['staff_name'] = profile.full_name if profile else user.get_full_name() or user.username
-            request.session['staff_org'] = 'HOSP'
-            request.session['staff_org_name'] = 'PSM Hospital'
-            staff_asset = profile.assigned_asset_id if (profile and profile.assigned_asset_id) else ''
-            if not staff_asset and profile:
-                dev = DeviceAsset.objects.filter(assigned_emp_id__iexact=profile.emp_id).first()
-                if dev:
-                    staff_asset = dev.asset_id
-            request.session['staff_asset'] = staff_asset or 'PSM/IT/2F/C-201'
-            messages.success(request, f"Welcome, {request.session['staff_name']}!")
-            return redirect('user_dashboard')
-
-        messages.error(request, "Invalid Employee ID, Email, or Password. Please try again or use Quick Demo Staff login.")
-
-    return render(request, "user/user_login.html", {
-        'sample_staff': SAMPLE_STAFF,
-    })
+    """Staff & Users entry view: redirect directly to the instant Mobile QR incident report portal."""
+    return redirect('mobile_report')
 
 def user_signup_view(request):
     """Staff registration view."""
@@ -1744,151 +1669,8 @@ def user_logout_view(request):
     return redirect('user_login')
 
 def user_dashboard(request):
-    """Employee Portal Dashboard: My Assigned Workstation + Service Desk."""
-    ensure_sample_complaints()
-
-    # Default to Dr. Vikram Sharma for instant interactive testing if not logged in
-    if 'staff_emp_id' not in request.session:
-        default_staff = SAMPLE_STAFF[0] # Dr. Vikram Sharma
-        request.session['staff_emp_id'] = default_staff['empId']
-        request.session['staff_name'] = default_staff['fullName']
-        request.session['staff_org'] = default_staff['orgId']
-        request.session['staff_org_name'] = default_staff['orgName']
-        request.session['staff_dept'] = default_staff['department']
-        request.session['staff_email'] = default_staff['email']
-        request.session['staff_asset'] = default_staff['assignedAssetId']
-
-    emp_id = request.session.get('staff_emp_id')
-    user_name = request.session.get('staff_name')
-    org_id = request.session.get('staff_org')
-    assigned_asset_id = request.session.get('staff_asset')
-
-    # If session doesn't have asset ID, retrieve from UserProfile
-    if (not assigned_asset_id or assigned_asset_id in ['HOSP-ICU-00042', 'PSM/IT/2F/C-201']) and emp_id:
-        prof = UserProfile.objects.filter(emp_id__iexact=emp_id).first()
-        if prof and prof.assigned_asset_id:
-            assigned_asset_id = prof.assigned_asset_id
-            request.session['staff_asset'] = assigned_asset_id
-
-    ensure_sample_devices()
-
-    # Retrieve device details from central database
-    device_obj = None
-    if assigned_asset_id:
-        device_obj = DeviceAsset.objects.filter(asset_id__iexact=assigned_asset_id).first()
-    if not device_obj and emp_id:
-        device_obj = DeviceAsset.objects.filter(assigned_emp_id__iexact=emp_id).first()
-
-    if not device_obj and assigned_asset_id:
-        # Check in SAMPLE_DEVICES first
-        sample_match = next((d for d in SAMPLE_DEVICES if d['assetId'].lower() == assigned_asset_id.lower()), None)
-        if sample_match:
-            device = dict(sample_match)
-        else:
-            # Create real DeviceAsset in database for this user's asset ID
-            clean_dev_id = f"dev-{emp_id}".lower().replace('/', '-')
-            base_dev_id = clean_dev_id
-            counter = 1
-            while DeviceAsset.objects.filter(dev_id=clean_dev_id).exists():
-                clean_dev_id = f"{base_dev_id}-{counter}"
-                counter += 1
-
-            device_obj = DeviceAsset.objects.create(
-                dev_id=clean_dev_id,
-                asset_id=assigned_asset_id,
-                serial_number=f"SN-{assigned_asset_id.replace('/', '-')}",
-                org_id=org_id or 'HOSP',
-                org_name='PSM Hospital' if (org_id == 'HOSP') else 'Swaminarayan University',
-                building_name='PSM Main Complex',
-                floor_name='Ground Floor',
-                room_name=request.session.get('staff_dept', 'Hospital Clinical Desk'),
-                assigned_user_id=emp_id,
-                assigned_user_name=user_name,
-                assigned_emp_id=emp_id,
-                monitor_spec='24" Dell UltraSharp FHD LED',
-                cpu_processor='Intel Core i5-12400 (6 cores, 12 threads)',
-                storage_ram='512GB NVMe SSD / 16GB DDR4 RAM',
-                ip_address='192.168.9.150',
-                mac_address='00:1A:2B:3C:4D:5E',
-                operating_system='Windows 11 Pro 64-bit',
-                purchase_date='15-Jan-2024',
-                warranty_expiry_date='15-Jan-2027',
-                status='Active'
-            )
-
-    if device_obj:
-        device = {
-            'id': device_obj.dev_id,
-            'assetId': device_obj.asset_id,
-            'serialNumber': device_obj.serial_number,
-            'orgId': device_obj.org_id,
-            'orgName': device_obj.org_name,
-            'buildingName': device_obj.building_name,
-            'floorName': device_obj.floor_name,
-            'roomName': device_obj.room_name,
-            'assignedUserId': device_obj.assigned_user_id,
-            'assignedUserName': device_obj.assigned_user_name,
-            'empId': device_obj.assigned_emp_id,
-            'monitorSpec': device_obj.monitor_spec,
-            'cpuProcessor': device_obj.cpu_processor,
-            'storageRam': device_obj.storage_ram,
-            'ipAddress': device_obj.ip_address,
-            'macAddress': device_obj.mac_address,
-            'operatingSystem': device_obj.operating_system,
-            'purchaseDate': device_obj.purchase_date,
-            'warrantyExpiryDate': device_obj.warranty_expiry_date,
-            'status': device_obj.status
-        }
-    elif assigned_asset_id:
-        device = {
-            'id': f"dev-{emp_id}",
-            'assetId': assigned_asset_id,
-            'serialNumber': f"SN-{assigned_asset_id.replace('/', '-')}",
-            'orgId': org_id or 'HOSP',
-            'orgName': 'PSM Hospital',
-            'buildingName': 'PSM Main Complex',
-            'floorName': 'Ground Floor',
-            'roomName': request.session.get('staff_dept', 'Hospital Clinical Desk'),
-            'assignedUserId': emp_id,
-            'assignedUserName': user_name,
-            'empId': emp_id,
-            'monitorSpec': '24" Dell UltraSharp FHD LED',
-            'cpuProcessor': 'Intel Core i5-12400 (6 cores, 12 threads)',
-            'storageRam': '512GB NVMe SSD / 16GB DDR4 RAM',
-            'ipAddress': '192.168.9.150',
-            'macAddress': '00:1A:2B:3C:4D:5E',
-            'operatingSystem': 'Windows 11 Pro 64-bit',
-            'purchaseDate': '15-Jan-2024',
-            'warrantyExpiryDate': '15-Jan-2027',
-            'status': 'Active'
-        }
-    else:
-        device = SAMPLE_DEVICES[0]
-
-    # Retrieve user's submitted complaints
-    user_complaints = DeviceComplaint.objects.filter(emp_id=emp_id) | DeviceComplaint.objects.filter(user_full_name__iexact=user_name)
-    user_complaints = user_complaints.distinct().order_by('-created_at')
-
-    pending_count = user_complaints.filter(status='Pending').count()
-    progress_count = user_complaints.filter(status='In Progress').count()
-    resolved_count = user_complaints.filter(status='Resolved').count()
-
-    context = {
-        'staff_name': user_name,
-        'staff_emp_id': emp_id,
-        'staff_org': org_id,
-        'staff_org_name': request.session.get('staff_org_name', 'PSM Hospital'),
-        'staff_dept': request.session.get('staff_dept', 'Department'),
-        'staff_email': request.session.get('staff_email', ''),
-        'device': device,
-        'complaints': user_complaints,
-        'total_complaints': user_complaints.count(),
-        'pending_count': pending_count,
-        'progress_count': progress_count,
-        'resolved_count': resolved_count,
-        'sample_staff': SAMPLE_STAFF,
-    }
-    return render(request, "user/user_dashboard.html", context)
+    """Employee Portal Dashboard: redirect directly to the unified Mobile QR incident report portal."""
+    return redirect('mobile_report')
 
 def submit_complaint(request):
     """Handles submission of a hardware problem / complaint by an employee."""
@@ -1936,9 +1718,9 @@ def submit_complaint(request):
         )
 
         messages.success(request, f"Service Complaint #{ticket_id} filed successfully! Biomedical IT Support has been notified.")
-        return redirect('user_dashboard')
+        return redirect('mobile_report')
 
-    return redirect('user_dashboard')
+    return redirect('mobile_report')
 
 
 def get_active_tunnel_url():
@@ -2153,7 +1935,7 @@ def api_submit_quick_complaint(request):
             'sla_text': sla_text,
             'device_asset_id': device_asset_id,
             'room_location': room_location,
-            'created_at': complaint.created_at.strftime("%d-%b-%Y %I:%M %p"),
+            'created_at': timezone.localtime(complaint.created_at).strftime("%d-%b-%Y %I:%M %p"),
             'message': f"Complaint #{ticket_id} registered successfully! Biomedical IT Support has been dispatched."
         })
 
@@ -2176,7 +1958,7 @@ def admin_complaints(request):
 
     status_filter = request.GET.get('status', 'ALL')
 
-    queryset = DeviceComplaint.objects.filter(org_id='HOSP')
+    queryset = DeviceComplaint.objects.filter(org_id='HOSP').order_by('-created_at')
     if status_filter != 'ALL':
         queryset = queryset.filter(status=status_filter)
 

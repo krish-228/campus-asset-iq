@@ -47,10 +47,10 @@
                 <i data-lucide="download" class="w-4 h-4 text-blue-300"></i>
                 <span>Export Tickets (CSV)</span>
             </button>
-            <a href="{% url 'user_dashboard' %}"
+            <a href="{% url 'mobile_report' %}" target="_blank"
                 class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2 active:scale-95">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                <span>Submit New Ticket</span>
+                <i data-lucide="qr-code" class="w-4 h-4"></i>
+                <span>Report Issue (QR Page)</span>
             </a>
         </div>
     </div>
@@ -239,7 +239,7 @@
                             </div>
                             <div class="text-xs text-slate-500 mt-1 flex items-center gap-1 font-semibold">
                                 <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
-                                <span>{{ c.created_at|date:"d-M-Y, H:i" }}</span>
+                                <span>{{ c.created_at|date:"d-M-Y, h:i A" }}</span>
                             </div>
                         </td>
 
@@ -336,7 +336,7 @@
                                 data-description="{{ c.description }}" data-status="{{ c.status }}"
                                 data-technician="{{ c.technician_name|default:'IT Desk Team' }}"
                                 data-remarks="{{ c.admin_remarks|default:'' }}"
-                                data-created="{{ c.created_at|date:'d-M-Y, H:i' }}"
+                                data-created="{{ c.created_at|date:'d-M-Y, h:i A' }}"
                                 class="px-3.5 py-1.5 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1.5">
                                 <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                                 <span>Inspect & Resolve</span>
