@@ -1212,6 +1212,145 @@ def api_reassign_device(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request method.'}, status=405)
 
+@csrf_exempt
+def api_save_device(request):
+    """Registers a new hardware device or updates an existing device in PostgreSQL database.
+    Immediately synchronizes with Asset Tag Center and Inventory."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'POST method required.'}, status=405)
+
+    import json
+    import uuid
+    import datetime
+
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except Exception:
+            data = {}
+    else:
+        data = request.POST
+
+    asset_id = (data.get('assetId') or data.get('asset_id') or '').strip().upper()
+    if not asset_id:
+        return JsonResponse({'success': False, 'message': 'Asset Tag / ID is required.'}, status=400)
+
+    serial_number = (data.get('serialNumber') or data.get('serial_number') or '').strip().upper()
+    device_type = normalize_device_type(data.get('deviceType') or data.get('device_type'), asset_id)
+    org_id = (data.get('orgId') or data.get('org_id') or 'HOSP').strip()
+    org_name = 'PSM Hospital' if org_id == 'HOSP' else 'Swaminarayan University'
+
+    building_name = (data.get('buildingName') or data.get('building_name') or 'PSM Hospital Main Medical Complex').strip()
+    floor_name = (data.get('floorName') or data.get('floor_name') or 'Ground Floor').strip()
+    room_name = (data.get('roomName') or data.get('room_name') or 'General Facility').strip()
+
+    assigned_user_id = data.get('assignedUserId') or data.get('assigned_user_id') or ''
+    assigned_user_name = (data.get('assignedUserName') or data.get('assigned_user_name') or 'Unassigned').strip()
+    assigned_emp_id = (data.get('assignedEmpId') or data.get('assigned_emp_id') or data.get('empId') or '').strip()
+
+    cpu_processor = (data.get('cpuProcessor') or data.get('cpu_processor') or 'Intel Core i5 (Standard)').strip()
+    storage_ram = (data.get('storageRam') or data.get('storage_ram') or '16GB RAM / 512GB SSD').strip()
+    monitor_spec = (data.get('monitorSpec') or data.get('monitor_spec') or '24" FHD IPS Display').strip()
+    operating_system = (data.get('operatingSystem') or data.get('operating_system') or 'Windows 11 Pro').strip()
+    ip_address = (data.get('ipAddress') or data.get('ip_address') or '').strip()
+    mac_address = (data.get('macAddress') or data.get('mac_address') or '').strip().upper()
+    status = (data.get('status') or 'Active').strip()
+    purchase_date = (data.get('purchaseDate') or data.get('purchase_date') or timezone.now().strftime('%d-%b-%Y')).strip()
+    warranty_expiry_date = (data.get('warrantyExpiryDate') or data.get('warranty_expiry_date') or (datetime.date.today() + datetime.timedelta(days=1095)).strftime('%d-%b-%Y')).strip()
+
+    dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
+    is_new = False
+    if dev:
+        dev.device_type = device_type
+        if serial_number:
+            dev.serial_number = serial_number
+        dev.org_id = org_id
+        dev.org_name = org_name
+        dev.building_name = building_name
+        dev.floor_name = floor_name
+        dev.room_name = room_name
+        dev.assigned_user_id = assigned_user_id
+        dev.assigned_user_name = assigned_user_name
+        dev.assigned_emp_id = assigned_emp_id
+        dev.cpu_processor = cpu_processor
+        dev.storage_ram = storage_ram
+        dev.monitor_spec = monitor_spec
+        dev.operating_system = operating_system
+        dev.ip_address = ip_address
+        dev.mac_address = mac_address
+        dev.purchase_date = purchase_date
+        dev.warranty_expiry_date = warranty_expiry_date
+        dev.status = status
+        dev.save()
+    else:
+        is_new = True
+        dev_id = f"dev-{uuid.uuid4().hex[:8]}"
+        dev = DeviceAsset.objects.create(
+            dev_id=dev_id,
+            asset_id=asset_id,
+            device_type=device_type,
+            serial_number=serial_number,
+            org_id=org_id,
+            org_name=org_name,
+            building_name=building_name,
+            floor_name=floor_name,
+            room_name=room_name,
+            assigned_user_id=assigned_user_id,
+            assigned_user_name=assigned_user_name,
+            assigned_emp_id=assigned_emp_id,
+            cpu_processor=cpu_processor,
+            storage_ram=storage_ram,
+            monitor_spec=monitor_spec,
+            operating_system=operating_system,
+            ip_address=ip_address,
+            mac_address=mac_address,
+            purchase_date=purchase_date,
+            warranty_expiry_date=warranty_expiry_date,
+            status=status
+        )
+
+    # Initial custody audit log if assigned
+    if is_new and assigned_user_name and assigned_user_name.lower() != 'unassigned':
+        CustodyTransferLog.objects.create(
+            device=dev,
+            device_asset_id=dev.asset_id,
+            from_user_name="Initial Provisioning",
+            from_emp_id="",
+            to_user_name=assigned_user_name,
+            to_emp_id=assigned_emp_id,
+            handover_date=purchase_date,
+            assigned_by=request.session.get('staff_name', 'IT Admin Desk') if hasattr(request, 'session') else 'IT Admin Desk',
+            remarks=f"Initial hardware assignment to {assigned_user_name}"
+        )
+
+    return JsonResponse({
+        'success': True,
+        'message': f"Hardware device {dev.asset_id} {'registered' if is_new else 'updated'} successfully and synchronized with Asset Tag Center!",
+        'device': {
+            'id': dev.dev_id,
+            'assetId': dev.asset_id,
+            'deviceType': dev.device_type,
+            'serialNumber': dev.serial_number,
+            'orgId': dev.org_id,
+            'orgName': dev.org_name,
+            'buildingName': dev.building_name,
+            'floorName': dev.floor_name,
+            'roomName': dev.room_name,
+            'assignedUserId': dev.assigned_user_id,
+            'assignedUserName': dev.assigned_user_name,
+            'empId': dev.assigned_emp_id,
+            'cpuProcessor': dev.cpu_processor,
+            'storageRam': dev.storage_ram,
+            'monitorSpec': dev.monitor_spec,
+            'operatingSystem': dev.operating_system,
+            'ipAddress': dev.ip_address,
+            'macAddress': dev.mac_address,
+            'purchaseDate': dev.purchase_date,
+            'warrantyExpiryDate': dev.warranty_expiry_date,
+            'status': dev.status,
+        }
+    })
+
 def api_get_audit_logs(request):
     """Returns audit trail of all custody transfers from database."""
     qs = CustodyTransferLog.objects.all().order_by('-created_at')

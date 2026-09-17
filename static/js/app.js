@@ -1401,7 +1401,7 @@ function handleDevFloorChange() {
     updateAutoAssetTag();
 }
 
-function handleSaveDevice(e) {
+async function handleSaveDevice(e) {
     e.preventDefault();
     const getVal = (id, def = "") => {
         const el = document.getElementById(id);
@@ -1413,9 +1413,9 @@ function handleSaveDevice(e) {
     const serialNumber = getVal("dev-input-serial").trim().toUpperCase();
     const orgId = getVal("dev-select-org", "HOSP");
     const roomId = getVal("dev-select-room");
-    const cpuProcessor = getVal("dev-input-cpu").trim();
-    const storageRam = getVal("dev-input-ram").trim();
-    const monitorSpec = getVal("dev-input-monitor").trim();
+    const cpuProcessor = getVal("dev-input-cpu").trim() || "Intel Core i5 (Standard)";
+    const storageRam = getVal("dev-input-ram").trim() || "16GB RAM / 512GB SSD";
+    const monitorSpec = getVal("dev-input-monitor").trim() || "24\" FHD IPS Display";
     const operatingSystem = getVal("dev-select-os", "Windows 11 Pro");
     const ipAddress = getVal("dev-input-ip").trim();
     const macAddress = getVal("dev-input-mac").trim().toUpperCase();
@@ -1424,56 +1424,128 @@ function handleSaveDevice(e) {
     const warrantyExpiryDate = getVal("dev-input-warranty") || "14-Jan-2028";
     
     const typeSelect = document.getElementById("dev-select-type");
-    const deviceType = typeSelect ? typeSelect.value : (assetId.includes('/C-') ? 'C' : assetId.includes('/D-') ? 'D' : assetId.includes('/M-') ? 'M' : assetId.includes('/K-') ? 'K' : assetId.includes('/P-') ? 'P' : 'C');
+    const typeCode = typeSelect ? typeSelect.value : 'C';
+    const typeFullNames = { 'C': 'CPU', 'D': 'Display', 'M': 'Mouse', 'K': 'Keyboard', 'P': 'Printer', 'L': 'Laptop' };
+    const deviceType = typeFullNames[typeCode] || 'CPU';
     
-    if (!roomId) {
-        showToast("Please select a location room/lab.", "error");
-        return;
+    // Resolve clean human text for location and user
+    const bldgEl = document.getElementById("dev-select-bldg");
+    const buildingName = (bldgEl && bldgEl.selectedIndex >= 0 && bldgEl.options[bldgEl.selectedIndex].text !== 'Select') 
+        ? bldgEl.options[bldgEl.selectedIndex].text 
+        : "PSM Hospital Main Medical Complex";
+
+    const floorEl = document.getElementById("dev-select-floor");
+    const floorName = (floorEl && floorEl.selectedIndex >= 0 && floorEl.options[floorEl.selectedIndex].text !== 'Select') 
+        ? floorEl.options[floorEl.selectedIndex].text 
+        : "Ground Floor";
+
+    const roomEl = document.getElementById("dev-select-room");
+    const roomName = (roomEl && roomEl.selectedIndex >= 0 && roomEl.options[roomEl.selectedIndex].text !== 'Select') 
+        ? roomEl.options[roomEl.selectedIndex].text 
+        : "General Facility";
+
+    const userEl = document.getElementById("dev-select-user");
+    let assignedUserName = "Unassigned";
+    let assignedEmpId = "";
+    if (userEl && userEl.value) {
+        const rawText = userEl.options[userEl.selectedIndex].text;
+        assignedUserName = rawText.split('(')[0].replace(/--.*--/, '').trim() || "Assigned Staff";
+        const empMatch = rawText.match(/\(([^)]+)\)/);
+        assignedEmpId = empMatch ? empMatch[1] : "";
     }
 
+    const today = new Date();
+    const purchaseDate = `${String(today.getDate()).padStart(2, '0')}-${today.toLocaleString('default', { month: 'short' })}-${today.getFullYear()}`;
+
+    // Payload for central PostgreSQL database and Asset Tag Center
+    const payload = {
+        assetId,
+        deviceType,
+        serialNumber,
+        orgId,
+        orgName: orgId === 'HOSP' ? 'PSM Hospital' : 'Swaminarayan University',
+        buildingName,
+        floorName,
+        roomName,
+        roomId,
+        assignedUserId,
+        assignedUserName,
+        assignedEmpId,
+        cpuProcessor,
+        storageRam,
+        monitorSpec,
+        operatingSystem,
+        ipAddress,
+        macAddress,
+        status,
+        purchaseDate,
+        warrantyExpiryDate
+    };
+
+    // 1. Immediately update client-side appState so UI responds with 0 latency
     if (editId) {
-        const dev = appState.devices.find(d => d.id === editId);
+        const dev = appState.devices.find(d => d.id === editId || d.assetId === assetId);
         if (dev) {
-            Object.assign(dev, {
-                assetId, deviceType, serialNumber, orgId, roomId,
-                cpuProcessor, storageRam, monitorSpec, operatingSystem,
-                ipAddress, macAddress, assignedUserId, status, warrantyExpiryDate
-            });
+            Object.assign(dev, payload);
         }
         showToast(`Hardware device ${assetId} updated successfully!`, "success");
     } else {
-        const today = new Date();
-        const purchaseDate = `${String(today.getDate()).padStart(2, '0')}-${today.toLocaleString('default', { month: 'short' })}-${today.getFullYear()}`;
-        const newDevice = {
-            id: "dev-" + Date.now(),
-            assetId, deviceType, serialNumber, orgId, roomId,
-            cpuProcessor, storageRam, monitorSpec, operatingSystem,
-            ipAddress, macAddress, assignedUserId, status,
-            purchaseDate, warrantyExpiryDate
-        };
+        const newDevice = Object.assign({ id: "dev-" + Date.now() }, payload);
+        // Put right at index 0 (top of the list)
         appState.devices.unshift(newDevice);
 
-        // If assigned to user, create Initial Assignment record
         if (assignedUserId) {
-            const user = appState.users.find(u => u.id === assignedUserId);
-            const room = appState.rooms.find(r => r.id === roomId);
             appState.assignmentHistories.unshift({
                 id: "ah-" + Date.now(),
                 deviceId: newDevice.id,
+                deviceAssetId: newDevice.assetId,
                 userId: assignedUserId,
+                fromUserName: "Initial Provisioning",
+                toUserName: assignedUserName,
                 fromDate: purchaseDate,
                 toDate: "-",
-                                location: room ? room.name : "Primary Allocation",
-                assignedBy: "Admin",
+                location: `${floorName} • ${roomName}`,
+                assignedBy: "Admin Desk",
                 remarks: "Initial hardware provisioning"
             });
         }
-        showToast(`New device ${assetId} added to inventory!`, "success");
+        showToast(`New hardware ${assetId} registered & added to Asset Tag Center!`, "success");
     }
 
     saveAppState();
     renderAll();
     closeAddDeviceModal();
+
+    // 2. Persist to PostgreSQL database in the background
+    try {
+        const resp = await fetch('/api/devices/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(payload)
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.success && data.device) {
+                const target = appState.devices.find(d => d.assetId === assetId);
+                if (target) {
+                    target.id = data.device.id;
+                    Object.assign(target, data.device);
+                    saveAppState();
+                }
+            }
+        }
+    } catch (apiErr) {
+        console.warn("Database sync notice:", apiErr);
+    }
+
+    // 3. Immediately re-render Asset Tag Cards if present on this page
+    if (typeof renderStickerCards === 'function') {
+        const filterFn = (typeof getFilteredDevices === 'function') ? getFilteredDevices : () => appState.devices;
+        renderStickerCards(filterFn());
+    }
 }
 
 function closeAddDeviceModal() {

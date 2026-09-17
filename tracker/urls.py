@@ -81,6 +81,8 @@ urlpatterns = [
     path('api/devices/', views.api_get_devices, name='api_get_devices'),
     path('api/devices/import-excel/', views.api_import_devices_excel, name='api_import_devices_excel'),
     path('api/devices/reassign/', views.api_reassign_device, name='api_reassign_device'),
+    path('api/devices/save/', views.api_save_device, name='api_save_device'),
+    path('api/devices/add/', views.api_save_device, name='api_add_device'),
     path('api/audit-logs/', views.api_get_audit_logs, name='api_get_audit_logs'),
 ]
 

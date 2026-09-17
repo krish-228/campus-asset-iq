@@ -132,25 +132,45 @@ function renderStickerCards(devices) {
     };
 
     container.innerHTML = devices.map(dev => {
-        const room = appState.rooms ? appState.rooms.find(r => r.id === dev.roomId) : null;
-        const floor = (room && appState.floors) ? appState.floors.find(f => f.id === room.floorId) : null;
-        const org = (appState.organizations) ? appState.organizations.find(o => o.id === dev.orgId) : null;
-        const user = (appState.users) ? appState.users.find(u => u.id === dev.assignedUserId) : null;
+        // 1. Resolve Location text cleanly from device directly or appState
+        const room = (appState && appState.rooms) ? appState.rooms.find(r => r.id === dev.roomId) : null;
+        const floor = (room && appState && appState.floors) ? appState.floors.find(f => f.id === room.floorId) : null;
+        const org = (appState && appState.organizations) ? appState.organizations.find(o => o.id === dev.orgId) : null;
+        const user = (appState && appState.users) ? appState.users.find(u => u.id === dev.assignedUserId) : null;
 
-        const floorText = floor ? (floor.shortName || floor.name) : "Campus";
-        const roomText = room ? room.name : "Unallocated";
-        const orgName = org ? org.name : 'PSM HOSPITAL';
+        const floorText = dev.floorName || (floor ? (floor.shortName || floor.name) : (dev.buildingName || "Hospital Wing"));
+        const roomText = dev.roomName || (room ? room.name : "Medical Complex");
+        const orgName = dev.orgName || (org ? org.name : 'PSM HOSPITAL');
 
-        // Detect device category code (/C-, /D-, /M-, /K-, /P-, /L-)
-        const typeMatch = dev.assetId ? dev.assetId.match(/\/([CDKMPL])-/i) : null;
-        const typeCode = (dev.deviceType || (typeMatch ? typeMatch[1] : 'C')).toUpperCase();
-        const typeLabel = typeLabels[typeCode] || 'Hardware';
+        // 2. Resolve Device Type (CPU, Display, Mouse, Keyboard, Printer, Laptop)
+        let typeCode = 'C';
+        let typeLabel = 'CPU';
+        if (dev.deviceType) {
+            const dtUpper = String(dev.deviceType).toUpperCase();
+            if (dtUpper.includes('DISP') || dtUpper.includes('MONITOR') || dtUpper === 'D') { typeCode = 'D'; typeLabel = 'Display'; }
+            else if (dtUpper.includes('KEYB') || dtUpper === 'K') { typeCode = 'K'; typeLabel = 'Keyboard'; }
+            else if (dtUpper.includes('MOUS') || dtUpper === 'M') { typeCode = 'M'; typeLabel = 'Mouse'; }
+            else if (dtUpper.includes('PRINT') || dtUpper === 'P') { typeCode = 'P'; typeLabel = 'Printer'; }
+            else if (dtUpper.includes('LAP') || dtUpper === 'L') { typeCode = 'L'; typeLabel = 'Laptop'; }
+            else { typeCode = 'C'; typeLabel = 'CPU'; }
+        } else {
+            const typeMatch = dev.assetId ? dev.assetId.match(/\/([CDKMPL])-/i) : null;
+            typeCode = (typeMatch ? typeMatch[1] : 'C').toUpperCase();
+            typeLabel = typeLabels[typeCode] || 'CPU';
+        }
         const typeBadgeClass = typeColors[typeCode] || 'bg-slate-50 text-slate-700 border-slate-200';
 
-        // Direct mobile report URL for physical smartphone camera scanning
+        // 3. Resolve Assigned User / Custodian
+        let userName = "Hospital Spare / General";
+        if (dev.assignedUserName && dev.assignedUserName.trim() && dev.assignedUserName !== 'Unassigned') {
+            userName = dev.assignedUserName.trim();
+        } else if (user && user.fullName) {
+            userName = user.fullName;
+        }
+
+        // 4. Resolve Direct mobile report URL for smartphone QR code scanning
         const reportUrl = `${window.location.origin}/report/${encodeURIComponent(dev.assetId)}/`;
         const qrSVG = generateQRSVG(reportUrl, 70);
-        const userName = user ? user.fullName : 'Hospital Spare / General';
 
         // --- MODE 1: PURE CODE & QR ONLY (Literal Minimalist - ID & QR Only) ---
         if (currentStickerLayout === 'pure') {
