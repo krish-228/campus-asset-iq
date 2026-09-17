@@ -1,0 +1,553 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CampusAssetIQ — Enterprise Asset Management{% endblock %}</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' },
+                        medical: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Universal Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v={% now 'U' %}">
+
+    <style>
+        /* ========================================================= */
+        /* ULTRA-SMOOTH FLUID PHYSICS SIDEBAR & NAVBAR SYSTEM        */
+        /* Apple / iOS Momentum Deceleration: cubic-bezier(0.16,1,0.3,1) */
+        /* ========================================================= */
+        :root {
+            --sidebar-collapsed-w: 5rem;     /* 80px */
+            --sidebar-expanded-w: 16.75rem;   /* 268px */
+            --fluid-ease: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Hardware-Accelerated Smooth Sidebar Container */
+        #admin-sidebar {
+            width: var(--sidebar-collapsed-w);
+            transition: width 380ms var(--fluid-ease),
+                        box-shadow 380ms var(--fluid-ease),
+                        border-color 380ms var(--fluid-ease);
+            will-change: width;
+            transform: translateZ(0); /* Hardware compositing layer */
+            backface-visibility: hidden;
+            contain: layout;
+        }
+
+        /* Expanded State: Hover or Pinned */
+        #admin-sidebar.is-expanded,
+        #admin-sidebar:hover {
+            width: var(--sidebar-expanded-w) !important;
+            box-shadow: 0 25px 50px -12px rgba(10, 15, 30, 0.75), 0 0 0 1px rgba(99, 102, 241, 0.2) !important;
+        }
+
+        /* Stationary Nav Items - Zero Lateral Jitter */
+        .sidebar-nav-link {
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: 2.75rem; /* 44px */
+            border-radius: 0.75rem;
+            text-decoration: none;
+            transition: background-color 240ms var(--fluid-ease),
+                        border-color 240ms var(--fluid-ease),
+                        box-shadow 240ms var(--fluid-ease),
+                        transform 180ms var(--fluid-ease);
+            overflow: hidden;
+            user-select: none;
+        }
+        .sidebar-nav-link:hover {
+            transform: translateY(-1px);
+        }
+        .sidebar-nav-link:active {
+            transform: scale(0.98);
+        }
+
+        /* Fixed-Position Icon Wrapper (Centered in collapsed, perfectly anchored) */
+        .sidebar-icon-wrapper {
+            width: 2.75rem; /* 44px */
+            height: 2.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 260ms var(--fluid-ease), color 200ms ease;
+        }
+        .sidebar-nav-link:hover .sidebar-icon-wrapper {
+            transform: scale(1.12);
+        }
+
+        /* Active Navigation Indicator Strip */
+        .sidebar-nav-link.is-active::before {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 7px;
+            bottom: 7px;
+            width: 3.5px;
+            border-radius: 9999px;
+            background: #60a5fa;
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.9);
+            transition: opacity 250ms var(--fluid-ease);
+        }
+
+        /* Text & Badge Container: Liquid Slide & Fade (NO display: none!) */
+        .sidebar-expand-target {
+            display: flex !important;
+            align-items: center;
+            white-space: nowrap;
+            overflow: hidden;
+            opacity: 0;
+            max-width: 0;
+            transform: translateX(-10px);
+            pointer-events: none;
+            transition: opacity 260ms var(--fluid-ease),
+                        transform 280ms var(--fluid-ease),
+                        max-width 360ms var(--fluid-ease);
+            will-change: opacity, transform, max-width;
+        }
+
+        /* Expanded State: Smooth Staggered Reveal */
+        #admin-sidebar.is-expanded .sidebar-expand-target,
+        #admin-sidebar:hover .sidebar-expand-target {
+            opacity: 1;
+            max-width: 220px;
+            transform: translateX(0);
+            pointer-events: auto;
+            transition: opacity 320ms var(--fluid-ease) 45ms,
+                        transform 320ms var(--fluid-ease) 45ms,
+                        max-width 380ms var(--fluid-ease);
+        }
+
+        /* Smooth Collapsible Section Categories */
+        .sidebar-section-header {
+            overflow: hidden;
+            white-space: nowrap;
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            transform: translateY(-4px);
+            transition: max-height 300ms var(--fluid-ease),
+                        opacity 220ms var(--fluid-ease),
+                        padding 300ms var(--fluid-ease),
+                        transform 220ms var(--fluid-ease);
+        }
+        #admin-sidebar.is-expanded .sidebar-section-header,
+        #admin-sidebar:hover .sidebar-section-header {
+            max-height: 28px;
+            opacity: 1;
+            padding-top: 0.5rem;
+            padding-bottom: 0.25rem;
+            transform: translateY(0);
+            transition: max-height 360ms var(--fluid-ease),
+                        opacity 300ms var(--fluid-ease) 50ms,
+                        padding 360ms var(--fluid-ease),
+                        transform 300ms var(--fluid-ease) 50ms;
+        }
+
+        /* Smooth Collapsible Organization Pill Card */
+        .sidebar-org-card {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transform: scale(0.96) translateY(-6px);
+            padding-top: 0;
+            padding-bottom: 0;
+            transition: max-height 320ms var(--fluid-ease),
+                        opacity 220ms var(--fluid-ease),
+                        transform 260ms var(--fluid-ease),
+                        padding 320ms var(--fluid-ease);
+        }
+        #admin-sidebar.is-expanded .sidebar-org-card,
+        #admin-sidebar:hover .sidebar-org-card {
+            max-height: 54px;
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            padding-top: 0.75rem;
+            padding-bottom: 0.25rem;
+            transition: max-height 380ms var(--fluid-ease),
+                        opacity 320ms var(--fluid-ease) 50ms,
+                        transform 320ms var(--fluid-ease) 50ms,
+                        padding 380ms var(--fluid-ease);
+        }
+
+        /* Compact Notification Dot in Collapsed State */
+        .sidebar-compact-indicator {
+            position: absolute;
+            top: 7px;
+            right: 14px;
+            transition: opacity 220ms var(--fluid-ease), transform 220ms var(--fluid-ease);
+        }
+        #admin-sidebar.is-expanded .sidebar-compact-indicator,
+        #admin-sidebar:hover .sidebar-compact-indicator {
+            opacity: 0;
+            transform: scale(0.5);
+            pointer-events: none;
+        }
+
+        /* 3-Line Hamburger Precision Rotation */
+        #sidebar-hamburger-icon {
+            transition: transform 420ms var(--fluid-ease), color 240ms ease;
+        }
+        #admin-sidebar:hover #sidebar-hamburger-icon,
+        #admin-sidebar.is-expanded #sidebar-hamburger-icon {
+            transform: rotate(90deg);
+            color: #93c5fd;
+        }
+
+        @media print {
+            #admin-sidebar, header, .no-print { display: none !important; }
+            main { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-row font-sans text-slate-800 antialiased selection:bg-indigo-500 selection:text-white bg-slate-50 overflow-x-hidden">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none max-w-md w-full"></div>
+
+    <!-- ========================================================================= -->
+    <!-- ANIMATED HOVER-EXPANDABLE LEFT VERTICAL SIDEBAR (Signature Gradient Blue) -->
+    <!-- ========================================================================= -->
+    <aside id="admin-sidebar" 
+           class="bg-gradient-to-b from-blue-950 via-indigo-950 to-slate-950 text-white flex flex-col justify-between shrink-0 sticky top-0 h-screen z-50 border-r border-indigo-900/40 shadow-2xl no-print overflow-hidden select-none group/sidebar">
+
+        <!-- Top Header & Brand Identity -->
+        <div class="flex flex-col flex-1 min-h-0">
+            <!-- Brand & 3-Line Hamburger Trigger Row -->
+            <div class="p-4 border-b border-indigo-900/40 flex items-center justify-between gap-2.5 h-18">
+                <div class="flex items-center gap-3 overflow-hidden min-w-0">
+                    <!-- Three-Line Hamburger Icon Button -->
+                    <button id="sidebar-hamburger-btn" 
+                            onclick="toggleSidebarPin()" 
+                            title="Toggle Navigation Menu (Click to pin / Hover to preview)"
+                            class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/15 active:bg-white/20 border border-white/10 flex items-center justify-center text-white transition-all duration-200 shrink-0 shadow-sm cursor-pointer">
+                        <i id="sidebar-hamburger-icon" data-lucide="menu" class="w-5 h-5 transition-transform duration-300 text-blue-200"></i>
+                    </button>
+
+                    <!-- Brand Logo & Text (Smoothly reveals on hover) -->
+                    <a href="{% url 'index' %}" class="sidebar-expand-target flex items-center gap-2.5 min-w-0 group/brand">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/30 shrink-0">
+                            <i data-lucide="shield-check" class="w-4 h-4"></i>
+                        </div>
+                        <div class="leading-tight truncate">
+                            <div class="font-extrabold text-sm tracking-wide text-white group-hover/brand:text-blue-200 transition-colors">CampusAssetIQ</div>
+                            <div class="text-[9px] uppercase font-bold text-blue-300/80 tracking-wider">Enterprise Console</div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Pin / Live Status Dot -->
+                <div class="sidebar-expand-target items-center shrink-0">
+                    <button id="sidebar-pin-indicator" onclick="toggleSidebarPin()" title="Pin sidebar open" class="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
+                        <i id="sidebar-pin-icon" data-lucide="pin" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Organization Context Pill (Smooth fold) -->
+            <div class="px-3 sidebar-org-card flex-col">
+                <div class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center justify-between text-xs backdrop-blur-sm w-full">
+                    <div class="flex items-center gap-2 truncate">
+                        <div class="h-4 px-1 rounded bg-white flex items-center shrink-0 shadow-2xs">
+                            <img src="{% static 'images/psm_hospital_logo.png' %}" alt="PSM Hospital" class="h-3 w-auto object-contain">
+                        </div>
+                        <span class="font-medium text-slate-200 truncate text-[11px]">
+                            PSM Hospital
+                        </span>
+                    </div>
+                    <span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                        HEALTHCARE
+                    </span>
+                </div>
+            </div>
+
+            <!-- Navigation Links List (All 8 Modules - Locked to PSM Hospital) -->
+            <nav class="px-2 py-3 flex-1 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-indigo-900 scrollbar-track-transparent">
+                
+                <div class="sidebar-section-header px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Clinical Modules</div>
+
+                <!-- 1. Devices Inventory -->
+                <a href="{% url 'inventory' %}?org=HOSP" 
+                   title="1. Devices Inventory"
+                   class="sidebar-nav-link group/item {% if '/inventory' in request.path %}is-active bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-md shadow-indigo-950/50 border border-blue-400/30{% else %}text-slate-300 hover:text-white hover:bg-white/10 border border-transparent{% endif %}">
+                    <span class="sidebar-icon-wrapper">
+                        <i data-lucide="server" class="w-5 h-5 shrink-0 {% if '/inventory' in request.path %}text-white{% else %}text-blue-300 group-hover/item:text-white{% endif %}"></i>
+                    </span>
+                    <span class="sidebar-expand-target flex items-center justify-between flex-1 min-w-0 pr-3.5">
+                        <span class="truncate font-semibold text-xs">1. Devices Inventory</span>
+                        {% if nav_device_count %}
+                        <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold shrink-0 {% if '/inventory' in request.path %}bg-white/20 text-white{% else %}bg-white/10 text-slate-300 group-hover/item:bg-white/20 group-hover/item:text-white{% endif %}">
+                            {{ nav_device_count }}
+                        </span>
+                        {% endif %}
+                    </span>
+                    {% if nav_device_count and not '/inventory' in request.path %}
+                    <span class="sidebar-compact-indicator rounded-full bg-blue-500 w-2 h-2"></span>
+                    {% endif %}
+                </a>
+
+                <!-- 2. Location Explorer -->
+                <a href="{% url 'location' %}?org=HOSP" 
+                   title="2. Location Explorer"
+                   class="sidebar-nav-link group/item {% if '/location' in request.path %}is-active bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-md shadow-indigo-950/50 border border-blue-400/30{% else %}text-slate-300 hover:text-white hover:bg-white/10 border border-transparent{% endif %}">
+                    <span class="sidebar-icon-wrapper">
+                        <i data-lucide="map-pin" class="w-5 h-5 shrink-0 {% if '/location' in request.path %}text-white{% else %}text-blue-300 group-hover/item:text-white{% endif %}"></i>
+                    </span>
+                    <span class="sidebar-expand-target flex items-center justify-between flex-1 min-w-0 pr-3.5">
+                        <span class="truncate font-semibold text-xs">2. Location Explorer</span>
+                    </span>
+                </a>
+
+                <!-- 3. Staff & Users -->
+                <a href="{% url 'user' %}?org=HOSP" 
+                   title="3. Staff & Users"
+                   class="sidebar-nav-link group/item {% if '/user' in request.path %}is-active bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-md shadow-indigo-950/50 border border-blue-400/30{% else %}text-slate-300 hover:text-white hover:bg-white/10 border border-transparent{% endif %}">
+                    <span class="sidebar-icon-wrapper">
+                        <i data-lucide="users" class="w-5 h-5 shrink-0 {% if '/user' in request.path %}text-white{% else %}text-blue-300 group-hover/item:text-white{% endif %}"></i>
+                    </span>
+                    <span class="sidebar-expand-target flex items-center justify-between flex-1 min-w-0 pr-3.5">
+                        <span class="truncate font-semibold text-xs">3. Medical Staff</span>
+                    </span>
+                </a>
+
+                <!-- 4. Audit & History Logs -->
+                <a href="{% url 'audit' %}?org=HOSP" 
+                   title="4. Audit & History Logs"
+                   class="sidebar-nav-link group/item {% if '/audit' in request.path %}is-active bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-md shadow-indigo-950/50 border border-blue-400/30{% else %}text-slate-300 hover:text-white hover:bg-white/10 border border-transparent{% endif %}">
+                    <span class="sidebar-icon-wrapper">
+                        <i data-lucide="file-clock" class="w-5 h-5 shrink-0 {% if '/audit' in request.path %}text-white{% else %}text-blue-300 group-hover/item:text-white{% endif %}"></i>
+                    </span>
+                    <span class="sidebar-expand-target flex items-center justify-between flex-1 min-w-0 pr-3.5">
+                        <span class="truncate font-semibold text-xs">4. Audit Logs</span>
+                    </span>
+                </a>
+
+                <!-- 5. Asset Tag Center -->
+                <a href="{% url 'tag' %}?org=HOSP" 
+                   title="5. Asset Tag Center"
+                   class="sidebar-nav-link group/item {% if '/tag' in request.path %}is-active bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-md shadow-indigo-950/50 border border-blue-400/30{% else %}text-slate-300 hover:text-white hover:bg-white/10 border border-transparent{% endif %}">
+                    <span class="sidebar-icon-wrapper">
+                        <i data-lucide="qr-code" class="w-5 h-5 shrink-0 {% if '/tag' in request.path %}text-white{% else %}text-blue-300 group-hover/item:text-white{% endif %}"></i>
+                    </span>
+                    <span class="sidebar-expand-target flex items-center justify-between flex-1 min-w-0 pr-3.5">
+                        <span class="truncate font-semibold text-xs">5. Asset Tag Center</span>
+                    </span>
+                </a>
+
+                <div class="sidebar-section-header px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operations & Services</div>
+
+                <!-- 6. Helpdesk Complaints -->
+                <a href="{% url 'admin_complaints' %}?org=HOSP" 
+                   title="6. Helpdesk Complaints"
+                   class="sidebar-nav-link group/item {% if '/admin-complaints' in request.path %}is-active bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-md shadow-indigo-950/50 border border-blue-400/30{% else %}text-slate-300 hover:text-white hover:bg-white/10 border border-transparent{% endif %}">
+                    <span class="sidebar-icon-wrapper">
+                        <i data-lucide="wrench" class="w-5 h-5 shrink-0 {% if '/admin-complaints' in request.path %}text-white{% else %}text-rose-400 group-hover/item:text-white{% endif %}"></i>
+                    </span>
+                    <span class="sidebar-expand-target flex items-center justify-between flex-1 min-w-0 pr-3.5">
+                        <span class="truncate font-semibold text-xs">6. Helpdesk Tickets</span>
+                        {% if nav_pending_tickets > 0 %}
+                        <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-rose-500 text-white shadow-xs animate-pulse shrink-0">
+                            {{ nav_pending_tickets }}
+                        </span>
+                        {% endif %}
+                    </span>
+                    {% if nav_pending_tickets > 0 and not '/admin-complaints' in request.path %}
+                    <span class="sidebar-compact-indicator rounded-full bg-rose-500 w-2.5 h-2.5 animate-pulse"></span>
+                    {% endif %}
+                </a>
+
+                <!-- 7. Maintenance (PMS) -->
+                <a href="{% url 'pms_schedule' %}?org=HOSP" 
+                   title="7. Maintenance (PMS)"
+                   class="sidebar-nav-link group/item {% if '/pms-schedule' in request.path %}is-active bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-md shadow-indigo-950/50 border border-blue-400/30{% else %}text-slate-300 hover:text-white hover:bg-white/10 border border-transparent{% endif %}">
+                    <span class="sidebar-icon-wrapper">
+                        <i data-lucide="clipboard-check" class="w-5 h-5 shrink-0 {% if '/pms-schedule' in request.path %}text-white{% else %}text-teal-400 group-hover/item:text-white{% endif %}"></i>
+                    </span>
+                    <span class="sidebar-expand-target flex items-center justify-between flex-1 min-w-0 pr-3.5">
+                        <span class="truncate font-semibold text-xs">7. Maintenance (PMS)</span>
+                        {% if nav_pms_count %}
+                        <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold shrink-0 {% if '/pms-schedule' in request.path %}bg-white/20 text-white{% else %}bg-white/10 text-slate-300 group-hover/item:bg-white/20 group-hover/item:text-white{% endif %}">
+                            {{ nav_pms_count }}
+                        </span>
+                        {% endif %}
+                    </span>
+                </a>
+
+                <!-- 8. Breakdown Register -->
+                <a href="{% url 'equipment_breakdown' %}?org=HOSP" 
+                   title="8. Breakdown Register"
+                   class="sidebar-nav-link group/item {% if '/breakdown-register' in request.path %}is-active bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-md shadow-indigo-950/50 border border-blue-400/30{% else %}text-slate-300 hover:text-white hover:bg-white/10 border border-transparent{% endif %}">
+                    <span class="sidebar-icon-wrapper">
+                        <i data-lucide="alert-octagon" class="w-5 h-5 shrink-0 {% if '/breakdown-register' in request.path %}text-white{% else %}text-amber-400 group-hover/item:text-white{% endif %}"></i>
+                    </span>
+                    <span class="sidebar-expand-target flex items-center justify-between flex-1 min-w-0 pr-3.5">
+                        <span class="truncate font-semibold text-xs">8. Breakdown Register</span>
+                        {% if nav_breakdown_count %}
+                        <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold shrink-0 {% if '/breakdown-register' in request.path %}bg-white/20 text-white{% else %}bg-white/10 text-slate-300 group-hover/item:bg-white/20 group-hover/item:text-white{% endif %}">
+                            {{ nav_breakdown_count }}
+                        </span>
+                        {% endif %}
+                    </span>
+                </a>
+
+            </nav>
+        </div>
+
+        <!-- Bottom Footer (System & Admin Status) -->
+        <div class="p-3 border-t border-indigo-900/40 bg-black/25 shrink-0 flex flex-col gap-2">
+            <!-- System & Admin Status -->
+            <div class="px-2.5 py-1 flex items-center justify-between text-[10px] text-slate-400 sidebar-expand-target">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Admin Online</span>
+                </div>
+                <a href="{% url 'index' %}" class="hover:text-blue-300 underline transition-colors">Gateway</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ========================================================================= -->
+    <!-- MAIN RIGHT CONTENT COLUMN                                                 -->
+    <!-- ========================================================================= -->
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+        
+        <!-- Global Top Header Bar (PSM Hospital Dedicated Brand Context) -->
+        <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs h-16 transition-all duration-300">
+            <div class="max-w-[1650px] mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-4">
+                
+                <!-- Left: Entity Switcher / Brand Context (PSM Hospital Dedicated) -->
+                <div class="flex items-center gap-3 min-w-0">
+                    <a href="{% url 'inventory' %}?org=HOSP" class="flex items-center gap-2.5 px-3 py-1.5 h-9 rounded-xl border border-slate-200/90 bg-slate-50/90 hover:bg-white hover:border-indigo-300 hover:shadow-sm text-slate-800 transition-all duration-300 cursor-pointer shadow-3xs active:scale-98">
+                        <span id="active-entity-icon-container" class="flex items-center shrink-0 transition-transform duration-300 hover:scale-105">
+                            <img id="active-entity-img" src="{% static 'images/psm_hospital_logo.png' %}" alt="PSM Hospital" class="h-5 sm:h-5.5 w-auto object-contain">
+                        </span>
+                        <span id="active-entity-label" class="text-xs sm:text-[13px] font-bold text-slate-900 tracking-tight">PSM Hospital</span>
+                    </a>
+
+                    <a href="{% url 'index' %}" title="Change Organization" class="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 hover:border-slate-300 text-slate-600 text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-2xs hover:shadow-xs active:scale-95">
+                        <i data-lucide="arrow-left" class="w-3.5 h-3.5 text-slate-500"></i>
+                        <span class="hidden md:inline">Gateway</span>
+                    </a>
+
+                    {% block page_title_badge %}{% endblock %}
+                </div>
+
+                <!-- Right Action Buttons / User Menu -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <!-- Admin Identity Pill & Dynamic Avatar -->
+                    <div class="flex items-center gap-2">
+                        <!-- Admin Profile Chip -->
+                        <div class="hidden md:flex flex-col text-right">
+                            <span class="text-xs font-bold text-slate-800 leading-tight">{{ current_admin_name }}</span>
+                            <span class="text-[10px] font-mono text-slate-400 font-semibold leading-tight">{{ current_admin_role }}</span>
+                        </div>
+
+                        <!-- Admin Avatar -->
+                        <div title="{{ current_admin_name }} ({{ current_admin_role }})" class="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-900 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shadow-xs hover:shadow-md hover:scale-105 transition-all duration-250 select-none border border-slate-700/50">
+                            {{ current_admin_initials|default:"AD" }}
+                        </div>
+
+                        <!-- Admin Logout Button -->
+                        <a href="{% url 'admin_logout' %}" title="Log out from Admin Console" class="w-9 h-9 rounded-xl border border-slate-200 bg-slate-50/80 hover:bg-rose-50 hover:border-rose-200 text-slate-500 hover:text-rose-600 transition-all duration-200 flex items-center justify-center shadow-3xs active:scale-95">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </header>
+
+        <!-- Main Page Content Block -->
+        {% block content %}{% endblock %}
+
+    </div><!-- End Main Right Content Column -->
+
+    <!-- Global Modals Block -->
+    {% block modals %}{% endblock %}
+
+    <!-- Core Scripts with Cache Busting -->
+    <script src="{% static 'js/table_scroll.js' %}?v={% now 'U' %}"></script>
+
+    <!-- Sidebar Animation & Interactivity Script -->
+    <script>
+        // Sidebar Pinned State from localStorage
+        const sidebar = document.getElementById('admin-sidebar');
+        const pinIcon = document.getElementById('sidebar-pin-icon');
+
+        function initSidebarState() {
+            const isPinned = localStorage.getItem('sidebar_pinned') === 'true';
+            if (isPinned && sidebar) {
+                sidebar.classList.add('is-expanded');
+                if (pinIcon) pinIcon.classList.add('text-blue-400');
+            }
+        }
+
+        function toggleSidebarPin() {
+            if (!sidebar) return;
+            const isExpanded = sidebar.classList.toggle('is-expanded');
+            localStorage.setItem('sidebar_pinned', isExpanded ? 'true' : 'false');
+            if (pinIcon) {
+                if (isExpanded) {
+                    pinIcon.classList.add('text-blue-400');
+                } else {
+                    pinIcon.classList.remove('text-blue-400');
+                }
+            }
+        }
+
+        function toggleEntityDropdown() {
+            const el = document.getElementById('entity-dropdown');
+            if (el) el.classList.toggle('hidden');
+        }
+
+        // Close entity dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const btn = document.getElementById('entity-selector-btn');
+            const dropdown = document.getElementById('entity-dropdown');
+            if (btn && dropdown && !btn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            initSidebarState();
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+        });
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

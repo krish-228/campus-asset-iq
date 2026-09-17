@@ -1,0 +1,429 @@
+/* ==========================================================================
+   CampusAssetIQ - Master Central Stylesheet
+   Covers: Core Theme Variables, Hospital & University Branding,
+   Atmospheric Canvases, Glassmorphism, Animations, Fonts & Print Rules.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. ROOT THEME VARIABLES
+   Easily customize primary entity colors, borders, and glows here.
+   -------------------------------------------------------------------------- */
+:root {
+    /* PSM Hospital (Royal Amethyst / Electric Violet & Medical Emerald) */
+    --hosp-primary: #7c3aed;          /* Violet 600 */
+    --hosp-primary-dark: #6d28d9;     /* Violet 700 */
+    --hosp-primary-deep: #5b21b6;     /* Violet 800 */
+    --hosp-primary-light: #a78bfa;    /* Violet 400 */
+    --hosp-primary-subtle: #f5f3ff;   /* Violet 50 */
+    --hosp-border: #ddd6fe;           /* Violet 200 */
+    --hosp-border-dark: #4c1d95;      /* Violet 900 */
+    --hosp-glow: rgba(124, 58, 237, 0.25);
+    --hosp-badge-bg: rgba(124, 58, 237, 0.15);
+
+    /* Swaminarayan University (Regal Indigo / Sapphire) */
+    --uni-primary: #4f46e5;           /* Indigo 600 */
+    --uni-primary-dark: #4338ca;      /* Indigo 700 */
+    --uni-primary-light: #818cf8;     /* Indigo 400 */
+    --uni-primary-subtle: #eef2ff;    /* Indigo 50 */
+    --uni-border: #c7d2fe;            /* Indigo 200 */
+    --uni-border-dark: #90053e;       /* Indigo 800 */
+    --uni-glow: rgba(79, 70, 229, 0.25);
+    --uni-badge-bg: rgba(79, 70, 229, 0.15);
+
+    /* System Operational Statuses */
+    --status-active: #10b981;         /* Emerald 500 */
+    --status-active-bg: #ecfdf5;      /* Emerald 50 */
+    --status-pending: #b9103a;        /* Amber 500 */
+    --status-pending-bg: #fffbeb;     /* Amber 50 */
+    --status-resolved: #10b981;       /* Emerald 500 */
+    --status-danger: #ef4444;         /* Rose 500 */
+}
+
+/* --------------------------------------------------------------------------
+   2. TYPOGRAPHY & GLOBAL BASE
+   -------------------------------------------------------------------------- */
+html {
+    font-size: 17px; /* Comfortable, spacious, prominent enterprise scale */
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.55;
+}
+
+.font-inter {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+.font-jakarta {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+
+/* Micro-labels and badges */
+.text-\[9px\] {
+    font-size: 10.5px !important;
+}
+.text-\[10px\] {
+    font-size: 11px !important;
+}
+.text-\[11px\] {
+    font-size: 12px !important;
+}
+
+/* Ensure form controls inherit optimal sizing and feel comfortable */
+input, select, textarea, button {
+    font-family: inherit;
+}
+
+/* --------------------------------------------------------------------------
+   3. PSM HOSPITAL THEME CLASSES (Royal Amethyst / Electric Violet & Medical Emerald)
+   -------------------------------------------------------------------------- */
+/* Hospital Entity Dot */
+.hosp-dot {
+    background-color: var(--hosp-primary) !important;
+}
+
+/* Hospital Text Accents */
+.hosp-text {
+    color: var(--hosp-primary-deep) !important;
+}
+.hosp-text-light {
+    color: var(--hosp-primary-light) !important;
+}
+
+/* Hospital Backgrounds & Badges */
+.hosp-bg-subtle {
+    background-color: var(--hosp-primary-subtle) !important;
+}
+.hosp-badge {
+    background-color: var(--hosp-primary-subtle) !important;
+    color: var(--hosp-primary-deep) !important;
+    border: 1px solid var(--hosp-border) !important;
+}
+.hosp-pill-active {
+    background-color: var(--hosp-primary-subtle) !important;
+    color: var(--hosp-primary-deep) !important;
+    border: 1px solid var(--hosp-border) !important;
+    font-weight: 700 !important;
+}
+
+/* Hospital Card & Borders */
+.hosp-card {
+    border-color: rgba(124, 58, 237, 0.3) !important;
+}
+.hosp-card:hover {
+    border-color: var(--hosp-primary-light) !important;
+    box-shadow: 0 20px 25px -5px var(--hosp-glow) !important;
+}
+
+/* Hospital Icon Box */
+.hosp-icon-box {
+    background-color: rgba(109, 40, 217, 0.2) !important;
+    border: 1px solid rgba(124, 58, 237, 0.4) !important;
+    color: var(--hosp-primary-light) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. SWAMINARAYAN UNIVERSITY THEME CLASSES (Indigo / Sapphire)
+   -------------------------------------------------------------------------- */
+.uni-dot {
+    background-color: var(--uni-primary) !important;
+}
+.uni-text {
+    color: var(--uni-primary-dark) !important;
+}
+.uni-text-light {
+    color: var(--uni-primary-light) !important;
+}
+.uni-bg-subtle {
+    background-color: var(--uni-primary-subtle) !important;
+}
+.uni-badge {
+    background-color: var(--uni-primary-subtle) !important;
+    color: var(--uni-primary-dark) !important;
+    border: 1px solid var(--uni-border) !important;
+}
+.uni-card {
+    border-color: rgba(79, 70, 229, 0.3) !important;
+}
+.uni-card:hover {
+    border-color: var(--uni-primary-light) !important;
+    box-shadow: 0 20px 25px -5px var(--uni-glow) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. ATMOSPHERIC CANVASES & BACKGROUNDS
+   -------------------------------------------------------------------------- */
+.luxury-canvas {
+    background: 
+        radial-gradient(1000px circle at 50% -10%, rgba(37, 99, 235, 0.10) 0%, rgba(79, 70, 229, 0.05) 35%, transparent 75%),
+        radial-gradient(700px circle at 85% 85%, rgba(30, 64, 175, 0.06) 0%, transparent 60%),
+        radial-gradient(600px circle at 15% 75%, rgba(37, 99, 235, 0.05) 0%, transparent 55%),
+        #f8fafc;
+}
+
+.luxury-canvas-dashboard {
+    background: 
+        radial-gradient(1200px circle at 50% -10%, rgba(37, 99, 235, 0.10) 0%, rgba(79, 70, 229, 0.05) 35%, transparent 75%),
+        radial-gradient(800px circle at 90% 85%, rgba(30, 64, 175, 0.06) 0%, transparent 60%),
+        #f8fafc;
+}
+
+/* Ambient Glow Orbs */
+.ambient-glow-indigo {
+    background-color: rgba(99, 102, 241, 0.15);
+}
+.ambient-glow-violet {
+    background-color: rgba(124, 58, 237, 0.15);
+}
+
+/* --------------------------------------------------------------------------
+   6. GLASSMORPHISM ACCENTS
+   -------------------------------------------------------------------------- */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-banner {
+    background: linear-gradient(135deg, rgba(30, 58, 138, 0.95), rgba(30, 27, 75, 0.95));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.glass-stat-card {
+    background: rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* --------------------------------------------------------------------------
+   7. ANIMATIONS & TRANSITIONS
+   -------------------------------------------------------------------------- */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulseGlow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.95); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+    animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* --------------------------------------------------------------------------
+   8. CUSTOM SCROLLBARS
+   -------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* --------------------------------------------------------------------------
+   9. PRINT STYLES (Asset Tag Stickers)
+   -------------------------------------------------------------------------- */
+@media print {
+    .no-print, header, aside, nav, #toast-container, .modal, button {
+        display: none !important;
+    }
+    #qr-tags-grid {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    #qr-stickers-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 16px !important;
+        width: 100% !important;
+    }
+    .sticker-card {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        border: 1.5px solid #0f172a !important;
+        box-shadow: none !important;
+        border-radius: 12px !important;
+        background: #ffffff !important;
+        print-color-adjust: exact !important;
+        -webkit-print-color-adjust: exact !important;
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   8. INVENTORY TABLE & ACTION DROPDOWN ENHANCEMENTS
+   -------------------------------------------------------------------------- */
+.inventory-table {
+    width: 100%;
+    table-layout: auto;
+}
+
+.inventory-table th {
+    letter-spacing: 0.05em;
+    font-size: 0.75rem; /* ~12.75px at 17px base */
+}
+
+.inventory-table td {
+    vertical-align: middle;
+}
+
+#device-actions-dropdown {
+    box-shadow: 0 20px 35px -5px rgba(15, 23, 42, 0.18), 0 10px 15px -5px rgba(15, 23, 42, 0.1);
+    animation: dropdownScaleIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Sleek Horizontal Scrollbar */
+.overflow-x-auto::-webkit-scrollbar {
+    height: 7px;
+}
+.overflow-x-auto::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 4px;
+}
+.overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* --------------------------------------------------------------------------
+   9. KPI METRIC CARDS HOVER LIFT & SOFT SHADOW ANIMATION
+   -------------------------------------------------------------------------- */
+.kpi-stat-card {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+                border-color 0.25s ease !important;
+    will-change: transform, box-shadow;
+    cursor: default;
+}
+
+.kpi-stat-card:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 14px 25px -5px rgba(15, 23, 42, 0.1), 
+                0 8px 10px -6px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* --------------------------------------------------------------------------
+   10. AUDIT SPLIT-PANE INSPECTOR & PRINTABLE PASSPORT
+   -------------------------------------------------------------------------- */
+.audit-event-card {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.audit-event-card.active-event {
+    border-color: #6366f1 !important;
+    background-color: #f5f3ff !important;
+    box-shadow: 0 4px 12px -2px rgba(99, 102, 241, 0.18) !important;
+}
+
+#audit-events-list::-webkit-scrollbar {
+    width: 6px;
+}
+#audit-events-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+#audit-events-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+#audit-events-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Dedicated Print Styles for Digital Audit Certificate */
+@media print {
+    #audit-events-list, .audit-cat-btn, #audit-search-input, .kpi-stat-card {
+        display: none !important;
+    }
+    #audit-inspector-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+        border: 2px solid #0f172a !important;
+        padding: 24px !important;
+        break-inside: avoid !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   11. SIGNATURE BLUE RIBBON & ARCHITECTURAL GRID STYLING
+   -------------------------------------------------------------------------- */
+.bg-grid-pattern {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.hero-blue-ribbon {
+    background: linear-gradient(135deg, #020617 0%, #0f172a 45%, #1e3a8a 100%);
+    position: relative;
+}
+
+.admin-hero-uni {
+    background: linear-gradient(135deg, #020617 0%, #0f172a 45%, #1e1b4b 100%);
+}
+
+.admin-hero-hosp {
+    background: linear-gradient(135deg, #020617 0%, #0f172a 45%, #3b0764 100%);
+}
+
+.admin-hero-all {
+    background: linear-gradient(135deg, #020617 0%, #0f172a 45%, #1e293b 100%);
+}
+
+

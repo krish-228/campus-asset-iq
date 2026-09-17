@@ -1,0 +1,746 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}IT Helpdesk & Device Complaints - CampusAssetIQ Admin{% endblock %}
+{% block page_title %}IT Helpdesk & Device Complaints{% endblock %}
+
+
+
+{% block content %}
+<!-- Main Content Area -->
+<main class="flex-1 max-w-[1650px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+
+    <!-- Django Alerts -->
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div
+            class="p-4 rounded-xl text-xs font-semibold flex items-center gap-3 bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs">
+            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600 shrink-0"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Top Header Info (Location Explorer Gradient) -->
+    <div
+        class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-2">
+                <span
+                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 text-rose-200 text-[11px] font-semibold border border-rose-400/30">
+                    <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span> Live Helpdesk Triage
+                </span>
+                <span class="text-[11px] font-mono text-blue-200/80">Campus Hardware Service Desk</span>
+            </div>
+            <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2.5">
+                <i data-lucide="wrench" class="w-6 h-6 text-blue-300"></i>
+                IT Helpdesk & Device Complaints
+            </h2>
+            <p class="text-xs text-slate-300 mt-1">Real-time hardware issue tracking, technician dispatch, and
+                resolution audit trail across campus workstations.</p>
+        </div>
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <button onclick="exportComplaintsToCSV()"
+                class="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/15 text-xs text-blue-100 font-semibold transition-all">
+                <i data-lucide="download" class="w-4 h-4 text-blue-300"></i>
+                <span>Export Tickets (CSV)</span>
+            </button>
+            <a href="{% url 'user_dashboard' %}"
+                class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2 active:scale-95">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>Submit New Ticket</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 KPI Metrics (Elevated Command Cards matching Inventory & Audit) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Total Tickets -->
+        <div class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-indigo-300 group transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200/60 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                <i data-lucide="inbox" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Tickets</div>
+                <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ total_tickets }}</div>
+                <div class="text-[10px] text-slate-500 font-medium">Across all campus departments</div>
+            </div>
+        </div>
+
+        <!-- Pending Review -->
+        <div class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-amber-300 group transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/60 group-hover:bg-amber-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                <i data-lucide="alert-circle" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Pending Review</div>
+                <div class="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight">{{ pending_tickets }}</div>
+                <div class="text-[10px] text-amber-600/90 font-medium">Requires IT triage & technician</div>
+            </div>
+        </div>
+
+        <!-- In Progress -->
+        <div class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-blue-300 group transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200/60 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">In Progress</div>
+                <div class="text-2xl sm:text-3xl font-black text-blue-600 tracking-tight">{{ progress_tickets }}</div>
+                <div class="text-[10px] text-blue-600/90 font-medium">Under active hardware repair</div>
+            </div>
+        </div>
+
+        <!-- Resolved -->
+        <div class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-emerald-300 group transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">Resolved</div>
+                <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight">{{ resolved_tickets }}</div>
+                <div class="text-[10px] text-emerald-600/90 font-medium">100% Successfully verified</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div
+        class="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
+            <button onclick="filterComplaintsByStatus('ALL')" id="filter-btn-all"
+                class="complaint-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
+                All (<span id="count-all">{{ total_tickets }}</span>)
+            </button>
+            <button onclick="filterComplaintsByStatus('Pending')" id="filter-btn-pending"
+                class="complaint-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200">
+                <span class="w-2 h-2 rounded-full bg-amber-500 inline-block mr-1"></span>
+                Pending ({{ pending_tickets }})
+            </button>
+            <button onclick="filterComplaintsByStatus('In Progress')" id="filter-btn-progress"
+                class="complaint-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200">
+                <span class="w-2 h-2 rounded-full bg-blue-500 inline-block mr-1"></span>
+                In Progress ({{ progress_tickets }})
+            </button>
+            <button onclick="filterComplaintsByStatus('Resolved')" id="filter-btn-resolved"
+                class="complaint-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>
+                Resolved ({{ resolved_tickets }})
+            </button>
+            {% if critical_tickets > 0 %}
+            <button onclick="filterComplaintsByPriority('Critical')" id="filter-btn-critical"
+                class="complaint-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200">
+                🚨 Critical ({{ critical_tickets }})
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- Search Box & Count Indicator -->
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+            <div class="w-full sm:w-80 relative">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none"></i>
+                <input type="text" id="complaints-search-input" oninput="handleComplaintsSearch(event)"
+                    placeholder="Search Ticket ID, Staff, Asset Tag, Room, Subject..."
+                    class="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all">
+            </div>
+        </div>
+    </div>
+
+    <!-- Complaints Data Table Container -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div
+            class="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2.5">
+                <i data-lucide="wrench" class="w-5 h-5 text-indigo-600"></i>
+                <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Hardware Incident Queue</h2>
+                <span id="complaints-feed-counter"
+                    class="px-2.5 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold">
+                    {{ complaints|length }} Records
+                </span>
+            </div>
+
+            <div class="flex items-center gap-2.5 flex-wrap no-print">
+                <!-- Mouse Cursor Horizontal Scroll Buttons -->
+                <div class="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200">
+                    <button type="button" onclick="scrollTableHorizontally('complaints-table', -350)"
+                        title="Scroll Left with Mouse Cursor (or click & drag table)"
+                        class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-200 text-slate-700 transition-all shadow-2xs active:scale-95 flex items-center gap-1 text-xs font-bold">
+                        <i data-lucide="chevron-left" class="w-3.5 h-3.5 text-indigo-600"></i>
+                        <span>Scroll Left</span>
+                    </button>
+                    <span
+                        class="px-2 text-[11px] font-bold text-slate-500 hidden sm:flex items-center gap-1 select-none"
+                        title="Click anywhere on the table and drag left or right with your mouse">
+                        <i data-lucide="move-horizontal" class="w-3.5 h-3.5 text-indigo-600"></i>
+                        <span>Drag with cursor</span>
+                    </span>
+                    <button type="button" onclick="scrollTableHorizontally('complaints-table', 350)"
+                        title="Scroll Right with Mouse Cursor (or click & drag table)"
+                        class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-200 text-slate-700 transition-all shadow-2xs active:scale-95 flex items-center gap-1 text-xs font-bold">
+                        <span>Scroll Right</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-indigo-600"></i>
+                    </button>
+                </div>
+
+                <!-- Export Sheet (CSV) & Print Buttons on Top of Table -->
+                <button onclick="exportComplaintsToCSV()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-300 text-xs font-bold transition-all shadow-2xs hover:border-slate-400">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-indigo-600"></i>
+                    <span>Export Sheet (CSV)</span>
+                </button>
+                <button onclick="window.print()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-300 text-xs font-bold transition-all shadow-2xs hover:border-slate-400">
+                    <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-600"></i>
+                    <span>Print Table</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-[750px] scrollbar-thin">
+            <table class="w-full text-left text-sm border-collapse print-table" id="complaints-table">
+                <thead
+                    class="sticky top-0 z-20 bg-slate-100 text-slate-700 font-bold border-b border-slate-300 shadow-2xs">
+                    <tr class="divide-x divide-slate-200 uppercase text-xs tracking-wider">
+                        <th scope="col"
+                            class="py-3.5 px-4 font-extrabold text-slate-800 bg-slate-200/90 whitespace-nowrap min-w-[140px]">
+                            Ticket & Age</th>
+                        <th scope="col" class="py-3.5 px-4 font-extrabold text-slate-800 bg-slate-200/90 min-w-[190px]">
+                            Reporter / Custodian</th>
+                        <th scope="col" class="py-3.5 px-4 font-extrabold text-slate-800 bg-slate-200/90 min-w-[160px]">
+                            Affected Asset</th>
+                        <th scope="col" class="py-3.5 px-4 font-extrabold text-slate-800 bg-slate-200/90 min-w-[220px]">
+                            Issue Summary</th>
+                        <th scope="col"
+                            class="py-3.5 px-4 text-center font-extrabold text-slate-800 bg-slate-200/90 min-w-[110px]">
+                            Priority</th>
+                        <th scope="col"
+                            class="py-3.5 px-4 text-center font-extrabold text-slate-800 bg-slate-200/90 min-w-[120px]">
+                            Status</th>
+                        <th scope="col" class="py-3.5 px-4 font-extrabold text-slate-800 bg-slate-200/90 min-w-[220px]">
+                            Technician & Resolution</th>
+                        <th scope="col"
+                            class="py-3.5 px-4 text-center font-extrabold text-slate-800 bg-slate-200/90 min-w-[130px] no-print">
+                            Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 bg-white" id="complaints-tbody">
+                    {% for c in complaints %}
+                    <tr class="complaint-row hover:bg-slate-50/80 transition-colors divide-x divide-slate-100 text-slate-800"
+                        data-status="{{ c.status }}" data-priority="{{ c.priority }}"
+                        data-search="{{ c.ticket_id|lower }} {{ c.user_full_name|lower }} {{ c.emp_id|lower }} {{ c.device_asset_id|lower }} {{ c.room_location|lower }} {{ c.subject|lower }} {{ c.description|lower }} {{ c.issue_category|lower }} {{ c.technician_name|lower }}">
+
+                        <!-- Ticket & Date -->
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <div
+                                class="font-mono font-bold text-slate-900 text-sm bg-slate-100 px-2.5 py-1 rounded-md border border-slate-300 inline-block shadow-3xs">
+                                {{ c.ticket_id }}
+                            </div>
+                            <div class="text-xs text-slate-500 mt-1 flex items-center gap-1 font-semibold">
+                                <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <span>{{ c.created_at|date:"d-M-Y, H:i" }}</span>
+                            </div>
+                        </td>
+
+                        <!-- Employee / Custodian with Avatar Initials -->
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-9 h-9 rounded-full {% if c.org_id == 'HOSP' %}bg-violet-100 text-violet-800 border border-violet-200{% else %}bg-indigo-100 text-indigo-800 border border-indigo-200{% endif %} flex items-center justify-center font-extrabold text-sm shrink-0 shadow-xs">
+                                    {{ c.user_full_name|slice:":2"|upper }}
+                                </div>
+                                <div>
+                                    <div class="font-bold text-slate-900 text-sm">{{ c.user_full_name }}</div>
+                                    <div class="text-xs text-slate-600 font-mono font-medium mt-0.5">{{ c.emp_id }}
+                                        &bull; {{ c.user_dept }}</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Workstation Asset (Asset Tag Focus) -->
+                        <td class="py-3.5 px-4">
+                            <div
+                                class="font-mono font-bold text-sm {% if c.org_id == 'HOSP' %}text-violet-800 bg-violet-50 border-violet-200{% else %}text-indigo-800 bg-indigo-50 border-indigo-200{% endif %} px-2.5 py-1 rounded-md border shadow-3xs inline-block">
+                                {{ c.device_asset_id }}
+                            </div>
+                            <div
+                                class="text-xs text-slate-700 font-semibold flex items-center gap-1 mt-1 truncate max-w-[170px]">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                                <span>{{ c.room_location }}</span>
+                            </div>
+                        </td>
+
+                        <!-- Issue Details -->
+                        <td class="py-3.5 px-4 max-w-xs">
+                            <div class="font-bold text-slate-900 text-sm leading-snug">{{ c.subject }}</div>
+                            <div class="text-xs text-slate-600 font-medium line-clamp-1 mt-0.5">{{ c.description }}
+                            </div>
+                            <span
+                                class="inline-flex items-center gap-1 mt-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                <i data-lucide="tag" class="w-3 h-3 text-slate-400"></i>
+                                {{ c.issue_category }}
+                            </span>
+                        </td>
+
+                        <!-- Priority -->
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                            <span
+                                class="text-xs font-extrabold px-3 py-1 rounded-full inline-flex items-center gap-1.5 {% if c.priority == 'Critical' %}bg-rose-100 text-rose-800 border border-rose-300{% elif c.priority == 'High' %}bg-amber-100 text-amber-800 border border-amber-300{% else %}bg-slate-100 text-slate-700 border border-slate-300{% endif %}">
+                                {% if c.priority == 'Critical' %}
+                                <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                                {% endif %}
+                                {{ c.priority }}
+                            </span>
+                        </td>
+
+                        <!-- Status -->
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                            <span
+                                class="text-xs font-extrabold px-3 py-1 rounded-full inline-flex items-center gap-1.5 mx-auto {% if c.status == 'Resolved' %}bg-emerald-100 text-emerald-800 border border-emerald-300{% elif c.status == 'In Progress' %}bg-blue-100 text-blue-800 border border-blue-300{% else %}bg-amber-100 text-amber-800 border border-amber-300{% endif %}">
+                                <span
+                                    class="w-2 h-2 rounded-full {% if c.status == 'Resolved' %}bg-emerald-500{% elif c.status == 'In Progress' %}bg-blue-500{% else %}bg-amber-500 animate-pulse{% endif %}"></span>
+                                {{ c.status }}
+                            </span>
+                        </td>
+
+                        <!-- Technician & Resolution Note -->
+                        <td class="py-3.5 px-4 max-w-xs">
+                            {% if c.admin_remarks %}
+                            <div
+                                class="text-xs text-emerald-950 bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200 shadow-2xs">
+                                <div
+                                    class="text-[10px] font-extrabold text-emerald-900 uppercase flex items-center gap-1">
+                                    <i data-lucide="wrench" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    <span>{{ c.technician_name|default:'IT Technician' }}:</span>
+                                </div>
+                                <div class="text-xs font-medium text-emerald-900 mt-0.5 line-clamp-2">{{ c.admin_remarks
+                                    }}</div>
+                            </div>
+                            {% else %}
+                            <span class="text-slate-400 italic text-xs flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-300"></i>
+                                <span>Awaiting action</span>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Action -->
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                            <button type="button" onclick="openResolveModalFromBtn(this)"
+                                data-ticket-id="{{ c.ticket_id }}" data-asset-id="{{ c.device_asset_id }}"
+                                data-reporter-name="{{ c.user_full_name }}" data-emp-id="{{ c.emp_id }}"
+                                data-dept="{{ c.user_dept }}" data-email="{{ c.user_email }}"
+                                data-location="{{ c.room_location }}" data-category="{{ c.issue_category }}"
+                                data-priority="{{ c.priority }}" data-subject="{{ c.subject }}"
+                                data-description="{{ c.description }}" data-status="{{ c.status }}"
+                                data-technician="{{ c.technician_name|default:'IT Desk Team' }}"
+                                data-remarks="{{ c.admin_remarks|default:'' }}"
+                                data-created="{{ c.created_at|date:'d-M-Y, H:i' }}"
+                                class="px-3.5 py-1.5 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1.5">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                <span>Inspect & Resolve</span>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr id="django-empty-row">
+                        <td colspan="8" class="py-12 text-center text-slate-400">
+                            <div
+                                class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                                <i data-lucide="inbox" class="w-6 h-6"></i>
+                            </div>
+                            <div class="font-bold text-slate-700">No complaints matching this filter</div>
+                            <div class="text-xs text-slate-400 mt-1">All workstations in this category are operating
+                                smoothly.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    <!-- Dynamic JS Search Empty Row -->
+                    <tr id="js-search-empty-row" class="hidden">
+                        <td colspan="8" class="py-12 text-center text-slate-400">
+                            <div
+                                class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                                <i data-lucide="search-x" class="w-6 h-6"></i>
+                            </div>
+                            <div class="font-bold text-slate-700 text-xs">No complaints match your search query</div>
+                            <div class="text-[11px] text-slate-400 mt-0.5">Try searching with a different Asset Tag,
+                                employee name, or ticket number.</div>
+                            <button onclick="clearComplaintsSearch()"
+                                class="mt-2 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors">Clear
+                                Search</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<!-- Page Footer -->
+<footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div>CampusAssetIQ Admin Console &bull; Central Helpdesk & IT Service Desk</div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'inventory' %}" class="hover:underline text-indigo-600 font-medium">Inventory Table</a>
+            <span>&bull;</span>
+            <a href="{% url 'audit' %}" class="hover:underline text-indigo-600 font-medium">Audit Trail</a>
+        </div>
+    </div>
+</footer>
+{% endblock %}
+
+{% block modals %}
+<!-- Redesigned High-Performance Service Desk Inspector Modal -->
+<div id="resolve-modal"
+    class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div
+        class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 animate-scale-up space-y-5 my-8">
+
+        <!-- Modal Top Header -->
+        <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span id="modal-priority-badge"
+                        class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">Critical</span>
+                    <span class="text-[10px] font-mono text-slate-400">Reported on <span id="modal-created-time"
+                            class="font-bold text-slate-600"></span></span>
+                </div>
+                <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                    <i data-lucide="wrench" class="w-5 h-5 text-indigo-600"></i>
+                    <span>Ticket Resolution & Triage: </span>
+                    <span id="modal-ticket-id" class="font-mono text-indigo-700">TKT-2026-001</span>
+                </h3>
+            </div>
+            <button onclick="closeResolveModal()"
+                class="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Ticket Context & Hardware Subject Card -->
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
+            <!-- Reporter & Asset Identity Row -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-3 border-b border-slate-200">
+                <div>
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Affected Hardware Asset
+                    </div>
+                    <div class="font-mono font-black text-indigo-700 text-sm mt-0.5 flex items-center gap-2">
+                        <span id="modal-asset-id">HOSP-ICU-00042</span>
+                    </div>
+                    <div class="text-slate-600 font-medium text-[11px] mt-0.5 flex items-center gap-1">
+                        <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i>
+                        <span id="modal-room-location">ICU Ward 1</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reporting Custodian</div>
+                    <div class="font-bold text-slate-900 text-xs mt-0.5" id="modal-reporter-name">Dr. Vikram Sharma
+                    </div>
+                    <div class="text-slate-500 text-[10px] font-mono" id="modal-reporter-meta">MED-00042 &bull; Critical
+                        Care</div>
+                </div>
+            </div>
+
+            <!-- Complaint Subject & Description -->
+            <div>
+                <div
+                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+                    <span>Reported Issue</span>
+                    <span id="modal-issue-category"
+                        class="font-semibold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 text-[9px]">Hardware
+                        Fault</span>
+                </div>
+                <div class="font-bold text-slate-900 text-xs" id="modal-subject">Screen Flickering & Touchscreen Offset
+                </div>
+                <p class="text-slate-600 text-[11px] leading-relaxed mt-1 bg-white p-2.5 rounded-lg border border-slate-200 italic"
+                    id="modal-description">
+                    Full issue description details...
+                </p>
+            </div>
+        </div>
+
+        <!-- Technical Resolution Form -->
+        <form id="resolve-form" method="POST" action="" class="space-y-4 text-xs">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+            <!-- Status Picker -->
+            <div>
+                <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px] mb-1.5">Update Ticket
+                    Status *</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <label
+                        class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-all has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 has-[:checked]:text-amber-900">
+                        <input type="radio" name="status" value="Pending" id="status-radio-pending"
+                            class="accent-amber-600">
+                        <span class="font-bold text-[11px]">Pending</span>
+                    </label>
+                    <label
+                        class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-900">
+                        <input type="radio" name="status" value="In Progress" id="status-radio-progress"
+                            class="accent-blue-600">
+                        <span class="font-bold text-[11px]">In Progress</span>
+                    </label>
+                    <label
+                        class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-all has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 has-[:checked]:text-emerald-900">
+                        <input type="radio" name="status" value="Resolved" id="status-radio-resolved"
+                            class="accent-emerald-600">
+                        <span class="font-bold text-[11px]">Resolved</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Assigned Technician -->
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Assigned
+                        Technician *</label>
+                    <span class="text-[10px] text-slate-400">Quick suggestions below</span>
+                </div>
+                <input type="text" id="modal-tech" name="technician_name" required
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-semibold">
+
+                <!-- Quick Technician Presets -->
+                <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    <button type="button" onclick="quickSetTechnician('Senior IT Hardware Engineer')"
+                        class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[10px] font-medium transition-colors">
+                        + Senior IT Engineer
+                    </button>
+                    <button type="button" onclick="quickSetTechnician('Biomedical IT Specialist')"
+                        class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[10px] font-medium transition-colors">
+                        + Biomedical Specialist
+                    </button>
+                    <button type="button" onclick="quickSetTechnician('Campus Network Administrator')"
+                        class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[10px] font-medium transition-colors">
+                        + Network Admin
+                    </button>
+                    <button type="button" onclick="quickSetTechnician('Lab Technical Assistant')"
+                        class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[10px] font-medium transition-colors">
+                        + Lab Assistant
+                    </button>
+                </div>
+            </div>
+
+            <!-- Technical Resolution Remarks -->
+            <div>
+                <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px] mb-1.5">Technical
+                    Resolution Remarks & Actions Taken</label>
+                <textarea id="modal-remarks" name="admin_remarks" rows="3"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all"></textarea>
+            </div>
+
+            <!-- Modal Actions -->
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onclick="closeResolveModal()"
+                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
+                    Cancel
+                </button>
+                <button type="submit"
+                    class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center gap-1.5">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Save & Update Ticket</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    lucide.createIcons();
+
+    let currentActiveStatus = "ALL";
+    let currentSearchText = "";
+
+    function toggleEntityDropdown() {
+        const el = document.getElementById('entity-dropdown');
+        if (el) el.classList.toggle('hidden');
+    }
+
+    function openResolveModalFromBtn(btn) {
+        const d = btn.dataset;
+        openResolveModal(
+            d.ticketId,
+            d.assetId,
+            d.reporterName,
+            d.empId,
+            d.dept,
+            d.email,
+            d.location,
+            d.category,
+            d.priority,
+            d.subject,
+            d.description,
+            d.status,
+            d.technician,
+            d.remarks,
+            d.created
+        );
+    }
+
+    function openResolveModal(ticketId, assetId, reporterName, empId, dept, email, location, category, priority, subject, description, status, technician, remarks, created) {
+        document.getElementById('modal-ticket-id').textContent = ticketId;
+        document.getElementById('modal-asset-id').textContent = assetId;
+        document.getElementById('modal-reporter-name').textContent = reporterName;
+        document.getElementById('modal-reporter-meta').textContent = `${empId} • ${dept}`;
+        document.getElementById('modal-room-location').textContent = location || 'Campus Lab';
+        document.getElementById('modal-issue-category').textContent = category || 'Hardware Issue';
+        document.getElementById('modal-subject').textContent = subject || 'Hardware Maintenance';
+        document.getElementById('modal-description').textContent = description || 'No further description provided.';
+        document.getElementById('modal-created-time').textContent = created || '';
+
+        // Priority badge styling
+        const prioBadge = document.getElementById('modal-priority-badge');
+        prioBadge.textContent = priority || 'Normal';
+        if (priority === 'Critical') {
+            prioBadge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200";
+        } else if (priority === 'High') {
+            prioBadge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200";
+        } else {
+            prioBadge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200";
+        }
+
+        // Radio status
+        if (status === 'Pending') {
+            document.getElementById('status-radio-pending').checked = true;
+        } else if (status === 'In Progress') {
+            document.getElementById('status-radio-progress').checked = true;
+        } else {
+            document.getElementById('status-radio-resolved').checked = true;
+        }
+
+        document.getElementById('modal-tech').value = technician || 'IT Desk Team';
+        document.getElementById('modal-remarks').value = remarks || '';
+        document.getElementById('resolve-form').action = `/admin-complaints/update/${ticketId}/`;
+        document.getElementById('resolve-modal').classList.remove('hidden');
+        lucide.createIcons();
+    }
+
+    function closeResolveModal() {
+        document.getElementById('resolve-modal').classList.add('hidden');
+    }
+
+    function quickSetTechnician(name) {
+        document.getElementById('modal-tech').value = name;
+    }
+
+    function handleComplaintsSearch(e) {
+        currentSearchText = e.target.value.trim().toLowerCase();
+        applyComplaintFilters();
+    }
+
+    function clearComplaintsSearch() {
+        currentSearchText = "";
+        const input = document.getElementById('complaints-search-input');
+        if (input) input.value = "";
+        applyComplaintFilters();
+    }
+
+    function filterComplaintsByStatus(status) {
+        currentActiveStatus = status;
+
+        // Reset tab styles
+        document.querySelectorAll('.complaint-filter-btn').forEach(btn => {
+            btn.className = "complaint-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200";
+        });
+
+        const activeBtn = document.getElementById(`filter-btn-${status.toLowerCase().replace(' ', '')}`);
+        if (activeBtn) {
+            activeBtn.className = "complaint-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs";
+        }
+
+        applyComplaintFilters();
+    }
+
+    function filterComplaintsByPriority(prio) {
+        currentActiveStatus = "PRIO_" + prio;
+        applyComplaintFilters();
+    }
+
+    function applyComplaintFilters() {
+        const rows = document.querySelectorAll('.complaint-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const status = row.getAttribute('data-status');
+            const priority = row.getAttribute('data-priority');
+            const searchData = row.getAttribute('data-search') || '';
+
+            let matchesStatus = true;
+            if (currentActiveStatus === "ALL") {
+                matchesStatus = true;
+            } else if (currentActiveStatus.startsWith("PRIO_")) {
+                matchesStatus = (priority === currentActiveStatus.replace("PRIO_", ""));
+            } else {
+                matchesStatus = (status === currentActiveStatus);
+            }
+
+            let matchesSearch = true;
+            if (currentSearchText) {
+                matchesSearch = searchData.includes(currentSearchText);
+            }
+
+            if (matchesStatus && matchesSearch) {
+                row.style.display = "";
+                visibleCount++;
+            } else {
+                row.style.display = "none";
+            }
+        });
+
+        // Update counter
+        const counter = document.getElementById('complaints-feed-counter');
+        if (counter) {
+            counter.textContent = `${visibleCount} Records`;
+        }
+
+        // Show / Hide empty row
+        const emptyRow = document.getElementById('js-search-empty-row');
+        if (emptyRow) {
+            if (visibleCount === 0 && rows.length > 0) {
+                emptyRow.classList.remove('hidden');
+            } else {
+                emptyRow.classList.add('hidden');
+            }
+        }
+    }
+
+    function exportComplaintsToCSV() {
+        const rows = document.querySelectorAll('.complaint-row');
+        let csv = "Ticket ID,Created Date,Reporter,Employee ID,Department,Asset Tag,Location,Priority,Status,Subject,Technician,Remarks\n";
+
+        rows.forEach(row => {
+            if (row.style.display === "none") return; // Only export visible / filtered
+            const cells = row.querySelectorAll('td');
+            if (cells.length < 8) return;
+
+            const ticketId = cells[0].querySelector('.font-mono')?.textContent.trim() || '';
+            const date = cells[0].querySelector('.text-\\[10px\\]')?.textContent.trim() || '';
+            const reporter = cells[1].querySelector('.font-bold')?.textContent.trim() || '';
+            const meta = cells[1].querySelector('.font-mono')?.textContent.trim() || '';
+            const assetTag = cells[2].querySelector('.font-mono')?.textContent.trim() || '';
+            const location = cells[2].querySelector('.text-\\[11px\\]')?.textContent.trim() || '';
+            const subject = cells[3].querySelector('.font-bold')?.textContent.trim() || '';
+            const priority = cells[4].textContent.trim() || '';
+            const status = cells[5].textContent.trim() || '';
+            const remarks = cells[6].textContent.trim().replace(/\s+/g, ' ') || '';
+
+            csv += `"${ticketId}","${date}","${reporter}","${meta}","${assetTag}","${location}","${priority}","${status}","${subject.replace(/"/g, '""')}","${remarks.replace(/"/g, '""')}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `CampusAssetIQ_Helpdesk_Complaints_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+{% endblock %}

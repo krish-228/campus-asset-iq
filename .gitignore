@@ -1,0 +1,33 @@
+# Python & Django
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Artifacts
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Static build & local tools
+staticfiles/
+cloudflared.exe
+mingit/
+

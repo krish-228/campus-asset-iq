@@ -1,0 +1,318 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full overflow-hidden">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up — CampusAssetIQ | PSM Hospital</title>
+    
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            500: '#4361ee',
+                            600: '#3f37c9',
+                            700: '#3a0ca3',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * {
+            transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-primary-flow {
+            background: linear-gradient(135deg, #4361ee 0%, #3a56e4 50%, #2f45cc 100%);
+            box-shadow: 0 8px 24px -4px rgba(67, 97, 238, 0.45);
+        }
+        .btn-primary-flow:hover {
+            box-shadow: 0 12px 28px -4px rgba(67, 97, 238, 0.6);
+            transform: translateY(-1px);
+        }
+        .btn-primary-flow:active {
+            transform: translateY(0);
+        }
+
+
+
+        .wave-banner {
+            background-image: linear-gradient(180deg, rgba(29, 78, 216, 0.55) 0%, rgba(30, 58, 138, 0.82) 100%), url('{% static "images/admin_auth_wave_bg.jpg" %}');
+            background-size: cover;
+            background-position: center;
+        }
+
+
+
+        /* Strict Viewport Lock: Zero Scrollbars */
+        html, body {
+            height: 100vh !important;
+            width: 100vw !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+        .no-scrollbar {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen m-0 p-0 overflow-hidden bg-white font-sans antialiased text-slate-800 selection:bg-blue-600 selection:text-white">
+
+    <!-- Master Fullscreen Layout (Zero Outer Margin, Full Viewport, Non-Scrollable) -->
+    <div class="h-screen w-full flex flex-col lg:flex-row p-3 sm:p-4 lg:p-5 gap-4 lg:gap-6 bg-white overflow-hidden">
+
+        <!-- ========================================================================= -->
+        <!-- LEFT COLUMN: CURVED BLUE WAVE SHOWCASE CARD (FULL HEIGHT)                -->
+        <!-- ========================================================================= -->
+        <div class="hidden lg:flex lg:w-1/2 h-full rounded-[28px] wave-banner text-white p-8 sm:p-10 lg:p-12 xl:p-14 flex-col justify-between relative overflow-hidden shrink-0 shadow-lg">
+            
+            <!-- Ambient Highlights -->
+            <div class="absolute -top-20 -left-20 w-60 h-60 bg-blue-400/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-20 -right-20 w-72 h-72 bg-indigo-500/25 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Top Header: Welcome Heading & Subtitle -->
+            <div class="relative z-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold tracking-wide mb-4">
+                    <span class="w-2 h-2 rounded-full bg-cyan-300"></span>
+                    <span>IT Engineer Enrollment</span>
+                </div>
+                <h1 class="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white tracking-tight leading-tight">
+                    Join CampusAssetIQ
+                </h1>
+                <p class="text-blue-100/90 text-sm sm:text-base font-medium mt-3 max-w-md leading-relaxed">
+                    Enroll your staff profile for enterprise hardware custody & incident response.
+                </p>
+            </div>
+
+            <!-- Bottom Section: Feature Highlight & Carousel Indicators -->
+            <div class="relative z-10 pt-12 lg:pt-0">
+                <div class="max-w-md">
+                    <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                        Seamless Collaboration
+                    </h2>
+                    <p class="text-blue-100/80 text-xs sm:text-sm font-normal mt-2 leading-relaxed">
+                        Effortlessly work together with your hospital engineering team and track hardware health in real-time.
+                    </p>
+                </div>
+
+                <!-- 3-Dot Pagination Indicator -->
+                <div class="flex items-center gap-2 mt-6">
+                    <span class="w-2 h-2 rounded-full bg-white/40"></span>
+                    <span class="w-7 h-2 rounded-full bg-white shadow-xs"></span>
+                    <span class="w-2 h-2 rounded-full bg-white/40"></span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- RIGHT COLUMN: MINIMALIST CRISP AUTH FORM PANEL                            -->
+        <!-- ========================================================================= -->
+        <div class="w-full lg:w-1/2 h-full flex flex-col justify-between p-5 sm:p-7 lg:p-9 xl:p-11 bg-white overflow-hidden no-scrollbar">
+
+            <!-- Top Brand Header Bar -->
+            <div class="flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs flex items-center gap-2.5">
+                        <img src="{% static 'images/psm_hospital_logo.png' %}" alt="PSM Hospital Logo" class="h-5 sm:h-6 w-auto object-contain">
+                        <span class="font-bold text-sm sm:text-[14px] text-slate-800 tracking-tight">PSM Hospital</span>
+                    </div>
+                    <span class="text-xs sm:text-sm font-mono font-bold text-slate-400">| Enrollment</span>
+                </div>
+
+                <a href="{% url 'admin_login' %}" class="text-xs sm:text-sm font-semibold text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 transition-colors">
+                    <i data-lucide="log-in" class="w-4 h-4"></i>
+                    <span>Sign In</span>
+                </a>
+            </div>
+
+            <!-- Form Content Body -->
+            <div class="w-full max-w-lg mx-auto my-auto py-5 sm:py-8">
+
+                <!-- Form Header -->
+                <div class="mb-5 sm:mb-7">
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">Create Admin Account</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+                        Already have an account? <a href="{% url 'admin_login' %}" class="text-[#4361ee] font-bold hover:underline">Sign In</a>
+                    </p>
+                </div>
+
+                <!-- Django Feedback Messages -->
+                {% if messages %}
+                <div class="mb-4 space-y-1.5">
+                    {% for message in messages %}
+                    <div class="p-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2.5 {% if message.tags == 'error' %}bg-rose-50 text-rose-800 border border-rose-200{% elif message.tags == 'success' %}bg-emerald-50 text-emerald-800 border border-emerald-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                        <i data-lucide="{% if message.tags == 'error' %}alert-circle{% elif message.tags == 'success' %}check-circle-2{% else %}info{% endif %}" class="w-4 h-4 shrink-0"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Primary Sign Up Form -->
+                <form method="POST" action="{% url 'admin_signup' %}" autocomplete="off" class="space-y-4 sm:space-y-4.5">
+                    {% csrf_token %}
+
+                    <!-- Row 1: Full Name & Username -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label for="full_name" class="block text-base sm:text-[17px] font-bold text-slate-900 mb-1.5">
+                                Full Name *
+                            </label>
+                            <input 
+                                type="text" 
+                                id="full_name" 
+                                name="full_name" 
+                                required 
+                                placeholder="Er. Rajesh Kulkarni" 
+                                class="w-full px-3.5 py-2.5 sm:py-2.5 text-sm sm:text-[15px] text-slate-900 bg-white border border-slate-200 rounded-xl focus:border-[#4361ee] focus:ring-4 focus:ring-indigo-100/70 outline-none transition-all placeholder-slate-400 font-medium shadow-2xs"
+                                autofocus
+                            >
+                        </div>
+                        <div>
+                            <label for="username" class="block text-base sm:text-[17px] font-bold text-slate-900 mb-1.5">
+                                Admin Username *
+                            </label>
+                            <input 
+                                type="text" 
+                                id="username" 
+                                name="username" 
+                                required 
+                                placeholder="rajesh_it" 
+                                class="w-full px-3.5 py-2.5 sm:py-2.5 text-sm sm:text-[15px] text-slate-900 bg-white border border-slate-200 rounded-xl focus:border-[#4361ee] focus:ring-4 focus:ring-indigo-100/70 outline-none transition-all placeholder-slate-400 font-mono shadow-2xs"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Email Id -->
+                    <div>
+                        <label for="email" class="block text-base sm:text-[17px] font-bold text-slate-900 mb-1.5">
+                            Email Id *
+                        </label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            required 
+                            placeholder="rajesh@psmhospital.org" 
+                            class="w-full px-3.5 py-2.5 sm:py-2.5 text-sm sm:text-[15px] text-slate-900 bg-white border border-slate-200 rounded-xl focus:border-[#4361ee] focus:ring-4 focus:ring-indigo-100/70 outline-none transition-all placeholder-slate-400 font-medium shadow-2xs"
+                        >
+                    </div>
+
+                    <!-- Row 3: System Role -->
+                    <div>
+                        <label for="designation" class="block text-base sm:text-[17px] font-bold text-slate-900 mb-1.5">
+                            System Role
+                        </label>
+                        <select id="designation" name="designation" class="w-full px-3.5 py-2.5 sm:py-2.5 text-sm sm:text-[15px] text-slate-900 bg-white border border-slate-200 rounded-xl focus:border-[#4361ee] focus:ring-4 focus:ring-indigo-100/70 outline-none transition-all font-medium cursor-pointer shadow-2xs">
+                            <option value="Systems Administrator">Systems Administrator</option>
+                            <option value="Hardware Asset Manager">Hardware Asset Manager</option>
+                            <option value="Biomedical Lead Engineer">Biomedical Lead Engineer</option>
+                            <option value="IT Infrastructure Lead">IT Infrastructure Lead</option>
+                        </select>
+                    </div>
+
+                    <!-- Row 4: Password & Confirm Password -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label for="password" class="block text-base sm:text-[17px] font-bold text-slate-900 mb-1.5">
+                                Password *
+                            </label>
+                            <div class="relative">
+                                <input 
+                                    type="password" 
+                                    id="password" 
+                                    name="password" 
+                                    required 
+                                    placeholder="Enter Password" 
+                                    class="w-full pl-3.5 pr-10 py-2.5 sm:py-2.5 text-sm sm:text-[15px] text-slate-900 bg-white border border-slate-200 rounded-xl focus:border-[#4361ee] focus:ring-4 focus:ring-indigo-100/70 outline-none transition-all placeholder-slate-400 font-medium shadow-2xs"
+                                >
+                                <button type="button" onclick="togglePasswordVisibility('password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="confirm_password" class="block text-base sm:text-[17px] font-bold text-slate-900 mb-1.5">
+                                Confirm Password *
+                            </label>
+                            <div class="relative">
+                                <input 
+                                    type="password" 
+                                    id="confirm_password" 
+                                    name="confirm_password" 
+                                    required 
+                                    placeholder="Re-enter Password" 
+                                    class="w-full pl-3.5 pr-10 py-2.5 sm:py-2.5 text-sm sm:text-[15px] text-slate-900 bg-white border border-slate-200 rounded-xl focus:border-[#4361ee] focus:ring-4 focus:ring-indigo-100/70 outline-none transition-all placeholder-slate-400 font-medium shadow-2xs"
+                                >
+                                <button type="button" onclick="togglePasswordVisibility('confirm_password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Primary Action Button: Create Account -->
+                    <button type="submit" class="w-full py-3.5 px-5 rounded-xl text-white font-bold text-base tracking-wide btn-primary-flow flex items-center justify-center gap-2.5 transition-all mt-4 sm:mt-5 cursor-pointer shadow-md">
+                        <span>Create Account</span>
+                    </button>
+                </form>
+
+            </div>
+
+            <!-- Terms Notice -->
+            <div class="text-center text-xs text-slate-400 font-medium pt-3 border-t border-slate-100 shrink-0">
+                By signing up to create an account I accept CampusAssetIQ's 
+                <a href="#" class="font-bold text-slate-600 hover:underline">Terms of use & Privacy Policy</a>.
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        lucide.createIcons();
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            btn.innerHTML = isPassword 
+                ? '<i data-lucide="eye-off" class="w-4 h-4 text-indigo-600"></i>' 
+                : '<i data-lucide="eye" class="w-4 h-4"></i>';
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

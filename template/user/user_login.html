@@ -1,0 +1,467 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — CampusAssetIQ</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#4f46e5',
+                            hover: '#4338ca',
+                            light: '#e0e7ff',
+                            dark: '#3730a3'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v={% now 'U' %}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100vh !important;
+            max-height: 100vh !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #ffffff;
+            color: #0f172a;
+        }
+
+        /* Diagonal Split Clip Path for Medium and Desktop Screens */
+        @media (min-width: 768px) {
+            .angled-split-full {
+                clip-path: polygon(0 0, 100% 0, 86% 100%, 0% 100%);
+            }
+        }
+
+        /* Clean Form Labels & Inputs (Scaled Up & Crisp, Zero Label Icons) */
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 7px;
+            letter-spacing: -0.01em;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 52px;
+            padding: 13px 18px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #0f172a;
+            background-color: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            background-color: #ffffff;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3.5px rgba(79, 70, 229, 0.12);
+        }
+
+        .form-input::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+            font-size: 14.5px;
+        }
+
+        /* Primary Action Button (Taller & Prominent) */
+        .btn-action {
+            height: 52px;
+            background: #4f46e5;
+            color: #ffffff;
+            font-weight: 700;
+            border-radius: 14px;
+            padding: 14px 24px;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 20px -3px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-action:hover {
+            background: #4338ca;
+            box-shadow: 0 10px 25px -4px rgba(79, 70, 229, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-action:active {
+            transform: translateY(0);
+        }
+
+        /* Demo Pill Button (Spacious & Clean) */
+        .demo-pill {
+            background: #ffffff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 13px;
+            padding: 12px 18px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            transition: all 0.15s ease;
+            width: 100%;
+        }
+
+        .demo-pill:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+            color: #0f172a;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+<body class="h-screen w-full m-0 p-0 font-sans antialiased text-slate-800 selection:bg-indigo-500 selection:text-white overflow-hidden">
+
+    <!-- ====================================================================
+         FULL PAGE NON-SCROLLABLE 50/50 ANGLED SPLIT
+         ==================================================================== -->
+    <div class="h-screen w-full flex flex-row bg-white overflow-hidden">
+
+        <!-- ================================================================
+             LEFT 50%: FULL-HEIGHT ANGLED ROYAL BLUE SHOWCASE (NON-SCROLLABLE)
+             ================================================================ -->
+        <div class="angled-split-full hidden md:flex md:w-[48%] xl:w-[50%] h-full bg-[#4f46e5] text-white p-6 lg:p-8 xl:p-10 lg:pr-20 xl:pr-24 flex-col justify-between relative overflow-hidden shrink-0">
+            
+            <!-- Top: Brand Header & Meaningful Value Proposition -->
+            <div class="relative z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[#4f46e5] shadow-sm shrink-0">
+                        <i class="fa-solid fa-desktop text-sm"></i>
+                    </div>
+                    <div class="text-lg lg:text-xl font-bold tracking-tight text-white">
+                        CampusAssetIQ
+                    </div>
+                </div>
+
+                <div class="mt-3.5 max-w-sm">
+                    <h2 class="text-xl lg:text-2xl font-extrabold text-white tracking-tight leading-snug">
+                        Campus hardware, simplified.
+                    </h2>
+                    <p class="text-xs text-indigo-100/90 mt-1 leading-relaxed">
+                        Track workstation custody, view live specs, and request direct IT assistance anytime.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Center: Vector 2.5D Tech Illustration (Sized strictly to fit viewport) -->
+            <div class="my-auto py-1 flex items-center justify-center relative z-10">
+                <svg class="w-full max-w-[250px] lg:max-w-[280px] max-h-[190px] lg:max-h-[220px] h-auto drop-shadow-xl" viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Ground Ellipse Shadow -->
+                    <ellipse cx="200" cy="275" rx="150" ry="28" fill="rgba(255, 255, 255, 0.18)" />
+                    
+                    <!-- Decorative Background Plant Leaf -->
+                    <g transform="translate(60, 190)">
+                        <path d="M20,60 C20,30 5,20 0,0 C25,10 40,35 40,60 Z" fill="#312e81" opacity="0.5"/>
+                        <path d="M15,60 C15,35 30,25 45,10 C35,25 30,45 25,60 Z" fill="#3730a3" opacity="0.6"/>
+                        <rect x="5" y="55" width="28" height="25" rx="6" fill="#1e1b4b" />
+                    </g>
+
+                    <!-- Background Floating Security Badges -->
+                    <g transform="translate(85, 80)">
+                        <rect x="0" y="0" width="46" height="56" rx="8" fill="rgba(255, 255, 255, 0.25)" />
+                        <path d="M23,16 C23,16 33,20 33,30 C33,40 23,45 23,45 C23,45 13,40 13,30 C13,20 23,16 23,16 Z" fill="#ffffff" />
+                        <circle cx="23" cy="28" r="3" fill="#4f46e5"/>
+                    </g>
+                    <g transform="translate(138, 95)">
+                        <rect x="0" y="0" width="36" height="42" rx="6" fill="rgba(255, 255, 255, 0.2)" />
+                        <rect x="6" y="8" width="24" height="4" rx="2" fill="rgba(255, 255, 255, 0.6)" />
+                        <rect x="6" y="16" width="16" height="4" rx="2" fill="rgba(255, 255, 255, 0.4)" />
+                    </g>
+
+                    <!-- Large Angled Tablet / Workstation Display -->
+                    <g transform="matrix(0.96, -0.12, 0.05, 0.98, 90, 75)">
+                        <rect x="0" y="0" width="170" height="195" rx="16" fill="#1e1b4b" stroke="#312e81" stroke-width="4"/>
+                        <rect x="8" y="8" width="154" height="179" rx="10" fill="#ffffff" />
+                        
+                        <path d="M8,18 Q8,8 18,8 L152,8 Q162,8 162,18 L162,48 L8,48 Z" fill="#eef2ff" />
+                        <text x="85" y="34" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="11" fill="#4338ca" text-anchor="middle" letter-spacing="1">SIGN IN</text>
+                        
+                        <circle cx="85" cy="74" r="18" fill="#e0e7ff" />
+                        <path d="M85,64 C88.3,64 91,66.7 91,70 C91,73.3 88.3,76 85,76 C81.7,76 79,73.3 79,70 C79,66.7 81.7,64 85,64 Z" fill="#4f46e5"/>
+                        <path d="M72,88 C72,82 78,80 85,80 C92,80 98,82 98,88 Z" fill="#4f46e5"/>
+
+                        <rect x="25" y="102" width="120" height="16" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+                        <circle cx="34" cy="110" r="3" fill="#94a3b8"/>
+                        <rect x="42" y="108" width="55" height="4" rx="2" fill="#94a3b8"/>
+
+                        <rect x="25" y="125" width="120" height="16" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+                        <circle cx="34" cy="133" r="3" fill="#94a3b8"/>
+                        <circle cx="44" cy="133" r="2" fill="#64748b"/>
+                        <circle cx="50" cy="133" r="2" fill="#64748b"/>
+                        <circle cx="56" cy="133" r="2" fill="#64748b"/>
+                        <circle cx="62" cy="133" r="2" fill="#64748b"/>
+
+                        <rect x="35" y="152" width="100" height="20" rx="6" fill="#4f46e5" />
+                        <text x="85" y="165" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="9" fill="#ffffff" text-anchor="middle">Login</text>
+                    </g>
+
+                    <!-- Foreground Security Key -->
+                    <g transform="translate(115, 235) rotate(-15)">
+                        <circle cx="16" cy="16" r="12" fill="#93c5fd" stroke="#2563eb" stroke-width="3"/>
+                        <circle cx="16" cy="16" r="5" fill="#4f46e5" />
+                        <rect x="28" y="13" width="38" height="6" rx="2" fill="#2563eb" />
+                        <rect x="52" y="19" width="5" height="8" rx="1.5" fill="#2563eb" />
+                        <rect x="61" y="19" width="4" height="6" rx="1.5" fill="#2563eb" />
+                    </g>
+
+                    <!-- User Character Standing Beside Screen -->
+                    <g transform="translate(260, 110)">
+                        <path d="M30,22 C22,18 20,8 30,2 C40,-2 48,6 46,18 C46,20 40,24 30,22 Z" fill="#1e1b4b" />
+                        <circle cx="34" cy="18" r="11" fill="#fbcfe8" />
+                        <rect x="31" y="27" width="6" height="6" fill="#fbcfe8" />
+                        <path d="M22,33 L46,33 L49,72 L19,72 Z" fill="#ffffff" />
+                        <path d="M22,33 L29,48 L17,42 Z" fill="#4f46e5" />
+                        <path d="M22,35 L12,52 L2,50" stroke="#fbcfe8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+                        <rect x="-6" y="42" width="24" height="30" rx="3" fill="#c7d2fe" stroke="#4f46e5" stroke-width="1.5" transform="rotate(-15)"/>
+                        <path d="M46,35 L54,54 L44,56" stroke="#fbcfe8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M19,72 L49,72 L47,135 L37,135 L35,88 L33,88 L31,135 L21,135 Z" fill="#1e293b" />
+                        <ellipse cx="23" cy="137" rx="8" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <ellipse cx="45" cy="137" rx="8" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Small Meaningful Stat Strip -->
+            <div class="relative z-10 max-w-sm mb-2">
+                <div class="grid grid-cols-3 gap-2 py-2 px-3.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-center">
+                    <div>
+                        <div class="text-sm lg:text-base font-black text-white font-mono">1,250+</div>
+                        <div class="text-[9px] text-indigo-200 uppercase font-semibold">Devices</div>
+                    </div>
+                    <div class="border-l border-white/15 pl-2">
+                        <div class="text-sm lg:text-base font-black text-emerald-300 font-mono">99.9%</div>
+                        <div class="text-[9px] text-indigo-200 uppercase font-semibold">Uptime</div>
+                    </div>
+                    <div class="border-l border-white/15 pl-2">
+                        <div class="text-sm lg:text-base font-black text-sky-200 font-mono">24/7</div>
+                        <div class="text-[9px] text-indigo-200 uppercase font-semibold">Support</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom: Clean Links & Domain Note -->
+            <div class="flex items-center justify-between text-white/80 text-xs relative z-10 max-w-sm pt-1">
+                <div class="flex items-center gap-3.5 text-sm">
+                    <a href="https://github.com" target="_blank" class="hover:text-white transition-colors" title="GitHub">
+                        <i class="fa-brands fa-github"></i>
+                    </a>
+                    <a href="#" class="hover:text-white transition-colors" title="Twitter / X">
+                        <i class="fa-brands fa-x-twitter"></i>
+                    </a>
+                    <a href="#" class="hover:text-white transition-colors" title="LinkedIn">
+                        <i class="fa-brands fa-linkedin-in"></i>
+                    </a>
+                    <a href="{% url 'index' %}" class="hover:text-white transition-colors" title="IT Helpdesk">
+                        <i class="fa-solid fa-headset"></i>
+                    </a>
+                </div>
+                <span class="text-[10px] text-indigo-200 font-medium">PSM Hospital Healthcare Portal</span>
+            </div>
+
+        </div>
+
+        <!-- ================================================================
+             RIGHT 50%: FULL-HEIGHT CRISP WHITE FORM PANEL (TALL & SPACIOUS INPUTS)
+             ================================================================ -->
+        <div class="w-full md:w-[52%] xl:w-[50%] h-full flex flex-col justify-between items-center p-5 sm:p-7 lg:p-9 bg-white overflow-y-auto">
+            
+            <!-- Top Right Navigation -->
+            <div class="w-full max-w-[480px] flex items-center justify-end">
+                <a href="{% url 'index' %}" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors">
+                    <i class="fa-solid fa-shield-halved text-xs text-indigo-500"></i>
+                    <span>IT Admin Console</span>
+                    <i class="fa-solid fa-arrow-right text-[10px] text-slate-400"></i>
+                </a>
+            </div>
+
+            <!-- Form Content Wrapper (Taller Inputs with Generous Space, strictly fits 100vh) -->
+            <div class="w-full max-w-[480px] my-auto py-2">
+                
+                <!-- Form Header -->
+                <div class="mb-4">
+                    <h1 class="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">Login</h1>
+                    <p class="text-sm text-slate-500 mt-1 font-medium">Welcome back! Please enter your credentials.</p>
+                </div>
+
+                <!-- Django Messages Alert -->
+                {% if messages %}
+                <div class="mb-3 space-y-1.5">
+                    {% for message in messages %}
+                    <div class="p-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 {% if message.tags == 'error' %}bg-rose-50 text-rose-800 border border-rose-200{% elif message.tags == 'success' %}bg-emerald-50 text-emerald-800 border border-emerald-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %} shadow-xs">
+                        <i class="{% if message.tags == 'error' %}fa-solid fa-circle-exclamation text-rose-500{% elif message.tags == 'success' %}fa-solid fa-circle-check text-emerald-500{% else %}fa-solid fa-circle-info text-blue-500{% endif %} text-xs"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Quick 1-Click Demo Staff Buttons -->
+                <div class="space-y-2 mb-3.5">
+                    <form method="POST" action="{% url 'user_login' %}" class="w-full">
+                        {% csrf_token %}
+                        <input type="hidden" name="demo_staff_id" value="MED-00042">
+                        <button type="submit" class="demo-pill group flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-user-doctor text-emerald-600 text-sm"></i>
+                                <span>Login as Dr. Vikram Sharma <span class="text-xs text-emerald-600 font-semibold">(PSM Hospital)</span></span>
+                            </div>
+                            <img src="{% static 'images/psm_hospital_logo.png' %}" alt="PSM Hospital" class="h-4 w-auto object-contain">
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{% url 'user_login' %}" class="w-full">
+                        {% csrf_token %}
+                        <input type="hidden" name="demo_staff_id" value="MED-00115">
+                        <button type="submit" class="demo-pill group flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-user-nurse text-emerald-600 text-sm"></i>
+                                <span>Login as Kavita Nair <span class="text-xs text-emerald-600 font-semibold">(ICU Nursing)</span></span>
+                            </div>
+                            <img src="{% static 'images/psm_hospital_logo.png' %}" alt="PSM Hospital" class="h-4 w-auto object-contain">
+                        </button>
+                    </form>
+                </div>
+
+                <!-- "OR" Divider Strip -->
+                <div class="relative flex py-1 items-center mb-3.5">
+                    <div class="flex-grow border-t border-slate-200"></div>
+                    <span class="flex-shrink mx-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">OR</span>
+                    <div class="flex-grow border-t border-slate-200"></div>
+                </div>
+
+                <!-- Primary Login Form (Taller Inputs + More Space Between Inputs) -->
+                <form method="POST" action="{% url 'user_login' %}" autocomplete="off" class="space-y-4">
+                    {% csrf_token %}
+
+                    <!-- Email / Employee ID Input -->
+                    <div>
+                        <label for="login_id" class="form-label">
+                            Email or Employee ID
+                        </label>
+                        <input 
+                            type="text" 
+                            id="login_id" 
+                            name="login_id" 
+                            required 
+                            placeholder="example@gmail.com or EMP-00125" 
+                            class="form-input font-mono"
+                            autocomplete="username"
+                        >
+                    </div>
+
+                    <!-- Password Input -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label for="password" class="form-label !mb-0">
+                                Password
+                            </label>
+                            <span class="text-[11px] text-slate-400 font-medium lowercase">(demo: any password)</span>
+                        </div>
+                        <div class="relative">
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                required 
+                                value="password123" 
+                                placeholder="••••••••••••" 
+                                class="form-input pr-11"
+                                autocomplete="current-password"
+                            >
+                            <button type="button" id="togglePassword" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer p-1" aria-label="Toggle password visibility">
+                                <i class="fa-regular fa-eye text-base" id="toggleIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="flex items-center justify-between text-xs pt-1">
+                        <label class="flex items-center gap-2 text-slate-600 cursor-pointer select-none text-xs">
+                            <input type="checkbox" name="remember" checked class="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer">
+                            <span>Remember me</span>
+                        </label>
+                        <a href="{% url 'index' %}" class="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline text-xs">
+                            Forgot Password?
+                        </a>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full btn-action flex items-center justify-center gap-2 cursor-pointer mt-3">
+                        <span>Login</span>
+                    </button>
+                </form>
+
+                <!-- Registration Link -->
+                <div class="mt-4 text-center text-sm text-slate-500">
+                    Don't have an account?
+                    <a href="{% url 'user_signup' %}" class="font-bold text-indigo-600 hover:text-indigo-800 hover:underline ml-1">
+                        Register
+                    </a>
+                </div>
+
+            </div>
+
+            <!-- Footer Security -->
+            <div class="w-full max-w-[480px] text-center text-xs text-slate-400">
+                <span>Authorized personnel only • Audit logged</span>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Password toggle script -->
+    <script>
+        const toggleBtn = document.getElementById('togglePassword');
+        const pwInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        if (toggleBtn && pwInput && toggleIcon) {
+            toggleBtn.addEventListener('click', () => {
+                const isPassword = pwInput.type === 'password';
+                pwInput.type = isPassword ? 'text' : 'password';
+                toggleIcon.classList.toggle('fa-eye', !isPassword);
+                toggleIcon.classList.toggle('fa-eye-slash', isPassword);
+            });
+        }
+    </script>
+</body>
+</html>

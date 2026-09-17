@@ -1,0 +1,1543 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Report Device Issue — PSM Hospital IT Helpdesk</title>
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        clinical: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['"Plus Jakarta Sans"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Vector Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Standalone Local High-Precision QR Scanner Engines -->
+    <script src="{% static 'js/jsQR.js' %}?v=5.1"></script>
+    <script src="{% static 'js/html5-qrcode.min.js' %}?v=5.1"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
+        /* Universal Plus Jakarta Sans Typography */
+        *, html, body, input, select, textarea, button {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* iOS Smooth Scrolling & Safe Area Support */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            background-color: #f8fafc;
+        }
+
+        /* Fluid Touch Press Feedback */
+        .touch-press {
+            transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .touch-press:active {
+            transform: scale(0.97);
+        }
+
+        /* Frosted Glass Header */
+        .glass-header-light {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        /* QR Scanner Animation & Video Styles */
+        @keyframes scanline {
+            0% { top: 12%; opacity: 0; }
+            15% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { top: 88%; opacity: 0; }
+        }
+        .animate-scanline {
+            animation: scanline 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* UPI Sweeping Laser Scanline (Google Pay / PhonePe Style) */
+        @keyframes upiLaser {
+            0% { top: 6%; opacity: 0.1; transform: scaleX(0.85); }
+            15% { opacity: 1; transform: scaleX(1); }
+            85% { opacity: 1; transform: scaleX(1); }
+            100% { top: 94%; opacity: 0.1; transform: scaleX(0.85); }
+        }
+        .animate-upi-laser {
+            animation: upiLaser 2.0s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+        }
+
+        @keyframes scaleUp {
+            0% { transform: scale(0.88); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-scale-up {
+            animation: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        #qr-reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 1rem !important;
+        }
+        #qr-reader {
+            border: none !important;
+        }
+        #qr-reader__scan_region {
+            background: transparent !important;
+        }
+
+        /* Clean Micro Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body class="h-full bg-slate-50 text-slate-900 flex flex-col justify-between selection:bg-blue-600 selection:text-white antialiased">
+
+    <!-- TOP HEADER: CLEAN CLINICAL LIGHT BRAND BAR -->
+    <header class="glass-header-light sticky top-0 z-40 border-b border-slate-200/90 px-4 py-3 sm:px-6 shadow-2xs">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="h-8 w-8 rounded-xl bg-blue-50 border border-blue-200/80 flex items-center justify-center p-1 shrink-0 shadow-2xs">
+                    <img src="{% static 'images/psm_hospital_logo.png' %}" alt="PSM Hospital Logo" class="h-6 w-auto object-contain" onerror="this.style.display='none'">
+                </div>
+                <div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-black tracking-wider uppercase text-slate-900">PSM Hospital</span>
+                        <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200">IT Desk</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-medium leading-none mt-0.5">Biomedical Incident Dispatch</p>
+                </div>
+            </div>
+
+            <!-- Live Status Pulse -->
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-2xs">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="text-[10px] font-black tracking-wide uppercase">24/7 Live</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN INTERACTIVE CONTAINER (DEDICATED MAX-W-MD FOR SMARTPHONE SCREENS) -->
+    <main class="flex-1 w-full max-w-md mx-auto px-4 py-4 space-y-4 pb-28">
+
+        <!-- SECTION 1: SCANNED HARDWARE IDENTITY CARD -->
+        <div id="device-banner-container">
+            {% if device %}
+            <div class="bg-white rounded-3xl border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden transition-all duration-300">
+                <!-- TOP INTERIOR PADDING -->
+                <div class="p-4.5 sm:p-5">
+                    <!-- 1. FIRST: ASSIGNED USER NAME & ACTIVE STATUS -->
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <!-- Staff Avatar with Radiant Clinical Gradient -->
+                            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-700 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-600/20 ring-4 ring-blue-50/90">
+                                <i data-lucide="user-check" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[9.5px] font-black uppercase tracking-widest text-slate-400 block leading-tight">Assigned Staff</span>
+                                    {% if device.department %}
+                                    <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                                    <span class="text-[10px] font-bold text-blue-600 truncate">{{ device.department }}</span>
+                                    {% endif %}
+                                </div>
+                                <h2 class="text-[17px] font-black text-slate-900 truncate leading-snug tracking-tight mt-0.5" id="display-custodian">
+                                    {{ device.custodian }}
+                                </h2>
+                                {% if device.designation %}
+                                <p class="text-[11.5px] font-bold text-slate-500 truncate leading-none mt-1">{{ device.designation }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Live Status Pill -->
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs shrink-0">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span>{{ device.status|default:'Active' }}</span>
+                        </span>
+                    </div>
+
+                    <!-- HAIRLINE DIVIDER -->
+                    <div class="my-3.5 h-px bg-slate-100"></div>
+
+                    <!-- 2. SECOND: DEVICE TYPE & ASSET ID + 3. THIRD: HARDWARE MODEL SPECS -->
+                    <div class="flex items-start gap-3.5">
+                        <!-- Hardware Type Icon Tile -->
+                        <div class="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-sm ring-1 ring-slate-800" id="device-type-icon-box">
+                            {% if 'display' in device.device_type|lower or 'monitor' in device.device_type|lower %}
+                                <i data-lucide="monitor" class="w-5 h-5 text-sky-400"></i>
+                            {% elif 'printer' in device.device_type|lower %}
+                                <i data-lucide="printer" class="w-5 h-5 text-emerald-400"></i>
+                            {% elif 'keyboard' in device.device_type|lower %}
+                                <i data-lucide="keyboard" class="w-5 h-5 text-amber-400"></i>
+                            {% elif 'mouse' in device.device_type|lower %}
+                                <i data-lucide="mouse" class="w-5 h-5 text-purple-400"></i>
+                            {% else %}
+                                <i data-lucide="cpu" class="w-5 h-5 text-cyan-400"></i>
+                            {% endif %}
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <!-- 2. Device Type Pill + Clean Bold Asset ID (Zero Typewriter Monospace) -->
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase tracking-wider bg-slate-900 text-white shadow-2xs leading-none">
+                                    {{ device.device_type }}
+                                </span>
+                                <span class="text-[16px] font-black text-slate-950 tracking-tight select-all leading-tight" id="display-asset-id">
+                                    {{ device.asset_id }}
+                                </span>
+                            </div>
+                            
+                            <!-- 3. Hardware Processor / Model Line (Sans-serif, clean & crisp) -->
+                            <div class="mt-1.5 flex items-center gap-1.5 text-xs text-slate-600 font-medium truncate">
+                                <i data-lucide="microchip" class="w-3.5 h-3.5 text-slate-600 shrink-0"></i>
+                                <span class="truncate font-bold text-slate-700">{{ device.hardware_model|default:device.specs }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. FOURTH: PHYSICAL LOCATION & SWITCH ACTION -->
+                <div class="px-4.5 py-3 bg-slate-50/90 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center gap-2 text-slate-700 min-w-0">
+                        <div class="w-6 h-6 rounded-lg bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center shrink-0">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <span class="font-bold text-slate-800 truncate text-[12px]" id="display-room-location">
+                            {{ device.room }} &bull; {{ device.floor }}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button type="button" onclick="triggerQrScan()" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-bold text-xs shadow-2xs touch-press transition-all cursor-pointer" title="Scan another physical QR tag">
+                            <i data-lucide="camera" class="w-3 h-3 text-blue-600"></i>
+                            <span>Scan</span>
+                        </button>
+                        <button type="button" onclick="toggleDeviceSearchModal()" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs shadow-2xs touch-press transition-all cursor-pointer" title="Search workstation list">
+                            <i data-lucide="refresh-cw" class="w-3 h-3 text-slate-500"></i>
+                            <span>Switch</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Unscanned / Generic State -->
+            <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-xs space-y-3" id="device-unscanned-card">
+                
+                <!-- Initial Card View -->
+                <div id="device-unscanned-default" class="text-center space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center mx-auto shadow-2xs">
+                        <i data-lucide="qr-code" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Device Not Selected</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Scan workstation QR sticker or search by room.</p>
+                    </div>
+                    <div class="flex items-center gap-2 pt-1">
+                        <!-- Direct One-Tap Camera Trigger -->
+                        <button type="button" onclick="triggerQrScan()" class="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 touch-press cursor-pointer">
+                            <i data-lucide="camera" class="w-4 h-4"></i>
+                            <span>Scan QR Code</span>
+                        </button>
+                        <button type="button" onclick="toggleDeviceSearchModal()" class="py-3 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs flex items-center justify-center gap-1.5 touch-press cursor-pointer">
+                            <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                            <span>Search</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LIVE CAMERA VIEWFINDER (Real-Time Auto-Scanner - No Photos Needed) -->
+                <div id="device-live-scanner-box" class="hidden relative w-full rounded-2xl overflow-hidden bg-slate-950 shadow-lg border border-slate-800 animate-fadeIn">
+                    <!-- Header -->
+                    <div class="absolute top-0 left-0 right-0 z-20 px-3.5 py-2.5 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-center justify-between text-white">
+                        <div class="flex items-center gap-2">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span class="text-[11px] font-black uppercase tracking-wider text-emerald-400">Live Auto-Scanner</span>
+                        </div>
+                        <button type="button" onclick="stopLiveScanner()" class="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition-all cursor-pointer">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- Video Viewport -->
+                    <div class="relative w-full aspect-[4/3] max-h-72 flex items-center justify-center overflow-hidden bg-black">
+                        <video id="qr-live-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                        
+                        <!-- Reticle Overlay -->
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
+                            <div class="w-48 h-48 relative border border-white/20 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]">
+                                <!-- Corner Marks -->
+                                <span class="absolute -top-1 -left-1 w-5 h-5 border-t-3 border-l-3 border-cyan-400 rounded-tl-lg"></span>
+                                <span class="absolute -top-1 -right-1 w-5 h-5 border-t-3 border-r-3 border-cyan-400 rounded-tr-lg"></span>
+                                <span class="absolute -bottom-1 -left-1 w-5 h-5 border-b-3 border-l-3 border-cyan-400 rounded-bl-lg"></span>
+                                <span class="absolute -bottom-1 -right-1 w-5 h-5 border-b-3 border-r-3 border-cyan-400 rounded-br-lg"></span>
+                                
+                                <!-- Animated Scan Line -->
+                                <div class="absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_#22d3ee] animate-scanline"></div>
+                            </div>
+                        </div>
+
+                        <!-- Detected Success Flash -->
+                        <div id="qr-detected-flash" class="absolute inset-0 bg-emerald-500/40 backdrop-blur-2xs hidden items-center justify-center text-white font-black text-sm transition-all z-30">
+                            <div class="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-black/70 shadow-lg">
+                                <i data-lucide="check-circle-2" class="w-8 h-8 text-emerald-400"></i>
+                                <span class="text-xs font-bold text-emerald-200">Workstation Detected!</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Bar -->
+                    <div class="px-3 py-2 bg-slate-900/95 border-t border-slate-800 text-center">
+                        <p class="text-[10.5px] font-bold text-slate-300">
+                            Aim camera at workstation QR code — Scans automatically
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Retry Notice (Only shown if captured photo had no detectable QR code) -->
+                <div id="device-camera-retry-notice" class="hidden p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-left space-y-2 animate-fadeIn">
+                    <div class="flex items-center gap-2 text-rose-900 font-bold text-xs">
+                        <i data-lucide="alert-circle" class="w-4 h-4 text-rose-600 shrink-0"></i>
+                        <span>No QR Code Detected in Photo</span>
+                    </div>
+                    <p class="text-[11.5px] text-rose-800 leading-snug">
+                        Please hold your phone steady closer to the equipment's QR sticker and tap below:
+                    </p>
+                    <button type="button" onclick="triggerQrScan()" class="w-full py-2.5 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 cursor-pointer touch-press">
+                        <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                        <span>Retake QR Photo</span>
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Hidden Native Camera Input & Canvas (Mounted globally outside conditionals for both states) -->
+        <input type="file" id="native-camera-input" accept="image/*" capture="environment" style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;" onchange="handleNativeCameraCapture(event)">
+        <div id="direct-qr-canvas" class="hidden"></div>
+
+        <!-- GLOBAL DECODING OVERLAY (Instant feedback while decoding QR photo) -->
+        <div id="qr-scan-loading-card" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-6 text-center space-y-3 shadow-2xl max-w-xs w-full animate-scale-up border border-slate-100">
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center mx-auto shadow-sm">
+                    <div class="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-slate-900">Decoding Workstation Tag...</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Please wait, loading equipment record...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HIDDEN FORM FIELDS -->
+        <input type="hidden" id="field-asset-id" value="{% if device %}{{ device.asset_id }}{% else %}{{ scanned_asset_id }}{% endif %}">
+        <input type="hidden" id="field-room-location" value="{% if device %}{{ device.room }} ({{ device.floor }}){% endif %}">
+        <input type="hidden" id="field-category" value="Hardware Fault">
+        <input type="hidden" id="field-priority" value="Normal">
+
+        <!-- SECTION 2: ISSUE CLASSIFICATION (1. HARDWARE vs 2. SOFTWARE) -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between px-0.5">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                    <i data-lucide="help-circle" class="w-3.5 h-3.5 text-blue-600"></i>
+                    <span>1. Select Issue Type</span>
+                </label>
+                <span class="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">Step 1</span>
+            </div>
+
+            <!-- 2 Primary Buttons: Hardware & Software -->
+            <div class="grid grid-cols-2 gap-2.5">
+                <!-- 1. Hardware Button -->
+                <button type="button" onclick="selectMainType('hardware', this)" id="btn-type-hardware" class="main-type-btn p-3.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-800 flex items-center gap-3 touch-press relative transition-all shadow-2xs hover:border-slate-300 cursor-pointer">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs icon-box">
+                        <i data-lucide="cpu" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-left min-w-0 flex-1">
+                        <div class="text-[13.5px] font-black text-slate-900 leading-tight">Hardware</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5 font-medium truncate">Physical Parts</div>
+                    </div>
+                    <span class="check-icon text-blue-600 hidden shrink-0"><i data-lucide="check-circle-2" class="w-5 h-5"></i></span>
+                </button>
+
+                <!-- 2. Software Button -->
+                <button type="button" onclick="selectMainType('software', this)" id="btn-type-software" class="main-type-btn p-3.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-800 flex items-center gap-3 touch-press relative transition-all shadow-2xs hover:border-slate-300 cursor-pointer">
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs icon-box">
+                        <i data-lucide="monitor-smartphone" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-left min-w-0 flex-1">
+                        <div class="text-[13.5px] font-black text-slate-900 leading-tight">Software</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5 font-medium truncate">OS & Apps</div>
+                    </div>
+                    <span class="check-icon text-purple-600 hidden shrink-0"><i data-lucide="check-circle-2" class="w-5 h-5"></i></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 2B: HARDWARE COMPONENT SELECTOR (SHOWN ONLY IF HARDWARE CHOSEN) -->
+        <div id="hardware-device-selector" class="hidden space-y-2 transition-all duration-300">
+            <div class="flex items-center justify-between px-0.5">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                    <i data-lucide="wrench" class="w-3.5 h-3.5 text-blue-600"></i>
+                    <span>2. Select Faulty Device / Part</span>
+                </label>
+                <span class="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">Step 2</span>
+            </div>
+
+            <!-- 6 Component Cards: Display, CPU, Mouse, Keyboard, Printer, Other -->
+            <div class="grid grid-cols-3 gap-2" id="hw-components-grid">
+                <!-- Display -->
+                <button type="button" onclick="selectHardwareComponent('Display', this)" data-comp="Display" class="hw-comp-btn p-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-800 flex flex-col items-center justify-center gap-1.5 touch-press relative transition-all shadow-2xs hover:border-slate-300 cursor-pointer">
+                    <div class="w-8 h-8 rounded-xl bg-sky-50 border border-sky-100 text-sky-600 flex items-center justify-center shadow-2xs">
+                        <i data-lucide="monitor" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-[11px] font-extrabold text-slate-800">Display</span>
+                    <span class="hw-check absolute top-1.5 right-1.5 text-blue-600 hidden"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i></span>
+                </button>
+
+                <!-- CPU -->
+                <button type="button" onclick="selectHardwareComponent('CPU', this)" data-comp="CPU" class="hw-comp-btn p-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-800 flex flex-col items-center justify-center gap-1.5 touch-press relative transition-all shadow-2xs hover:border-slate-300 cursor-pointer">
+                    <div class="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shadow-2xs">
+                        <i data-lucide="cpu" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-[11px] font-extrabold text-slate-800">CPU</span>
+                    <span class="hw-check absolute top-1.5 right-1.5 text-blue-600 hidden"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i></span>
+                </button>
+
+                <!-- Mouse -->
+                <button type="button" onclick="selectHardwareComponent('Mouse', this)" data-comp="Mouse" class="hw-comp-btn p-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-800 flex flex-col items-center justify-center gap-1.5 touch-press relative transition-all shadow-2xs hover:border-slate-300 cursor-pointer">
+                    <div class="w-8 h-8 rounded-xl bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center shadow-2xs">
+                        <i data-lucide="mouse" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-[11px] font-extrabold text-slate-800">Mouse</span>
+                    <span class="hw-check absolute top-1.5 right-1.5 text-blue-600 hidden"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i></span>
+                </button>
+
+                <!-- Keyboard -->
+                <button type="button" onclick="selectHardwareComponent('Keyboard', this)" data-comp="Keyboard" class="hw-comp-btn p-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-800 flex flex-col items-center justify-center gap-1.5 touch-press relative transition-all shadow-2xs hover:border-slate-300 cursor-pointer">
+                    <div class="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center shadow-2xs">
+                        <i data-lucide="keyboard" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-[11px] font-extrabold text-slate-800">Keyboard</span>
+                    <span class="hw-check absolute top-1.5 right-1.5 text-blue-600 hidden"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i></span>
+                </button>
+
+                <!-- Printer -->
+                <button type="button" onclick="selectHardwareComponent('Printer', this)" data-comp="Printer" class="hw-comp-btn p-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-800 flex flex-col items-center justify-center gap-1.5 touch-press relative transition-all shadow-2xs hover:border-slate-300 cursor-pointer">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shadow-2xs">
+                        <i data-lucide="printer" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-[11px] font-extrabold text-slate-800">Printer</span>
+                    <span class="hw-check absolute top-1.5 right-1.5 text-blue-600 hidden"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i></span>
+                </button>
+
+                <!-- Other -->
+                <button type="button" onclick="selectHardwareComponent('Other', this)" data-comp="Other" class="hw-comp-btn p-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-800 flex flex-col items-center justify-center gap-1.5 touch-press relative transition-all shadow-2xs hover:border-slate-300 cursor-pointer">
+                    <div class="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center shadow-2xs">
+                        <i data-lucide="wrench" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-[11px] font-extrabold text-slate-800">Other</span>
+                    <span class="hw-check absolute top-1.5 right-1.5 text-blue-600 hidden"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 2C: SPECIFIC SYMPTOM (OPTIONAL) - DIRECTLY SHOWN ON SOFTWARE, OR AFTER HARDWARE SELECTION -->
+        <div id="symptoms-container" class="hidden bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-2.5 transition-all duration-300">
+            <div class="flex items-center justify-between">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-600"></i>
+                    <span id="symptoms-section-title">Specific Symptom (Optional)</span>
+                </label>
+                <span id="symptoms-context-pill" class="text-[10px] text-blue-600 font-bold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">1-Tap Tag</span>
+            </div>
+
+            <!-- 1-Tap Symptom Tags (Dynamically filled based on choice) -->
+            <div class="flex flex-wrap gap-1.5" id="symptom-tags-list">
+                <!-- Dynamically populated via JS -->
+            </div>
+
+            <div>
+                <textarea id="input-description" rows="2" placeholder="Provide any extra details (e.g. 'Happened right during patient discharge')..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all"></textarea>
+            </div>
+        </div>
+
+        <!-- SECTION 3: URGENCY & TRIAGE DUAL SWITCH -->
+        <div class="space-y-2">
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5 px-0.5">
+                <i data-lucide="flame" class="w-3.5 h-3.5 text-rose-500"></i>
+                <span>Triage Urgency Level</span>
+            </label>
+
+            <div class="grid grid-cols-2 gap-2 p-1.5 rounded-2xl bg-slate-100 border border-slate-200/80">
+                <!-- Routine Priority -->
+                <button type="button" onclick="setPriority('Normal', this)" id="btn-priority-normal" class="priority-btn p-2.5 rounded-xl text-left border-2 border-blue-600 bg-white text-slate-900 shadow-xs touch-press transition-all flex items-center gap-2 cursor-pointer">
+                    <div class="w-2.5 h-2.5 rounded-full bg-blue-600 shrink-0"></div>
+                    <div>
+                        <div class="text-xs font-black text-slate-900 leading-none">Routine Issue</div>
+                        <div class="text-[9.5px] text-slate-500 mt-1 font-medium">Standard SLA (~2-4h)</div>
+                    </div>
+                </button>
+
+                <!-- Critical / Emergency Priority -->
+                <button type="button" onclick="setPriority('Critical', this)" id="btn-priority-critical" class="priority-btn p-2.5 rounded-xl text-left border-2 border-transparent bg-transparent text-slate-600 hover:text-slate-900 touch-press transition-all flex items-center gap-2 cursor-pointer">
+                    <div class="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></div>
+                    <div>
+                        <div class="text-xs font-black text-slate-800 leading-none flex items-center gap-1">
+                            <span>Critical Emergency</span>
+                        </div>
+                        <div class="text-[9.5px] text-slate-500 mt-1 font-medium">Patient Impact (&lt;30m)</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Emergency Warning Pill (Reveals on Critical) -->
+            <div id="critical-alert-notice" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center gap-2.5 shadow-2xs animate-fadeIn">
+                <div class="w-6 h-6 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="bell-ring" class="w-3.5 h-3.5 animate-bounce"></i>
+                </div>
+                <span class="font-semibold leading-tight">High Priority: Biomedical IT duty engineer alerted for immediate room dispatch.</span>
+            </div>
+        </div>
+
+        <!-- SECTION 4: REPORTER CONTACT INFO (LOCALSTORAGE REMEMBERED) -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3">
+            <div class="flex items-center justify-between">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <i data-lucide="user-check" class="w-3.5 h-3.5 text-blue-600"></i>
+                    <span>Your Details (Hospital Staff)</span>
+                </label>
+                <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Auto-saved to phone</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-600 mb-1">Your Name / Title <span class="text-rose-500">*</span></label>
+                    <input type="text" id="input-staff-name" placeholder="e.g. Dr. Patel / Nurse R." required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-600 mb-1">Ward / Dept <span class="text-rose-500">*</span></label>
+                    <input type="text" id="input-staff-dept" placeholder="e.g. ICU / Emergency" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-1">Intercom / Mobile Extension</label>
+                <input type="text" id="input-staff-phone" placeholder="e.g. Ext. 204 or Mobile # for technician callback" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all">
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FIXED BOTTOM BAR: THUMB-FRIENDLY SUBMIT BUTTON -->
+    <div class="fixed bottom-0 left-0 right-0 z-40 glass-header-light border-t border-slate-200/90 p-3 sm:p-4 shadow-lg">
+        <div class="max-w-md mx-auto">
+            <button type="button" id="btn-submit-complaint" onclick="handleSubmitComplaint()" class="w-full py-3.5 px-5 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-sm font-black shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 touch-press active:scale-[0.98] transition-all cursor-pointer">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span id="submit-button-text">Dispatch IT Ticket to Helpdesk</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 1: DEVICE PICKER / SEARCH MODAL (WHEN DEVICE NOT PASSED OR SWITCHED) -->
+    <div id="modal-device-search" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white border border-slate-200 rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden animate-slide-up shadow-2xl">
+            <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-900">Select Hospital Workstation</h3>
+                </div>
+                <button type="button" onclick="toggleDeviceSearchModal()" class="text-slate-400 hover:text-slate-700 p-1 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                    <input type="text" id="device-filter-input" oninput="filterDeviceList(this.value)" placeholder="Search Asset ID, Room, or Device Type..." class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none">
+                </div>
+                <button type="button" onclick="switchToCameraFromSearch()" class="p-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl shadow-2xs touch-press shrink-0 flex items-center gap-1 text-xs font-bold cursor-pointer" title="Scan Physical QR Sticker">
+                    <i data-lucide="qr-code" class="w-4 h-4 text-blue-600"></i>
+                    <span class="hidden sm:inline">Scan</span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50/50" id="devices-search-results-list">
+                <!-- Device Items Injected Here via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: SUCCESS RESOLUTION / TICKET RECEIPT MODAL -->
+    <div id="modal-success-receipt" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-6 text-center space-y-4 shadow-2xl animate-scale-up">
+
+            <!-- Celebratory Checkmark -->
+            <div class="relative mx-auto w-16 h-16">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                    <i data-lucide="check" class="w-8 h-8 stroke-[3]"></i>
+                </div>
+            </div>
+
+            <div>
+                <span class="inline-block px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-wider border border-emerald-200 mb-1">
+                    Helpdesk Notified
+                </span>
+                <h3 class="text-xl font-black text-slate-900">Ticket Registered!</h3>
+                <p class="text-xs text-slate-500 mt-1">Biomedical Engineering IT team has received your ticket and dispatched an engineer.</p>
+            </div>
+
+            <!-- Ticket Code Card -->
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-center">
+                <span class="text-[9.5px] uppercase font-bold text-slate-400 block tracking-wider">Official Service Ticket</span>
+                <div class="flex items-center justify-center gap-2">
+                    <span class="text-2xl font-black tracking-widest text-blue-600 select-all" id="receipt-ticket-id">TKT-2026-000</span>
+                    <button type="button" onclick="copyTicketId()" class="p-1.5 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-200/60 touch-press" title="Copy Ticket">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="text-[11px] text-slate-600 pt-2 border-t border-slate-200/80 flex items-center justify-between">
+                    <span class="text-slate-500">Target Response:</span>
+                    <span class="font-bold text-emerald-700" id="receipt-sla-text">&lt; 30 Mins (Emergency Triage)</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-2 pt-1">
+                <!-- 1-Tap Call IT Hotline -->
+                <a href="tel:104" class="w-full py-3 px-4 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold flex items-center justify-center gap-2 touch-press">
+                    <i data-lucide="phone-call" class="w-4 h-4 text-blue-600"></i>
+                    <span>Call IT Emergency Desk (Ext. 104)</span>
+                </a>
+
+                <!-- Reset Form & File Another -->
+                <button type="button" onclick="resetReportForm()" class="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black shadow-sm flex items-center justify-center gap-2 touch-press">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Report Another Device</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JSON DATA PAYLOAD (SAFE INGESTION) -->
+    <script type="application/json" id="hospital-devices-payload">
+        {{ hospital_devices_json|safe }}
+    </script>
+
+    <!-- CLIENTSIDE APPLICATION LOGIC -->
+    <script>
+        // Ingest safe JSON catalog
+        let hospitalDevices = [];
+        try {
+            const rawPayload = document.getElementById('hospital-devices-payload').textContent;
+            hospitalDevices = JSON.parse(rawPayload || '[]');
+        } catch (e) {
+            hospitalDevices = [];
+        }
+
+        // Active State for Issue Classification & Hardware Component
+        let selectedMainType = ''; // 'hardware' or 'software'
+        let selectedHardwareComp = 'CPU'; // default component when hardware is selected
+        let selectedCategory = 'Hardware Fault';
+        let selectedCategoryLabel = 'Hardware Issue';
+        let selectedPriority = 'Normal';
+
+        // Scanned Device Type Hint from Django context
+        const scannedDeviceType = "{{ device.device_type|default:'' }}".trim();
+
+        // Dynamic Specific Symptom Presets (Software Only vs Component-Specific Hardware)
+        const SYMPTOM_PRESETS = {
+            'software': [
+                { text: 'Blue Screen of Death (BSOD)', label: '+ Blue Screen' },
+                { text: 'System Freezing / Totally Stuck', label: '+ System Freeze' },
+                { text: 'Application Not Responding / Error Popup', label: '+ App Crash' },
+                { text: 'Operating System Won\'t Boot / Boot Loop', label: '+ Boot Failure' },
+                { text: 'Extreme Slowness / Unresponsive Lag', label: '+ System Lag' },
+                { text: 'Network / Internet Connection Offline', label: '+ Network Down' },
+                { text: 'User Login / Password Authentication Failed', label: '+ Login Error' },
+                { text: 'Virus / Malicious Popup Warning', label: '+ Virus Alert' }
+            ],
+            'Display': [
+                { text: 'No Signal / Screen Completely Black', label: '+ No Signal' },
+                { text: 'Screen Flickering / Blinking Constantly', label: '+ Flickering' },
+                { text: 'Display Cable Loose or Damaged', label: '+ Loose Cable' },
+                { text: 'Screen Dim / Discolored / Distorted Pixels', label: '+ Distorted Colors' },
+                { text: 'Physical Screen Crack or Vertical Lines', label: '+ Screen Damage' }
+            ],
+            'CPU': [
+                { text: 'Won\'t Turn On / Completely Dead Power', label: '+ Dead / No Power' },
+                { text: 'Sudden Automatic Shutdown / Rebooting', label: '+ Auto Restart' },
+                { text: 'Excessive Fan Noise / Overheating Tower', label: '+ Overheating' },
+                { text: 'Continuous Beeping Sound on Power-up', label: '+ Beep Error' },
+                { text: 'Burning Smell or Spark from Power Supply', label: '+ Burning Smell' }
+            ],
+            'Mouse': [
+                { text: 'Mouse Cursor Won\'t Move / Optical Light Dead', label: '+ Cursor Stuck' },
+                { text: 'Left or Right Click Not Registering', label: '+ Click Broken' },
+                { text: 'Scroll Wheel Stuck or Skipping Pages', label: '+ Scroll Wheel' },
+                { text: 'Mouse Cable Cut or Wire Damaged', label: '+ Damaged Cable' },
+                { text: 'USB Mouse Device Not Recognized', label: '+ Not Detected' }
+            ],
+            'Keyboard': [
+                { text: 'Keys Not Typing / Completely Unresponsive', label: '+ Keys Dead' },
+                { text: 'Specific Key Physically Stuck or Repeating', label: '+ Key Stuck' },
+                { text: 'Liquid Spill on Keyboard Surface', label: '+ Liquid Spill' },
+                { text: 'Keyboard Cable Damaged or Cut', label: '+ Damaged Cable' },
+                { text: 'USB Keyboard Not Detected by Computer', label: '+ Not Detected' }
+            ],
+            'Printer': [
+                { text: 'Paper Jam Inside Feed Roller / Tray', label: '+ Paper Jam' },
+                { text: 'Blinking Red / Amber Hardware Error Light', label: '+ Red Error Light' },
+                { text: 'Printout Smudged / Blank / Missing Ink', label: '+ Print Quality' },
+                { text: 'Printer Offline / Queue Stuck', label: '+ Won\'t Print' },
+                { text: 'Loud Grinding or Mechanical Jam Noise', label: '+ Grinding Noise' }
+            ],
+            'Other': [
+                { text: 'Physical Hardware Enclosure Broken', label: '+ Physical Damage' },
+                { text: 'Power Adapter / External Cord Broken', label: '+ Broken Cable' },
+                { text: 'Excessive Heat / Thermal Cutout', label: '+ Overheating' },
+                { text: 'USB / Display Port Broken', label: '+ Port Broken' },
+                { text: 'Loose Cable Connection', label: '+ Loose Cable' }
+            ]
+        };
+
+        // Load Remembered Staff Information from LocalStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+
+            try {
+                const savedProfile = localStorage.getItem('psm_staff_profile');
+                if (savedProfile) {
+                    const profile = JSON.parse(savedProfile);
+                    if (profile.name) document.getElementById('input-staff-name').value = profile.name;
+                    if (profile.dept) document.getElementById('input-staff-dept').value = profile.dept;
+                    if (profile.phone) document.getElementById('input-staff-phone').value = profile.phone;
+                }
+            } catch (err) {
+                console.warn('LocalStorage not available', err);
+            }
+
+            // Populate device search list
+            renderDeviceSearchResults(hospitalDevices);
+        });
+
+        // 1. SELECT MAIN TYPE (HARDWARE VS SOFTWARE)
+        function selectMainType(type, el) {
+            selectedMainType = type;
+            const btnHw = document.getElementById('btn-type-hardware');
+            const btnSw = document.getElementById('btn-type-software');
+            const hwSelector = document.getElementById('hardware-device-selector');
+            const symptomsBox = document.getElementById('symptoms-container');
+            const symptomsTitle = document.getElementById('symptoms-section-title');
+            const symptomsPill = document.getElementById('symptoms-context-pill');
+
+            // Reset both primary buttons to clean unselected state
+            btnHw.className = 'main-type-btn p-3.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-800 flex items-center gap-3 touch-press relative transition-all shadow-2xs hover:border-slate-300 cursor-pointer';
+            btnHw.querySelector('.check-icon').classList.add('hidden');
+            btnSw.className = 'main-type-btn p-3.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-800 flex items-center gap-3 touch-press relative transition-all shadow-2xs hover:border-slate-300 cursor-pointer';
+            btnSw.querySelector('.check-icon').classList.add('hidden');
+
+            if (type === 'hardware') {
+                // Highlight Hardware button with blue radiant border
+                btnHw.className = 'main-type-btn p-3.5 rounded-2xl bg-blue-50/70 border-2 border-blue-600 text-blue-950 flex items-center gap-3 touch-press relative transition-all shadow-xs ring-2 ring-blue-500/20 cursor-pointer';
+                btnHw.querySelector('.check-icon').classList.remove('hidden');
+
+                // REVEAL Hardware Device Selector & Specific Symptoms
+                hwSelector.classList.remove('hidden');
+                symptomsBox.classList.remove('hidden');
+
+                // Auto-detect default component matching scanned device type if available
+                if (scannedDeviceType) {
+                    const dt = scannedDeviceType.toLowerCase();
+                    if (dt.includes('display') || dt.includes('monitor')) selectedHardwareComp = 'Display';
+                    else if (dt.includes('printer')) selectedHardwareComp = 'Printer';
+                    else if (dt.includes('keyboard')) selectedHardwareComp = 'Keyboard';
+                    else if (dt.includes('mouse')) selectedHardwareComp = 'Mouse';
+                    else selectedHardwareComp = 'CPU';
+                }
+
+                // Highlight active component card and render matching hardware symptoms
+                highlightComponentButton(selectedHardwareComp);
+                updateHardwareCategory(selectedHardwareComp);
+                renderSymptomPills(selectedHardwareComp);
+
+            } else if (type === 'software') {
+                // Highlight Software button with purple radiant border
+                btnSw.className = 'main-type-btn p-3.5 rounded-2xl bg-purple-50/70 border-2 border-purple-600 text-purple-950 flex items-center gap-3 touch-press relative transition-all shadow-xs ring-2 ring-purple-500/20 cursor-pointer';
+                btnSw.querySelector('.check-icon').classList.remove('hidden');
+
+                // HIDE Hardware Component Selector & DIRECTLY REVEAL Symptoms
+                hwSelector.classList.add('hidden');
+                symptomsBox.classList.remove('hidden');
+
+                // Configure category for software
+                selectedCategory = 'OS & Software Crash';
+                selectedCategoryLabel = 'Software / OS Issue';
+                document.getElementById('field-category').value = 'OS & Software Crash';
+
+                symptomsTitle.textContent = "Specific Software Symptom (Optional)";
+                symptomsPill.textContent = "Software Only";
+                symptomsPill.className = "text-[10px] text-purple-700 font-bold bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200";
+
+                // Render Software-Only symptoms
+                renderSymptomPills('software');
+            }
+
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+
+            if (navigator.vibrate) navigator.vibrate(15);
+        }
+
+        // 2. SELECT HARDWARE COMPONENT (Display, CPU, Mouse, Keyboard, Printer, Other)
+        function selectHardwareComponent(compName, el) {
+            selectedHardwareComp = compName;
+            highlightComponentButton(compName);
+            updateHardwareCategory(compName);
+            renderSymptomPills(compName);
+
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+
+            if (navigator.vibrate) navigator.vibrate(15);
+        }
+
+        // Highlight active component card in grid
+        function highlightComponentButton(compName) {
+            document.querySelectorAll('.hw-comp-btn').forEach(btn => {
+                const isMatch = btn.getAttribute('data-comp') === compName;
+                const check = btn.querySelector('.hw-check');
+                if (isMatch) {
+                    btn.className = 'hw-comp-btn p-2.5 rounded-2xl bg-blue-50/70 border-2 border-blue-600 text-blue-950 flex flex-col items-center justify-center gap-1.5 touch-press relative transition-all shadow-xs ring-1 ring-blue-500/30 cursor-pointer font-bold';
+                    if (check) check.classList.remove('hidden');
+                } else {
+                    btn.className = 'hw-comp-btn p-2.5 rounded-2xl bg-white border-2 border-slate-200 text-slate-800 flex flex-col items-center justify-center gap-1.5 touch-press relative transition-all shadow-2xs hover:border-slate-300 cursor-pointer';
+                    if (check) check.classList.add('hidden');
+                }
+            });
+        }
+
+        // Map component to backend category and labels
+        function updateHardwareCategory(compName) {
+            const symptomsTitle = document.getElementById('symptoms-section-title');
+            const symptomsPill = document.getElementById('symptoms-context-pill');
+
+            symptomsTitle.textContent = `${compName} Symptom (Optional)`;
+            symptomsPill.textContent = `Hardware: ${compName}`;
+            symptomsPill.className = "text-[10px] text-blue-700 font-bold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200";
+
+            if (compName === 'Display') {
+                selectedCategory = 'Display & Screen';
+                selectedCategoryLabel = 'Display / Monitor Fault';
+            } else if (compName === 'Mouse' || compName === 'Keyboard') {
+                selectedCategory = 'Peripherals Damage';
+                selectedCategoryLabel = `${compName} Peripheral Fault`;
+            } else if (compName === 'Printer') {
+                selectedCategory = 'Hardware Fault';
+                selectedCategoryLabel = 'Printer Hardware Fault';
+            } else if (compName === 'Other') {
+                selectedCategory = 'Other Issue';
+                selectedCategoryLabel = 'Other Hardware Fault';
+            } else {
+                selectedCategory = 'Hardware Fault';
+                selectedCategoryLabel = 'CPU / Tower Hardware Fault';
+            }
+
+            document.getElementById('field-category').value = selectedCategory;
+        }
+
+        // Render Symptom Tag Pills Dynamically
+        function renderSymptomPills(presetKey) {
+            const container = document.getElementById('symptom-tags-list');
+            if (!container) return;
+
+            const tags = SYMPTOM_PRESETS[presetKey] || SYMPTOM_PRESETS['Other'] || [];
+            container.innerHTML = tags.map(item => `
+                <button type="button" onclick="appendSymptomTag('${item.text.replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-slate-200/80 text-[11.5px] font-semibold text-slate-700 active:scale-95 touch-press transition-all cursor-pointer shadow-2xs">
+                    ${item.label}
+                </button>
+            `).join('');
+        }
+
+        // Priority Switcher (Normal vs Critical in Light Theme)
+        function setPriority(level, el) {
+            selectedPriority = level;
+            document.getElementById('field-priority').value = level;
+
+            const btnNormal = document.getElementById('btn-priority-normal');
+            const btnCritical = document.getElementById('btn-priority-critical');
+            const alertNotice = document.getElementById('critical-alert-notice');
+
+            if (level === 'Critical') {
+                btnCritical.className = 'priority-btn p-2.5 rounded-xl text-left border-2 border-rose-600 bg-rose-50 text-rose-950 shadow-xs touch-press transition-all flex items-center gap-2';
+                btnNormal.className = 'priority-btn p-2.5 rounded-xl text-left border-2 border-transparent bg-transparent text-slate-600 hover:text-slate-900 touch-press transition-all flex items-center gap-2';
+                if (alertNotice) alertNotice.classList.remove('hidden');
+                document.getElementById('submit-button-text').textContent = "Dispatch Emergency IT Ticket";
+            } else {
+                btnNormal.className = 'priority-btn p-2.5 rounded-xl text-left border-2 border-blue-600 bg-white text-slate-900 shadow-xs touch-press transition-all flex items-center gap-2';
+                btnCritical.className = 'priority-btn p-2.5 rounded-xl text-left border-2 border-transparent bg-transparent text-slate-600 hover:text-slate-900 touch-press transition-all flex items-center gap-2';
+                if (alertNotice) alertNotice.classList.add('hidden');
+                document.getElementById('submit-button-text').textContent = "Dispatch IT Ticket to Helpdesk";
+            }
+
+            if (navigator.vibrate) navigator.vibrate(level === 'Critical' ? [25, 60, 25] : 15);
+        }
+
+        // Append Quick Symptom Tag to textarea
+        function appendSymptomTag(tagText) {
+            const descArea = document.getElementById('input-description');
+            if (descArea.value.trim().length > 0) {
+                descArea.value = descArea.value.trim() + "; " + tagText;
+            } else {
+                descArea.value = tagText;
+            }
+            descArea.focus();
+            if (navigator.vibrate) navigator.vibrate(10);
+        }
+
+        // Search Device Modal Toggle
+        function toggleDeviceSearchModal() {
+            const modal = document.getElementById('modal-device-search');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                const searchInput = document.getElementById('device-filter-input');
+                if (searchInput) {
+                    searchInput.value = '';
+                    renderDeviceSearchResults(hospitalDevices);
+                    setTimeout(() => searchInput.focus(), 100);
+                }
+            }
+        }
+
+        // Filter Device Search List
+        function filterDeviceList(query) {
+            const q = (query || '').toLowerCase().trim();
+            if (!q) {
+                renderDeviceSearchResults(hospitalDevices);
+                return;
+            }
+            const filtered = hospitalDevices.filter(d => 
+                (d.asset_id && d.asset_id.toLowerCase().includes(q)) ||
+                (d.room_name && d.room_name.toLowerCase().includes(q)) ||
+                (d.device_type && d.device_type.toLowerCase().includes(q)) ||
+                (d.assigned_user_name && d.assigned_user_name.toLowerCase().includes(q))
+            );
+            renderDeviceSearchResults(filtered);
+        }
+
+        // Render Search Results in Light Theme
+        function renderDeviceSearchResults(devices) {
+            const container = document.getElementById('devices-search-results-list');
+            if (!container) return;
+
+            if (!devices || devices.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-xs">
+                        <i data-lucide="inbox" class="w-6 h-6 mx-auto mb-1.5 opacity-50"></i>
+                        No matching hospital workstation found.
+                    </div>
+                `;
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = devices.slice(0, 30).map(dev => `
+                <div onclick="selectDeviceFromSearch('${dev.asset_id}')" class="p-3 rounded-xl bg-white border border-slate-200/80 hover:border-blue-500 hover:bg-blue-50/50 active:bg-blue-100/60 flex items-center justify-between gap-2 touch-press cursor-pointer shadow-2xs">
+                    <div class="min-w-0">
+                        <div class="text-xs font-black tracking-tight text-blue-600 truncate">${dev.asset_id}</div>
+                        <div class="text-[11px] text-slate-800 font-bold truncate">${dev.device_type || 'Hardware'} &bull; ${dev.room_name || 'Clinical Ward'}</div>
+                        <div class="text-[9.5px] text-slate-500 truncate">Staff: ${dev.assigned_user_name || 'Unassigned / Spare'}</div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                </div>
+            `).join('');
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Select Device from Search List
+        function selectDeviceFromSearch(assetId) {
+            toggleDeviceSearchModal();
+            window.location.href = `/report/${encodeURIComponent(assetId)}/`;
+        }
+
+        // ====================================================
+        // DIRECT HIGH-PRECISION QR SCANNER SUITE (jsQR + Html5Qrcode)
+        // ====================================================
+        let html5QrScanner = null;
+
+        // Audio Beep on successful scan using Web Audio API (Zero external audio file needed)
+        function playScanBeep() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const audioCtx = new AudioContext();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 880Hz A5 note
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.18);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.18);
+            } catch (e) {
+                // Ignore audio context autoplay restrictions
+            }
+        }
+
+        // Robust parser for scanned QR text (Extracts Asset ID from URLs, JSON, or raw text)
+        function parseScannedAssetId(decodedText) {
+            let text = (decodedText || '').trim();
+            if (!text) return null;
+
+            // Pattern 0: JSON payload e.g. {"assetId": "PSM/IT/2F/C-201"}
+            if (text.startsWith('{') && text.endsWith('}')) {
+                try {
+                    const parsed = JSON.parse(text);
+                    if (parsed.assetId) return parsed.assetId.trim();
+                    if (parsed.asset_id) return parsed.asset_id.trim();
+                    if (parsed.id) return parsed.id.trim();
+                } catch (e) {}
+            }
+
+            // Pattern 1: URL containing /report/, /qr/, or /scan/
+            const urlPrefixes = ['/report/', '/qr/', '/scan/'];
+            for (const prefix of urlPrefixes) {
+                if (text.includes(prefix)) {
+                    const parts = text.split(prefix)[1];
+                    if (parts) {
+                        let asset = parts.split('?')[0].split('#')[0];
+                        if (asset.endsWith('/')) asset = asset.slice(0, -1);
+                        return decodeURIComponent(asset).trim();
+                    }
+                }
+            }
+
+            // Pattern 2: Generic URL
+            if (text.startsWith('http://') || text.startsWith('https://')) {
+                try {
+                    const parsedUrl = new URL(text);
+                    const segments = parsedUrl.pathname.split('/').filter(Boolean);
+                    if (segments.length > 0) {
+                        return decodeURIComponent(segments[segments.length - 1]).trim();
+                    }
+                } catch (e) {}
+            }
+
+            // Pattern 3: Raw Asset Tag e.g. "PSM/IT/1F/C-101"
+            return text;
+        }
+
+        // ====================================================
+        // BULLETPROOF NATIVE CAMERA & MULTI-SCALE DECODER
+        // ====================================================
+
+        // Triggered when user snaps a photo via phone camera
+        async function handleNativeCameraCapture(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            const defaultView = document.getElementById('device-unscanned-default');
+            const loadingOverlay = document.getElementById('qr-scan-loading-card');
+            const retryNotice = document.getElementById('device-camera-retry-notice');
+
+            if (defaultView) defaultView.classList.add('hidden');
+            if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+            if (retryNotice) retryNotice.classList.add('hidden');
+
+            try {
+                const decodedText = await decodeQrImageFile(file);
+                if (decodedText) {
+                    onDirectQrDetected(decodedText);
+                    return;
+                }
+
+                // If no QR code was found in the photo
+                if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                if (defaultView) defaultView.classList.remove('hidden');
+                if (retryNotice) retryNotice.classList.remove('hidden');
+                if (window.lucide && typeof window.lucide.createIcons === 'function') lucide.createIcons();
+
+            } catch (err) {
+                console.error("Camera decoding failed:", err);
+                if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                if (defaultView) defaultView.classList.remove('hidden');
+                if (retryNotice) retryNotice.classList.remove('hidden');
+                if (window.lucide && typeof window.lucide.createIcons === 'function') lucide.createIcons();
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        // High-Precision Multi-Scale QR Decoder (Handles modern 12-48MP smartphone photos)
+        function decodeQrImageFile(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                let objectUrl = null;
+
+                const cleanup = () => {
+                    if (objectUrl) {
+                        try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+                        objectUrl = null;
+                    }
+                };
+
+                img.onload = async function() {
+                    const w = img.naturalWidth || img.width;
+                    const h = img.naturalHeight || img.height;
+
+                    if (!w || !h) {
+                        cleanup();
+                        resolve(null);
+                        return;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+                    // Pass 1: Full-Frame multi-scale passes (1000px, 1400px, 800px, 1800px, 600px, 1.0)
+                    const targetResolutions = [1000, 1400, 800, 1800, 600];
+                    for (const targetRes of targetResolutions) {
+                        const maxDim = Math.max(w, h);
+                        const scale = maxDim > targetRes ? (targetRes / maxDim) : 1.0;
+                        const tw = Math.round(w * scale);
+                        const th = Math.round(h * scale);
+
+                        canvas.width = tw;
+                        canvas.height = th;
+                        ctx.drawImage(img, 0, 0, tw, th);
+
+                        try {
+                            const imgData = ctx.getImageData(0, 0, tw, th);
+                            if (typeof jsQR !== 'undefined') {
+                                const code = jsQR(imgData.data, tw, th, { inversionAttempts: "attemptBoth" });
+                                if (code && code.data && code.data.trim().length > 0) {
+                                    cleanup();
+                                    resolve(code.data.trim());
+                                    return;
+                                }
+                            }
+                        } catch (e) {}
+
+                        if (scale === 1.0) break;
+                    }
+
+                    // Pass 2: Center-crop pass (60% width x 60% height in case code is centered)
+                    try {
+                        const cropW = Math.round(w * 0.6);
+                        const cropH = Math.round(h * 0.6);
+                        const cropX = Math.round(w * 0.2);
+                        const cropY = Math.round(h * 0.2);
+                        const targetCropDim = 900;
+                        const cropScale = Math.min(targetCropDim / cropW, targetCropDim / cropH, 1.0);
+                        const tw = Math.round(cropW * cropScale);
+                        const th = Math.round(cropH * cropScale);
+
+                        canvas.width = tw;
+                        canvas.height = th;
+                        ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, tw, th);
+
+                        const imgData = ctx.getImageData(0, 0, tw, th);
+                        if (typeof jsQR !== 'undefined') {
+                            const code = jsQR(imgData.data, tw, th, { inversionAttempts: "attemptBoth" });
+                            if (code && code.data && code.data.trim().length > 0) {
+                                cleanup();
+                                resolve(code.data.trim());
+                                return;
+                            }
+                        }
+                    } catch (e) {}
+
+                    // Pass 3: Native resolution raw pass
+                    try {
+                        canvas.width = w;
+                        canvas.height = h;
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const imgData = ctx.getImageData(0, 0, w, h);
+                        if (typeof jsQR !== 'undefined') {
+                            const code = jsQR(imgData.data, w, h, { inversionAttempts: "attemptBoth" });
+                            if (code && code.data && code.data.trim().length > 0) {
+                                cleanup();
+                                resolve(code.data.trim());
+                                return;
+                            }
+                        }
+                    } catch (e) {}
+
+                    // Pass 4: Fallback to Html5Qrcode.scanFile if available
+                    if (typeof Html5Qrcode !== 'undefined') {
+                        try {
+                            if (!html5QrScanner) {
+                                html5QrScanner = new Html5Qrcode("direct-qr-canvas");
+                            }
+                            const text = await html5QrScanner.scanFile(file, false);
+                            if (text && text.trim().length > 0) {
+                                cleanup();
+                                resolve(text.trim());
+                                return;
+                            }
+                        } catch (err) {}
+                    }
+
+                    cleanup();
+                    resolve(null);
+                };
+
+                img.onerror = function() {
+                    cleanup();
+                    resolve(null);
+                };
+
+                // Use fast blob URL if available, otherwise fallback to FileReader
+                if (window.URL && typeof window.URL.createObjectURL === 'function') {
+                    try {
+                        objectUrl = URL.createObjectURL(file);
+                        img.src = objectUrl;
+                        return;
+                    } catch (e) {}
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => { img.src = e.target.result; };
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Direct QR Detection Handler (Audio, Haptic, and Instant Redirect)
+        function onDirectQrDetected(scannedText) {
+            const assetId = parseScannedAssetId(scannedText);
+            if (!assetId) return;
+
+            playScanBeep();
+            if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+
+            // Seamlessly redirect to workstation issue filing page
+            window.location.href = `/report/${encodeURIComponent(assetId)}/`;
+        }
+
+        // ====================================================
+        // LIVE CAMERA AUTO-SCANNER & SMART FALLBACK
+        // ====================================================
+        let liveVideoTrack = null;
+        let liveScanAnimId = null;
+        let liveScanActive = false;
+
+        async function triggerQrScan() {
+            // Priority 1: Check if browser supports live camera video streaming (getUserMedia)
+            if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+                try {
+                    await startLiveScanner();
+                    return;
+                } catch (err) {
+                    console.warn("Live stream cannot start on this origin/permission, falling back to camera input:", err);
+                }
+            }
+
+            // Priority 2: Native Camera Fallback (when video streaming is restricted by browser security sandbox)
+            const input = document.getElementById('native-camera-input');
+            if (input) {
+                input.click();
+            }
+        }
+
+        async function startLiveScanner() {
+            const video = document.getElementById('qr-live-video');
+            const liveBox = document.getElementById('device-live-scanner-box');
+            const defaultView = document.getElementById('device-unscanned-default');
+            const retryNotice = document.getElementById('device-camera-retry-notice');
+
+            if (retryNotice) retryNotice.classList.add('hidden');
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: "environment" },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false
+            });
+
+            liveVideoTrack = stream;
+            video.srcObject = stream;
+            await video.play();
+
+            if (defaultView) defaultView.classList.add('hidden');
+            if (liveBox) liveBox.classList.remove('hidden');
+            if (window.lucide && typeof window.lucide.createIcons === 'function') lucide.createIcons();
+
+            liveScanActive = true;
+
+            // Canvas for processing live video frames at 30+ fps
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+            function scanFrame() {
+                if (!liveScanActive) return;
+
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const w = video.videoWidth;
+                    const h = video.videoHeight;
+
+                    if (w > 0 && h > 0) {
+                        // Process at ~640px for blazing fast < 10ms frame scan
+                        const scale = Math.min(640 / Math.max(w, h), 1.0);
+                        const tw = Math.round(w * scale);
+                        const th = Math.round(h * scale);
+                        canvas.width = tw;
+                        canvas.height = th;
+                        ctx.drawImage(video, 0, 0, tw, th);
+
+                        try {
+                            const imgData = ctx.getImageData(0, 0, tw, th);
+                            if (typeof jsQR !== 'undefined') {
+                                const code = jsQR(imgData.data, tw, th, { inversionAttempts: "attemptBoth" });
+                                if (code && code.data && code.data.trim()) {
+                                    liveScanActive = false;
+                                    onLiveScanSuccess(code.data.trim());
+                                    return;
+                                }
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                liveScanAnimId = requestAnimationFrame(scanFrame);
+            }
+
+            liveScanAnimId = requestAnimationFrame(scanFrame);
+        }
+
+        function onLiveScanSuccess(decodedText) {
+            const flash = document.getElementById('qr-detected-flash');
+            if (flash) {
+                flash.classList.remove('hidden');
+                flash.classList.add('flex');
+            }
+            playScanBeep();
+            if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+
+            setTimeout(() => {
+                stopLiveScanner();
+                onDirectQrDetected(decodedText);
+            }, 300);
+        }
+
+        function stopLiveScanner() {
+            liveScanActive = false;
+            if (liveScanAnimId) {
+                cancelAnimationFrame(liveScanAnimId);
+                liveScanAnimId = null;
+            }
+            if (liveVideoTrack) {
+                liveVideoTrack.getTracks().forEach(t => t.stop());
+                liveVideoTrack = null;
+            }
+            const liveBox = document.getElementById('device-live-scanner-box');
+            const defaultView = document.getElementById('device-unscanned-default');
+            const flash = document.getElementById('qr-detected-flash');
+
+            if (flash) {
+                flash.classList.add('hidden');
+                flash.classList.remove('flex');
+            }
+            if (liveBox) liveBox.classList.add('hidden');
+            if (defaultView) defaultView.classList.remove('hidden');
+        }
+
+        function switchToCameraFromSearch() {
+            toggleDeviceSearchModal();
+            setTimeout(triggerQrScan, 150);
+        }
+
+        function openQrScannerModal() {
+            triggerQrScan();
+        }
+
+        function closeQrScannerModal() {
+            const overlay = document.getElementById('qr-scan-loading-card');
+            if (overlay) overlay.classList.add('hidden');
+        }
+
+        // Form Submission via AJAX to /api/complaint/quick-submit/
+        async function handleSubmitComplaint() {
+            const assetId = (document.getElementById('field-asset-id').value || '').trim();
+            const staffName = (document.getElementById('input-staff-name').value || '').trim();
+            const staffDept = (document.getElementById('input-staff-dept').value || '').trim();
+            const staffPhone = (document.getElementById('input-staff-phone').value || '').trim();
+            const roomLocation = (document.getElementById('field-room-location').value || '').trim();
+            const description = (document.getElementById('input-description').value || '').trim();
+
+            if (!assetId) {
+                alert("Please select or enter the Asset Tag / ID of the malfunctioning workstation.");
+                toggleDeviceSearchModal();
+                return;
+            }
+
+            if (!selectedMainType) {
+                alert("Please choose whether the issue is 1. Hardware or 2. Software.");
+                const hwBtn = document.getElementById('btn-type-hardware');
+                if (hwBtn) hwBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            if (!staffName) {
+                alert("Please enter your name or doctor/nurse title.");
+                document.getElementById('input-staff-name').focus();
+                return;
+            }
+
+            if (!staffDept) {
+                alert("Please enter your hospital ward or department (e.g. ICU, OPD, Emergency).");
+                document.getElementById('input-staff-dept').focus();
+                return;
+            }
+
+            // Save staff profile to localStorage for future 1-tap reporting
+            try {
+                localStorage.setItem('psm_staff_profile', JSON.stringify({
+                    name: staffName,
+                    dept: staffDept,
+                    phone: staffPhone
+                }));
+            } catch (err) {
+                console.warn('Could not save profile', err);
+            }
+
+            // Button Loading State
+            const submitBtn = document.getElementById('btn-submit-complaint');
+            const submitText = document.getElementById('submit-button-text');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75');
+            submitText.textContent = "Registering Incident Ticket...";
+
+            // Determine issue headline for subject and description
+            const issueHeadline = selectedMainType === 'hardware'
+                ? `Hardware Issue (${selectedHardwareComp})`
+                : `Software / OS Issue`;
+
+            const payload = {
+                device_asset_id: assetId,
+                user_full_name: staffName,
+                user_dept: staffDept,
+                user_phone: staffPhone,
+                room_location: roomLocation,
+                issue_category: selectedCategory,
+                priority: selectedPriority,
+                subject: `[${selectedPriority.toUpperCase()}] ${issueHeadline} — ${assetId}`,
+                description: description || `Staff reported ${issueHeadline} on ${assetId}. Requires biomedical IT support.`
+            };
+
+            try {
+                const res = await fetch('/api/complaint/quick-submit/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    // Success! Show animated confirmation modal
+                    document.getElementById('receipt-ticket-id').textContent = data.ticket_id;
+                    document.getElementById('receipt-sla-text').textContent = data.sla_text;
+                    
+                    const receiptModal = document.getElementById('modal-success-receipt');
+                    receiptModal.classList.remove('hidden');
+
+                    // Haptic celebration
+                    if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+                } else {
+                    alert("Error: " + (data.error || "Could not file complaint. Please try again."));
+                }
+            } catch (err) {
+                console.error("Submission failed", err);
+                alert("Network connection error. Please verify your hospital Wi-Fi connection and try again.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-75');
+                submitText.textContent = selectedPriority === 'Critical' ? "Dispatch Emergency IT Ticket" : "Dispatch IT Ticket to Helpdesk";
+            }
+        }
+
+        // Copy Ticket Number to Clipboard
+        function copyTicketId() {
+            const ticketId = document.getElementById('receipt-ticket-id').textContent;
+            navigator.clipboard.writeText(ticketId).then(() => {
+                alert(`Ticket ID ${ticketId} copied to clipboard!`);
+            }).catch(() => {
+                prompt("Copy Ticket ID:", ticketId);
+            });
+        }
+
+        // Reset Report Form for another machine
+        function resetReportForm() {
+            document.getElementById('modal-success-receipt').classList.add('hidden');
+            window.location.href = '/report/';
+        }
+    </script>
+</body>
+</html>

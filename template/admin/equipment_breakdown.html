@@ -1,0 +1,1855 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Equipment Breakdown Register — CampusAssetIQ Admin{% endblock %}
+{% block page_title %}Equipment Breakdown Register{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+    @media print {
+        #admin-sidebar, header, .no-print, footer, #modal-add-breakdown, #modal-resolve-breakdown, #modal-import-excel { display: none !important; }
+        main { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+        .print-table { font-size: 11px !important; width: 100% !important; }
+        .print-table th, .print-table td { padding: 5px 6px !important; }
+    }
+</style>
+{% endblock %}
+
+
+
+{% block content %}
+<!-- Main Workspace Content -->
+<main class="flex-1 max-w-[1650px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+
+    <!-- Unified Admin Hero Banner (Signature Blue/Indigo Enterprise Gradient) -->
+    <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-200 text-xs font-semibold border border-blue-400/30 mb-2">
+                <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span> Section 8 Equipment Breakdown Register
+            </div>
+            <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2.5">
+                <i data-lucide="alert-octagon" class="w-6 h-6 text-blue-300"></i>
+                Equipment Breakdown Register
+            </h1>
+            <p class="text-slate-300 text-xs sm:text-sm mt-1 max-w-3xl">
+                Real-time incident documentation, IT CELL / Bio-Medical Engineer (BME) notification, check-in, repair timestamps, and Turn Around Time (TAT) analytics.
+            </p>
+        </div>
+        
+        <!-- Quick Action Buttons -->
+        <div class="flex items-center gap-2.5 flex-wrap no-print">
+            <button onclick="openExcelImportModal()" class="flex items-center gap-2 bg-emerald-600/90 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2.5 rounded-xl border border-emerald-400/40 text-xs sm:text-sm font-bold transition-all shadow-sm active:scale-95">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-200"></i>
+                <span>Import Excel</span>
+            </button>
+            <a href="{% url 'pms_schedule' %}{% if selected_org and selected_org != 'ALL' %}?org={{ selected_org }}{% endif %}" class="flex items-center gap-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 hover:text-white px-4 py-2.5 rounded-xl border border-indigo-400/40 text-xs sm:text-sm font-bold transition-all shadow-sm active:scale-95">
+                <i data-lucide="clipboard-check" class="w-4 h-4 text-indigo-300"></i>
+                <span>PMS Schedule Matrix</span>
+            </a>
+            <button onclick="openAddBreakdownModal()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 active:scale-95">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>Add New Breakdown</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 4 Performance Metric Cards (Elevated Command Cards matching Inventory & Audit) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 no-print">
+        <!-- Total Breakdowns -->
+        <div onclick="setBreakdownFilter('all')" id="kpi-card-all" class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-indigo-400 cursor-pointer group transition-all active:scale-[0.99] ring-2 ring-indigo-500" title="Click to show all incidents">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200/60 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Recorded</div>
+                <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ total_count }}</div>
+                <div class="text-[10px] text-slate-500 font-medium">All Equipment Incidents</div>
+            </div>
+        </div>
+
+        <!-- Critical Equipment -->
+        <div onclick="setBreakdownFilter('critical')" id="kpi-card-critical" class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-rose-400 cursor-pointer group transition-all active:scale-[0.99]" title="Click to filter critical equipment">
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200/60 group-hover:bg-rose-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                <i data-lucide="activity" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-rose-700 font-bold uppercase tracking-wider">Critical Equipment</div>
+                <div class="text-2xl sm:text-3xl font-black text-rose-600 tracking-tight">{{ critical_count }}</div>
+                <div class="text-[10px] text-rose-600/90 font-medium">High Priority Assets</div>
+            </div>
+        </div>
+
+        <!-- Under Active Repair -->
+        <div onclick="setBreakdownFilter('under-repair')" id="kpi-card-repair" class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-amber-400 cursor-pointer group transition-all active:scale-[0.99]" title="Click to filter under repair incidents">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/60 group-hover:bg-amber-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                <i data-lucide="wrench" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-amber-700 font-bold uppercase tracking-wider flex items-center gap-1">
+                    <span>Under Active Repair</span>
+                    {% if under_repair_count > 0 %}<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>{% endif %}
+                </div>
+                <div class="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight">{{ under_repair_count }}</div>
+                <div class="text-[10px] text-amber-600/90 font-medium">Engineer Working Now</div>
+            </div>
+        </div>
+
+        <!-- Resolved / Restored -->
+        <div onclick="setBreakdownFilter('resolved')" id="kpi-card-resolved" class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-emerald-400 cursor-pointer group transition-all active:scale-[0.99]" title="Click to filter resolved incidents">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">Successfully Repaired</div>
+                <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight">{{ resolved_count }}</div>
+                <div class="text-[10px] text-emerald-600/90 font-medium">Restored to Normal Service</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Filter Pills (Unified Admin Blue/Indigo Theme) -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs sm:text-sm font-semibold no-print scrollbar-none">
+        <span class="text-slate-500 mr-1 flex items-center gap-1">
+            <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filters:
+        </span>
+        <button onclick="setBreakdownFilter('all')" id="pill-all" class="breakdown-pill px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-xs flex items-center gap-2 whitespace-nowrap font-bold">
+            <i data-lucide="layers" class="w-4 h-4"></i>
+            <span>All Incidents ({{ total_count }})</span>
+        </button>
+        <button onclick="setBreakdownFilter('critical')" id="pill-critical" class="breakdown-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
+            <i data-lucide="flame" class="w-4 h-4 text-rose-600"></i>
+            <span>Critical Only ({{ critical_count }})</span>
+        </button>
+        <button onclick="setBreakdownFilter('routine')" id="pill-routine" class="breakdown-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
+            <i data-lucide="check-circle" class="w-4 h-4 text-blue-600"></i>
+            <span>Routine ({{ routine_count }})</span>
+        </button>
+        <button onclick="setBreakdownFilter('under-repair')" id="pill-repair" class="breakdown-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
+            <i data-lucide="wrench" class="w-4 h-4 text-amber-600"></i>
+            <span>Under Repair ({{ under_repair_count }})</span>
+        </button>
+        <button onclick="setBreakdownFilter('resolved')" id="pill-resolved" class="breakdown-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
+            <i data-lucide="check-check" class="w-4 h-4 text-emerald-600"></i>
+            <span>Resolved ({{ resolved_count }})</span>
+        </button>
+    </div>
+
+    <!-- Filter Bar & Search Controls -->
+    <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs flex flex-col md:flex-row gap-3 items-center justify-between no-print">
+        <div class="flex items-center gap-2 w-full md:w-auto flex-1 max-w-lg">
+            <div class="relative w-full">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="breakdown-search-input" onkeyup="onSearchInputKeyup(this)" placeholder="Search Asset ID, Device, Cause, Status (Resolved / Repair), HOD, Staff..." value="{{ search }}" class="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium">
+                <button type="button" id="breakdown-search-clear" onclick="clearBreakdownSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 flex items-center justify-center transition-colors" title="Clear search">
+                    <i data-lucide="x" class="w-3 h-3"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+            <!-- Device Filter -->
+            <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-700 font-semibold">
+                <i data-lucide="monitor" class="w-4 h-4 text-slate-400"></i>
+                <span>Device:</span>
+                <select id="breakdown-device-filter" onchange="filterBreakdownTable()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+                    <option value="ALL">All Devices</option>
+                    {% for dev in device_choices %}
+                    <option value="{{ dev }}" {% if filter_device == dev %}selected{% endif %}>{{ dev }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Type Filter -->
+            <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-700 font-semibold">
+                <i data-lucide="activity" class="w-4 h-4 text-slate-400"></i>
+                <span>Type:</span>
+                <select id="breakdown-type-filter" onchange="filterBreakdownTable()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+                    <option value="ALL">All Types</option>
+                    {% for t in type_choices %}
+                    <option value="{{ t }}" {% if filter_type == t %}selected{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-700 font-semibold">
+                <i data-lucide="filter" class="w-4 h-4 text-slate-400"></i>
+                <span>Status:</span>
+                <select id="breakdown-status-filter" onchange="onStatusDropdownChange()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+                    <option value="ALL">All Status</option>
+                    <option value="Resolved" {% if filter_status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                    <option value="Under Repair" {% if filter_status == 'Under Repair' %}selected{% endif %}>Under Repair</option>
+                </select>
+            </div>
+
+            <!-- Reset Filter -->
+            <button onclick="resetBreakdownFilters()" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                Reset
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Filter Status Indicator Bar -->
+    <div id="breakdown-active-filter-bar" class="flex items-center justify-between px-4 py-2 rounded-xl bg-slate-100 border border-slate-200/90 text-xs font-semibold text-slate-700 no-print">
+        <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-slate-500 flex items-center gap-1">
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-indigo-600"></i> Active Filter View:
+            </span>
+            <span id="active-filter-name" class="px-2.5 py-0.5 rounded-md bg-indigo-600 text-white font-bold text-xs">All Incidents</span>
+            <span id="active-filter-count" class="text-slate-500 text-xs">({{ total_count }} total entries)</span>
+        </div>
+        <button type="button" onclick="resetBreakdownFilters()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1">
+            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset Filters
+        </button>
+    </div>
+
+    <!-- Master Equipment Breakdown Register Table -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2.5">
+                <i data-lucide="alert-octagon" class="w-5 h-5 text-indigo-600"></i>
+                <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Equipment Breakdown Register</h2>
+                <span id="breakdown-records-badge" class="px-2.5 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold">{{ records|length }} Records</span>
+            </div>
+
+            <!-- Export Sheet (CSV), Import Excel & Print Buttons on Top of Table -->
+            <div class="flex items-center gap-2 no-print">
+                <button onclick="openExcelImportModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-300 text-xs font-bold transition-all shadow-2xs hover:border-emerald-400 active:scale-95">
+                    <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    <span>Import Excel</span>
+                </button>
+                <button onclick="exportBreakdownCSV()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-300 text-xs font-bold transition-all shadow-2xs hover:border-slate-400">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-indigo-600"></i>
+                    <span>Export Sheet (CSV)</span>
+                </button>
+                <button onclick="window.print()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-300 text-xs font-bold transition-all shadow-2xs hover:border-slate-400">
+                    <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-600"></i>
+                    <span>Print Table</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-[750px] scrollbar-thin">
+            <table class="w-full text-left text-sm border-collapse print-table" id="breakdown-master-table">
+                <!-- Column Group Header -->
+                <thead class="sticky top-0 z-20 bg-slate-100 text-slate-700 font-bold border-b border-slate-300 shadow-2xs">
+                    <tr class="divide-x divide-slate-200 uppercase text-xs tracking-wider">
+                        <th scope="col" class="py-3.5 px-3 w-14 text-center bg-slate-200/90 font-extrabold text-slate-800">Sr. No.</th>
+                        <th scope="col" class="py-3.5 px-3.5 min-w-[120px] text-center bg-slate-200/90 font-extrabold text-slate-800">Breakdown Date</th>
+                        <th scope="col" class="py-3.5 px-3 min-w-[105px] text-center bg-slate-200/90 font-extrabold text-slate-800">Breakdown Time</th>
+                        <th scope="col" class="py-3.5 px-4 min-w-[180px] bg-slate-200/90 font-extrabold text-slate-800">Instrument / Equipment name</th>
+                        <th scope="col" class="py-3.5 px-4 min-w-[160px] bg-slate-200/90 font-extrabold text-slate-800">Location</th>
+                        <th scope="col" class="py-3.5 px-4 min-w-[170px] bg-slate-200/90 font-extrabold text-slate-800">Breakdown Cause</th>
+                        <th scope="col" class="py-3.5 px-3.5 min-w-[140px] text-center bg-slate-200/90 font-extrabold text-slate-800">Type of equipment<br><span class="text-[11px] text-slate-600 font-bold lowercase">Critical/routine</span></th>
+                        <th scope="col" class="py-3.5 px-3 min-w-[130px] text-center bg-slate-200/90 font-extrabold text-slate-800">Status</th>
+                        <th scope="col" class="py-3.5 px-3.5 min-w-[155px] text-center bg-slate-200/90 font-extrabold text-slate-800">Intimation date & time<br><span class="text-[11px] text-slate-600 font-bold lowercase">to IT CELL / BME</span></th>
+                        <th scope="col" class="py-3.5 px-3.5 min-w-[145px] text-center bg-slate-200/90 font-extrabold text-slate-800">Checkin Date & Time</th>
+                        <th scope="col" class="py-3.5 px-3.5 min-w-[140px] bg-slate-200/90 font-extrabold text-slate-800">Name of<br><span class="text-[11px] text-slate-600 font-bold">Departmental HOD</span></th>
+                        <th scope="col" class="py-3.5 px-3.5 min-w-[140px] bg-slate-200/90 font-extrabold text-slate-800">Name of<br><span class="text-[11px] text-slate-600 font-bold">IT CELL / BME staff</span></th>
+                        <th scope="col" class="py-3.5 px-3.5 min-w-[145px] text-center bg-slate-200/90 font-extrabold text-slate-800">Repair Date & Time</th>
+                        <th scope="col" class="py-3.5 px-3.5 min-w-[125px] text-center bg-emerald-100/90 text-emerald-950 font-extrabold">Total Turn around<br>time (TAT)</th>
+                        <th scope="col" class="py-3.5 px-3.5 min-w-[135px] text-center bg-slate-200/90 font-extrabold text-slate-800">Sign of<br><span class="text-[11px] text-slate-600 font-bold">Departmental HOD</span></th>
+                        <th scope="col" class="py-3.5 px-3.5 min-w-[135px] text-center bg-slate-200/90 font-extrabold text-slate-800">Sign of<br><span class="text-[11px] text-slate-600 font-bold">IT CELL / BME staff</span></th>
+                        <th scope="col" class="py-3.5 px-3 min-w-[110px] text-center bg-slate-200/90 font-extrabold text-slate-800 no-print">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 bg-white" id="breakdown-table-body">
+                    {% for item in records %}
+                    <tr class="hover:bg-slate-50/80 transition-colors divide-x divide-slate-100 text-slate-800 breakdown-row {% if item.status == 'Under Repair' %}border-l-4 border-l-amber-500 bg-amber-50/15{% else %}border-l-4 border-l-emerald-400 bg-white{% endif %}"
+                        id="breakdown-row-{{ item.id }}"
+                        data-id="{{ item.id }}"
+                        data-asset="{{ item.asset_id }}"
+                        data-device="{{ item.device_name }}"
+                        data-location="{{ item.location|default:'' }}"
+                        data-cause="{{ item.breakdown_cause|escapejs }}"
+                        data-type="{{ item.equipment_type }}"
+                        data-bdate="{{ item.display_breakdown_date|default:item.breakdown_date }}"
+                        data-btime="{{ item.display_breakdown_time|default:item.breakdown_time }}"
+                        data-intimation="{{ item.intimation_datetime }}"
+                        data-checkin="{{ item.checkin_datetime }}"
+                        data-dept-hod="{{ item.dept_hod_name }}"
+                        data-it-staff="{{ item.it_staff_name }}"
+                        data-repair="{{ item.repair_datetime|default:'' }}"
+                        data-tat="{{ item.tat_duration|default:'' }}"
+                        data-sign-hod="{{ item.sign_dept_hod|default:'' }}"
+                        data-sign-it="{{ item.sign_it_cell|default:'' }}"
+                        data-status="{{ item.status }}"
+                        data-search="{{ item.asset_id }} {{ item.device_name }} {{ item.location|default:'' }} {{ item.breakdown_cause }} {{ item.dept_hod_name }} {{ item.it_staff_name }} {{ item.status }} {{ item.equipment_type }} {{ item.tat_duration }}">
+                        
+                        <!-- 1. Sr. No. -->
+                        <td class="py-3 px-3 text-center font-bold text-slate-600 bg-slate-50/60 text-sm">
+                            {{ forloop.counter }}
+                        </td>
+
+                        <!-- 2. Breakdown Date -->
+                        <td class="py-3 px-3.5 text-center font-mono text-sm font-bold text-slate-900">
+                            {{ item.display_breakdown_date|default:item.breakdown_date }}
+                        </td>
+
+                        <!-- 3. Breakdown Time -->
+                        <td class="py-3 px-3 text-center font-mono text-sm font-semibold text-slate-700">
+                            {{ item.display_breakdown_time|default:item.breakdown_time }}
+                        </td>
+
+                        <!-- 4. Instrument / Equipment Name -->
+                        <td class="py-3 px-4 font-bold text-slate-900 text-sm">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-lg {% if item.device_name == 'Monitor' %}bg-blue-50 text-blue-600 border border-blue-100{% elif item.device_name == 'CPU' %}bg-indigo-50 text-indigo-600 border border-indigo-100{% elif item.device_name == 'UPS' %}bg-amber-50 text-amber-600 border border-amber-100{% elif 'Printer' in item.device_name %}bg-emerald-50 text-emerald-600 border border-emerald-100{% else %}bg-slate-50 text-slate-600 border border-slate-100{% endif %} flex items-center justify-center shrink-0">
+                                    <i data-lucide="cpu" class="w-4 h-4"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-slate-900">{{ item.device_name }}</div>
+                                    <div class="text-xs font-mono text-indigo-700 font-bold">{{ item.asset_id }}</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- 4b. Location -->
+                        <td class="py-3 px-4 text-slate-800 text-sm font-medium">
+                            <div class="flex items-center gap-1.5 text-slate-700">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
+                                <span class="font-semibold text-slate-800">{% if item.location %}{{ item.location }}{% else %}<span class="text-slate-400 font-normal italic text-xs">Unspecified</span>{% endif %}</span>
+                            </div>
+                        </td>
+
+                        <!-- 5. Breakdown Cause -->
+                        <td class="py-3 px-4 text-slate-800 text-sm font-medium leading-snug">
+                            {{ item.breakdown_cause }}
+                        </td>
+
+                        <!-- 6. Type of Equipment Critical / Routine -->
+                        <td class="py-3 px-3.5 text-center">
+                            {% if item.equipment_type == 'Critical' %}
+                            <span class="px-2.5 py-1 rounded-md text-xs font-extrabold bg-rose-100 text-rose-800 border border-rose-300">
+                                Critical
+                            </span>
+                            {% else %}
+                            <span class="px-2.5 py-1 rounded-md text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-300">
+                                Routine
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 6b. Status (Resolved vs Under Repair) -->
+                        <td class="py-3 px-3.5 text-center" id="cell-status-{{ item.id }}">
+                            {% if item.status == 'Resolved' %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                <span>Resolved</span>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs animate-pulse">
+                                <i data-lucide="wrench" class="w-3.5 h-3.5 text-amber-600"></i>
+                                <span>Under Repair</span>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 7. Intimation Date & Time -->
+                        <td class="py-3 px-3.5 text-center font-mono text-sm text-slate-800 font-semibold">
+                            {{ item.intimation_datetime }}
+                        </td>
+
+                        <!-- 8. Checkin Date & Time -->
+                        <td class="py-3 px-3.5 text-center font-mono text-sm text-slate-800 font-semibold">
+                            {{ item.checkin_datetime }}
+                        </td>
+
+                        <!-- 9. Name of Departmental HOD -->
+                        <td class="py-3 px-3.5 text-sm font-bold text-slate-900">
+                            {{ item.dept_hod_name }}
+                        </td>
+
+                        <!-- 10. Name of IT CELL Staff -->
+                        <td class="py-3 px-3.5 text-sm font-bold text-slate-900">
+                            {{ item.it_staff_name }}
+                        </td>
+
+                        <!-- 11. Repair Date & Time -->
+                        <td class="py-3 px-3.5 text-center font-mono text-sm font-bold" id="cell-repair-{{ item.id }}">
+                            {% if item.repair_datetime %}
+                            <span class="text-emerald-800 font-bold">{{ item.display_repair_datetime|default:item.repair_datetime }}</span>
+                            {% else %}
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                Pending Repair
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 12. Total Turn Around Time (TAT) -->
+                        <td class="py-3 px-3.5 text-center font-mono text-sm font-bold bg-emerald-50/50 text-emerald-950" id="cell-tat-{{ item.id }}">
+                            {% if item.tat_duration and item.tat_duration != 'In Progress' %}
+                            <span class="inline-flex items-center gap-1.5 text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-md border border-emerald-300 font-bold">
+                                <i data-lucide="clock" class="w-3.5 h-3.5 text-emerald-700"></i>
+                                {{ item.tat_duration }}
+                            </span>
+                            {% else %}
+                            <span class="text-amber-800 text-xs font-bold bg-amber-100 px-2 py-0.5 rounded border border-amber-200">Active</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 13. Sign of Departmental HOD -->
+                        <td class="py-3 px-3.5 text-center text-sm font-bold text-slate-800 font-mono">
+                            {{ item.sign_dept_hod }}
+                        </td>
+
+                        <!-- 14. Sign of IT CELL Staff -->
+                        <td class="py-3 px-3.5 text-center text-sm font-bold text-slate-800 font-mono" id="cell-sign-it-{{ item.id }}">
+                            {{ item.sign_it_cell }}
+                        </td>
+
+                        <!-- 15. Action Buttons -->
+                        <td class="py-3 px-3 text-center no-print">
+                            <div class="flex items-center justify-center gap-1.5">
+                                {% if item.status == 'Under Repair' %}
+                                <button onclick="openResolveModal('{{ item.id }}', '{{ item.asset_id }}')" title="Mark as Resolved" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-2xs flex items-center gap-1 active:scale-95">
+                                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                    <span class="hidden xl:inline">Resolve</span>
+                                </button>
+                                {% else %}
+                                <span class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 inline-flex items-center gap-1" title="Repair Completed">
+                                    <i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    <span class="hidden xl:inline">Repaired</span>
+                                </span>
+                                {% endif %}
+                                <button onclick="openEditBreakdownModal('{{ item.id }}')" title="Edit Incident Record" class="p-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 transition-colors border border-slate-200 active:scale-95">
+                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="deleteBreakdownRecord('{{ item.id }}', '{{ item.asset_id }}')" title="Delete Incident Record" class="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors border border-slate-200 active:scale-95">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="17" class="py-12 text-center text-slate-500">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <i data-lucide="check-circle" class="w-10 h-10 text-emerald-500"></i>
+                                <p class="font-bold text-base text-slate-700">No equipment breakdowns currently on record.</p>
+                                <p class="text-xs text-slate-400">All campus workstations, printers, and devices are fully operational.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    <!-- Dynamic No-Results Row for Client-side Filters -->
+                    <tr id="breakdown-no-results" class="hidden">
+                        <td colspan="17" class="py-12 text-center text-slate-500">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center mb-1">
+                                    <i data-lucide="filter-x" class="w-6 h-6"></i>
+                                </div>
+                                <p class="font-bold text-base text-slate-800">No matching breakdown incidents found.</p>
+                                <p class="text-xs text-slate-400 max-w-sm">No records match your selected status, device type, or search keywords.</p>
+                                <button type="button" onclick="resetBreakdownFilters()" class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95">
+                                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                    <span>Reset All Filters</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+{% endblock %}
+
+{% block modals %}
+<!-- Modal: Add New Breakdown -->
+<div id="modal-add-breakdown" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center">
+                    <i data-lucide="alert-octagon" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Log New Equipment Breakdown</h3>
+                    <p class="text-xs text-slate-500">Document hardware fault, intimation, and check-in timeline</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="openExcelImportModal()" title="Import from Excel / CSV" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 text-xs font-bold transition-all shadow-2xs hover:border-emerald-400 active:scale-95">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i>
+                    <span>Import Excel</span>
+                </button>
+                <button type="button" onclick="closeAddBreakdownModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <form onsubmit="submitAddBreakdown(event)" class="p-6 space-y-4 text-xs sm:text-sm">
+            <!-- Excel Quick Import Banner / Dropzone inside form -->
+            <div class="p-3.5 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/60 hover:bg-emerald-50 transition-all flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-800 text-xs">Bulk breakdown logs in an Excel sheet?</p>
+                        <p class="text-[11px] text-slate-500">Upload .xlsx or .csv to register rows directly into the database.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="openExcelImportModal()" class="shrink-0 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 active:scale-95">
+                    <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+                    <span>Upload Excel</span>
+                </button>
+            </div>
+            <!-- 1. Breakdown Date Time -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1.5 flex items-center gap-1">
+                    Breakdown Date Time <span class="text-rose-500">*</span>
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <span class="text-[11px] text-slate-500 font-semibold mb-1 block">Date</span>
+                        <input type="date" id="modal-breakdown-date" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-500 font-semibold mb-1 block">Time</span>
+                        <input type="time" id="modal-breakdown-time" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. IT Asset ID -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block font-bold text-slate-800 flex items-center gap-1">
+                        IT Asset ID <span class="text-rose-500">*</span>
+                    </label>
+                    <span class="text-[11px] text-indigo-600 font-semibold">Select registered asset to auto-fill</span>
+                </div>
+                <input type="text" id="modal-asset-id" list="breakdown-device-datalist" oninput="autoFillBreakdownDevice(this.value, 'add')" placeholder="Search or enter Asset ID (e.g. HOSP-ICU-00042, KH/IT/COMPUTER/1)" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                <datalist id="breakdown-device-datalist">
+                    {% for dev in inventory_devices %}
+                    <option value="{{ dev.asset_id }}" data-system="Computer" data-user="{{ dev.assigned_user_name }}" data-room="{{ dev.room_name }}">{{ dev.asset_id }} ({{ dev.room_name|default:'Campus' }})</option>
+                    {% endfor %}
+                    {% for pa in pms_assets %}
+                    <option value="{{ pa.asset_code }}" data-system="{{ pa.equipment_name }}">{{ pa.asset_code }} — {{ pa.equipment_name }} ({{ pa.company_name|default:'PMS' }})</option>
+                    {% endfor %}
+                </datalist>
+            </div>
+
+            <!-- 3. IT Device Name -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1">
+                    IT Device Name <span class="text-rose-500">*</span>
+                </label>
+                <select id="modal-device-name" required class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                    <option value="" disabled>Choose device name</option>
+                    <option value="Monitor">Monitor</option>
+                    <option value="CPU" selected>CPU</option>
+                    <option value="Keyboard">Keyboard</option>
+                    <option value="Mouse">Mouse</option>
+                    <option value="UPS">UPS</option>
+                    <option value="Laser Printer">Laser Printer</option>
+                    <option value="Barcode Printer">Barcode Printer</option>
+                    <option value="Scanner">Scanner</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <!-- 3b. Location -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1">
+                    Location / Room / Department
+                </label>
+                <input type="text" id="modal-location" placeholder="e.g. ICU Ward 2nd Floor / Computer Lab 101 / Admin Office" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+
+            <!-- 4. Breakdown Cause -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1">
+                    Breakdown Cause <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" id="modal-breakdown-cause" placeholder="e.g. power supply failure, black display, paper jam" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+
+            <!-- 5. Type of equipment -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1">
+                    Type of equipment <span class="text-rose-500">*</span>
+                </label>
+                <select id="modal-equipment-type" required class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                    <option value="" disabled>Choose type</option>
+                    <option value="Critical">Critical</option>
+                    <option value="Routine" selected>Routine</option>
+                </select>
+            </div>
+
+            <!-- 6. Name of Departmental HOD -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1">
+                    Name of Departmental HOD
+                </label>
+                <input type="text" id="modal-dept-hod" placeholder="e.g. Dr. Vikram Sharma / Staff Nurse Priya" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+
+            <!-- 7. Intimation date & time to IT CELL -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1.5 flex items-center gap-1">
+                    Intimation date & time to IT CELL <span class="text-rose-500">*</span>
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <span class="text-[11px] text-slate-500 font-semibold mb-1 block">Date</span>
+                        <input type="date" id="modal-intimation-date" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-500 font-semibold mb-1 block">Time</span>
+                        <input type="time" id="modal-intimation-time" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. IT CELL Checkin Date & Time -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1.5 flex items-center gap-1">
+                    IT CELL Checkin Date & Time <span class="text-rose-500">*</span>
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <span class="text-[11px] text-slate-500 font-semibold mb-1 block">Date</span>
+                        <input type="date" id="modal-checkin-date" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-500 font-semibold mb-1 block">Time</span>
+                        <input type="time" id="modal-checkin-time" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. Total Turn around time (TAT) -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1">
+                    Total Turn around time (TAT)
+                </label>
+                <input type="text" id="modal-tat" placeholder="e.g. 35 minutes / 1 hour 15 mins" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+
+            <!-- 10. Sign of Departmental HOD -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1">
+                    Sign of Departmental HOD
+                </label>
+                <input type="text" id="modal-sign-hod" placeholder="Verification signature / name" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+
+            <!-- 11. Sign of IT CELL -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1">
+                    Sign of IT CELL
+                </label>
+                <input type="text" id="modal-sign-it" placeholder="IT Staff Engineer signature / name" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+
+            <!-- Actions -->
+            <div class="pt-2 flex items-center justify-end gap-3 border-t border-slate-200">
+                <button type="button" onclick="closeAddBreakdownModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold transition-all">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-md flex items-center gap-2 active:scale-95">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Save Breakdown Incident</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Resolve Equipment Breakdown -->
+<div id="modal-resolve-breakdown" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 p-6">
+        <div class="flex items-center gap-2.5 mb-4">
+            <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <i data-lucide="check-circle" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-900 text-base">Complete Equipment Repair</h3>
+                <p class="text-xs text-slate-500" id="resolve-asset-label">Asset: IT-PC-00101</p>
+            </div>
+        </div>
+
+        <form onsubmit="submitResolveBreakdown(event)" class="space-y-3.5 text-xs sm:text-sm">
+            <input type="hidden" id="resolve-breakdown-id">
+
+            <div>
+                <label class="block font-bold text-slate-800 mb-1">Repair Date & Time *</label>
+                <input type="text" id="resolve-repair-time" required placeholder="e.g. 26.07.2022 2.35 pm" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-800 mb-1">Total Turn Around Time (TAT) *</label>
+                <input type="text" id="resolve-tat" required placeholder="e.g. 35 minutes" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-800 mb-1">Sign of IT CELL Staff *</label>
+                <input type="text" id="resolve-sign-it" required placeholder="e.g. Er. Amit Verma (IT CELL)" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-200">
+                <button type="button" onclick="closeResolveModal()" class="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-100">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md flex items-center gap-1.5 active:scale-95">
+                    <i data-lucide="check-check" class="w-4 h-4"></i>
+                    <span>Mark as Resolved</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Equipment Breakdown -->
+<div id="modal-edit-breakdown" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+                    <i data-lucide="edit-3" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Edit Equipment Breakdown Incident</h3>
+                    <p class="text-xs text-slate-500" id="edit-breakdown-subtitle">Asset: ... • Incident #...</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeEditBreakdownModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form onsubmit="submitEditBreakdown(event)" class="p-6 space-y-4 text-xs sm:text-sm">
+            <input type="hidden" id="edit-breakdown-id">
+
+            <!-- 1. Breakdown Date Time -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1.5 flex items-center gap-1">
+                    Breakdown Date Time <span class="text-rose-500">*</span>
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <span class="text-[11px] text-slate-500 font-semibold mb-1 block">Date (DD/MM/YYYY)</span>
+                        <input type="text" id="edit-breakdown-date" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-500 font-semibold mb-1 block">Time (HH:MM)</span>
+                        <input type="text" id="edit-breakdown-time" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. IT Asset ID & Device Name -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1">
+                        IT Asset ID <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" id="edit-asset-id" list="breakdown-device-datalist" oninput="autoFillBreakdownDevice(this.value, 'edit')" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1">
+                        IT Device Name <span class="text-rose-500">*</span>
+                    </label>
+                    <select id="edit-device-name" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                        <option value="Monitor">Monitor</option>
+                        <option value="CPU">CPU</option>
+                        <option value="Keyboard">Keyboard</option>
+                        <option value="Mouse">Mouse</option>
+                        <option value="UPS">UPS</option>
+                        <option value="Laser Printer">Laser Printer</option>
+                        <option value="Barcode Printer">Barcode Printer</option>
+                        <option value="Scanner">Scanner</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 2b. Location -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1">
+                    Location / Room / Department
+                </label>
+                <input type="text" id="edit-location" placeholder="e.g. ICU Ward 2nd Floor / Computer Lab 101" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+
+            <!-- 3. Breakdown Cause -->
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1">
+                    Breakdown Cause <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" id="edit-breakdown-cause" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+            </div>
+
+            <!-- 4. Equipment Type & Status -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1">
+                        Equipment Type <span class="text-rose-500">*</span>
+                    </label>
+                    <select id="edit-equipment-type" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                        <option value="Routine">Routine</option>
+                        <option value="Critical">Critical</option>
+                    </select>
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1">
+                        Incident Status <span class="text-rose-500">*</span>
+                    </label>
+                    <select id="edit-status" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                        <option value="Under Repair">Under Repair</option>
+                        <option value="Resolved">Resolved</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 5. HOD & IT Staff Names -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1">
+                        Departmental HOD Name
+                    </label>
+                    <input type="text" id="edit-dept-hod" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1">
+                        IT Staff / BME Engineer
+                    </label>
+                    <input type="text" id="edit-it-staff" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+            </div>
+
+            <!-- 6. Intimation & Checkin Date Time -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1">
+                        Intimation Date & Time
+                    </label>
+                    <input type="text" id="edit-intimation-datetime" placeholder="e.g. 26/07/2022 10:30" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-mono text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1">
+                        Checkin Date & Time
+                    </label>
+                    <input type="text" id="edit-checkin-datetime" placeholder="e.g. 26/07/2022 10:45" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-mono text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+            </div>
+
+            <!-- 7. Repair Date Time & TAT -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1">
+                        Repair Date & Time (Blank if active)
+                    </label>
+                    <input type="text" id="edit-repair-datetime" placeholder="e.g. 26/07/2022 11:30" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-mono text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1">
+                        Total Turn Around Time (TAT)
+                    </label>
+                    <input type="text" id="edit-tat" placeholder="e.g. 45 minutes" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+            </div>
+
+            <!-- 8. Signatures -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1">
+                        Sign of Departmental HOD
+                    </label>
+                    <input type="text" id="edit-sign-hod" placeholder="HOD sign" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <label class="block font-bold text-slate-800 mb-1">
+                        Sign of IT CELL Staff
+                    </label>
+                    <input type="text" id="edit-sign-it" placeholder="IT Staff sign" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden">
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="pt-2 flex items-center justify-end gap-3 border-t border-slate-200">
+                <button type="button" onclick="closeEditBreakdownModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold transition-all">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-md flex items-center gap-2 active:scale-95">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Save Changes</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Import Equipment Breakdown Excel / CSV -->
+<div id="modal-import-excel" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center">
+                    <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Import Equipment Breakdown Excel</h3>
+                    <p class="text-xs text-slate-500">Upload .xlsx, .xls or .csv to add records directly into the table</p>
+                </div>
+            </div>
+            <button onclick="closeExcelImportModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4 text-xs sm:text-sm">
+            <!-- Instructions and Template Download banner -->
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+                <div>
+                    <h4 class="font-bold text-slate-800 text-xs">Need an Excel spreadsheet template?</h4>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Download pre-formatted 14-column sheet with standard breakdown headers.</p>
+                </div>
+                <button type="button" onclick="downloadExcelTemplate()" class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-bold transition-all shadow-2xs hover:border-emerald-400 active:scale-95">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    <span>Template (.xlsx)</span>
+                </button>
+            </div>
+
+            <!-- Drag & Drop Zone -->
+            <div id="excel-dropzone" onclick="document.getElementById('excel-file-input').click()" class="border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50/60 hover:bg-emerald-50/30 rounded-2xl p-7 text-center cursor-pointer transition-all group">
+                <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelFileInput(this.files)">
+                <div class="w-13 h-13 mx-auto rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                    <i data-lucide="file-spreadsheet" class="w-7 h-7"></i>
+                </div>
+                <p class="font-bold text-slate-800 text-sm">Click to select or drag and drop Excel file</p>
+                <p class="text-xs text-slate-500 mt-1">Supports Microsoft Excel (.xlsx, .xls) and CSV (.csv) up to 10MB</p>
+            </div>
+
+            <!-- File Detected / Preview Card (Initially Hidden) -->
+            <div id="excel-file-info" class="hidden p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>
+                        <div>
+                            <span id="excel-file-name" class="font-bold text-slate-800 block text-xs truncate max-w-[280px]">file.xlsx</span>
+                            <span id="excel-file-meta" class="text-[11px] text-slate-500">0 KB • 0 records detected</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="clearSelectedExcelFile()" class="text-xs font-semibold text-rose-600 hover:underline">Remove</button>
+                </div>
+
+                <!-- Mini Preview Box -->
+                <div id="excel-preview-container" class="max-h-44 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
+                    <table class="w-full text-[11px] text-left border-collapse" id="excel-preview-table">
+                        <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                            <tr>
+                                <th class="p-1.5">Asset ID</th>
+                                <th class="p-1.5">Device</th>
+                                <th class="p-1.5">Location</th>
+                                <th class="p-1.5">Date</th>
+                                <th class="p-1.5">Type</th>
+                                <th class="p-1.5">HOD Name</th>
+                            </tr>
+                        </thead>
+                        <tbody id="excel-preview-tbody" class="divide-y divide-slate-100">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Import Progress / Message Feedback -->
+            <div id="excel-import-status" class="hidden p-3 rounded-xl text-xs font-semibold"></div>
+
+            <!-- Action Buttons -->
+            <div class="pt-2 flex items-center justify-end gap-3 border-t border-slate-200">
+                <button type="button" onclick="closeExcelImportModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold transition-all">
+                    Cancel
+                </button>
+                <button type="button" id="btn-confirm-import" onclick="submitExcelImport()" disabled class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-all shadow-md flex items-center gap-2 active:scale-95">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    <span id="btn-import-text">Import to Table</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Preset Date/Time Pickers with Local Values
+    function presetPickers() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const timeStr = `${hh}:${min}`;
+
+        ['modal-breakdown-date', 'modal-intimation-date', 'modal-checkin-date'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && !el.value) el.value = dateStr;
+        });
+
+        ['modal-breakdown-time', 'modal-intimation-time', 'modal-checkin-time'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && !el.value) el.value = timeStr;
+        });
+    }
+
+    function openAddBreakdownModal() {
+        presetPickers();
+        document.getElementById('modal-add-breakdown').classList.remove('hidden');
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+    }
+
+    function closeAddBreakdownModal() {
+        document.getElementById('modal-add-breakdown').classList.add('hidden');
+    }
+
+    function openResolveModal(id, assetId) {
+        document.getElementById('resolve-breakdown-id').value = id;
+        document.getElementById('resolve-asset-label').innerText = `Asset: ${assetId}`;
+        
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        
+        document.getElementById('resolve-repair-time').value = `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+        document.getElementById('resolve-tat').value = `45 minutes`;
+        document.getElementById('resolve-sign-it').value = `Er. Amit Verma (IT CELL)`;
+
+        document.getElementById('modal-resolve-breakdown').classList.remove('hidden');
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+    }
+
+    function closeResolveModal() {
+        document.getElementById('modal-resolve-breakdown').classList.add('hidden');
+    }
+
+    // Filter Table by Search Text, Device, Type, Status
+    let currentFilter = 'all';
+
+    function onSearchInputKeyup(input) {
+        const clearBtn = document.getElementById('breakdown-search-clear');
+        if (clearBtn) {
+            if (input.value.trim().length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+        }
+        filterBreakdownTable();
+    }
+
+    function clearBreakdownSearch() {
+        const input = document.getElementById('breakdown-search-input');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+        const clearBtn = document.getElementById('breakdown-search-clear');
+        if (clearBtn) clearBtn.classList.add('hidden');
+        filterBreakdownTable();
+    }
+
+    function setBreakdownFilter(type) {
+        currentFilter = type;
+        updatePillHighlight(`pill-${type}`);
+        updateKpiHighlight(type);
+
+        // Automatically synchronize the dropdown to eliminate conflicting filter states
+        const statusSelect = document.getElementById('breakdown-status-filter');
+        const typeSelect = document.getElementById('breakdown-type-filter');
+
+        if (type === 'under-repair') {
+            if (statusSelect) statusSelect.value = 'Under Repair';
+        } else if (type === 'resolved') {
+            if (statusSelect) statusSelect.value = 'Resolved';
+        } else if (type === 'all') {
+            if (statusSelect) statusSelect.value = 'ALL';
+            if (typeSelect) typeSelect.value = 'ALL';
+        } else if (type === 'critical') {
+            if (typeSelect) typeSelect.value = 'Critical';
+            if (statusSelect) statusSelect.value = 'ALL';
+        } else if (type === 'routine') {
+            if (typeSelect) typeSelect.value = 'Routine';
+            if (statusSelect) statusSelect.value = 'ALL';
+        }
+
+        filterBreakdownTable();
+    }
+
+    function onStatusDropdownChange() {
+        const val = document.getElementById('breakdown-status-filter').value;
+        if (val === 'Resolved') {
+            currentFilter = 'resolved';
+            updatePillHighlight('pill-resolved');
+            updateKpiHighlight('resolved');
+        } else if (val === 'Under Repair') {
+            currentFilter = 'under-repair';
+            updatePillHighlight('pill-repair');
+            updateKpiHighlight('under-repair');
+        } else {
+            if (currentFilter === 'resolved' || currentFilter === 'under-repair') {
+                currentFilter = 'all';
+                updatePillHighlight('pill-all');
+                updateKpiHighlight('all');
+            }
+        }
+        filterBreakdownTable();
+    }
+
+    function updateKpiHighlight(type) {
+        ['all', 'critical', 'repair', 'resolved'].forEach(k => {
+            const card = document.getElementById(`kpi-card-${k}`);
+            if (card) {
+                card.classList.remove('ring-2', 'ring-indigo-500', 'ring-rose-500', 'ring-amber-500', 'ring-emerald-500');
+            }
+        });
+        const targetMap = {
+            'all': { id: 'kpi-card-all', ring: 'ring-indigo-500' },
+            'critical': { id: 'kpi-card-critical', ring: 'ring-rose-500' },
+            'under-repair': { id: 'kpi-card-repair', ring: 'ring-amber-500' },
+            'resolved': { id: 'kpi-card-resolved', ring: 'ring-emerald-500' }
+        };
+        if (targetMap[type]) {
+            const el = document.getElementById(targetMap[type].id);
+            if (el) el.classList.add('ring-2', targetMap[type].ring);
+        }
+    }
+
+    function updatePillHighlight(activePillId) {
+        const pillStyles = {
+            'pill-all': { activeBg: 'bg-indigo-600', activeText: 'text-white' },
+            'pill-critical': { activeBg: 'bg-rose-600', activeText: 'text-white' },
+            'pill-routine': { activeBg: 'bg-blue-600', activeText: 'text-white' },
+            'pill-repair': { activeBg: 'bg-amber-600', activeText: 'text-white' },
+            'pill-resolved': { activeBg: 'bg-emerald-600', activeText: 'text-white' },
+        };
+
+        document.querySelectorAll('.breakdown-pill').forEach(pill => {
+            pill.className = 'breakdown-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap font-bold text-xs sm:text-sm';
+        });
+
+        const activePill = document.getElementById(activePillId);
+        if (activePill && pillStyles[activePillId]) {
+            activePill.className = `breakdown-pill px-4 py-2 rounded-xl ${pillStyles[activePillId].activeBg} ${pillStyles[activePillId].activeText} shadow-xs flex items-center gap-2 whitespace-nowrap font-bold text-xs sm:text-sm`;
+        }
+    }
+
+    function filterBreakdownTable() {
+        const searchVal = document.getElementById('breakdown-search-input').value.toLowerCase().trim();
+        const deviceVal = document.getElementById('breakdown-device-filter').value;
+        const typeVal = document.getElementById('breakdown-type-filter').value;
+        const statusVal = document.getElementById('breakdown-status-filter').value;
+
+        const clearBtn = document.getElementById('breakdown-search-clear');
+        if (clearBtn) {
+            if (searchVal.length > 0) clearBtn.classList.remove('hidden');
+            else clearBtn.classList.add('hidden');
+        }
+
+        const rows = document.querySelectorAll('.breakdown-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const searchData = (row.getAttribute('data-search') || '').toLowerCase();
+            const dev = (row.getAttribute('data-device') || '').trim();
+            const eqType = (row.getAttribute('data-type') || '').trim();
+            const stat = (row.getAttribute('data-status') || '').trim();
+
+            const normStat = stat.toLowerCase();
+            const isResolved = normStat.includes('resolve') || normStat.includes('repaired') || normStat.includes('closed') || normStat.includes('fixed') || normStat.includes('completed');
+            const isUnderRepair = (normStat.includes('repair') && !normStat.includes('repaired')) || normStat.includes('progress') || normStat.includes('active') || normStat.includes('pending') || normStat.includes('open');
+
+            const matchesSearch = !searchVal || searchData.includes(searchVal);
+            const matchesDevice = (deviceVal === 'ALL') || (dev.toLowerCase() === deviceVal.toLowerCase());
+            const matchesType = (typeVal === 'ALL') || (eqType.toLowerCase() === typeVal.toLowerCase());
+
+            let matchesStatus = true;
+            if (statusVal === 'Resolved') matchesStatus = isResolved;
+            else if (statusVal === 'Under Repair') matchesStatus = isUnderRepair;
+            else if (statusVal !== 'ALL') matchesStatus = (normStat === statusVal.toLowerCase());
+
+            let matchesPill = true;
+            if (currentFilter === 'critical') matchesPill = (eqType.toLowerCase() === 'critical');
+            else if (currentFilter === 'routine') matchesPill = (eqType.toLowerCase() === 'routine');
+            else if (currentFilter === 'under-repair') matchesPill = isUnderRepair;
+            else if (currentFilter === 'resolved') matchesPill = isResolved;
+
+            if (matchesSearch && matchesDevice && matchesType && matchesStatus && matchesPill) {
+                row.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+
+        // Update badge counts and active indicator bar
+        const badge = document.getElementById('breakdown-records-badge');
+        if (badge) {
+            badge.innerText = `${visibleCount} Records`;
+        }
+
+        const activeFilterName = document.getElementById('active-filter-name');
+        const activeFilterCount = document.getElementById('active-filter-count');
+        if (activeFilterName && activeFilterCount) {
+            const nameMap = {
+                'all': 'All Incidents',
+                'critical': 'Critical Equipment Only',
+                'routine': 'Routine Workstations',
+                'under-repair': 'Active / Under Repair',
+                'resolved': 'Resolved & Maintained'
+            };
+            activeFilterName.innerText = nameMap[currentFilter] || 'Filtered View';
+            activeFilterCount.innerText = `(${visibleCount} records visible)`;
+
+            const bgColors = {
+                'all': 'bg-indigo-600',
+                'critical': 'bg-rose-600',
+                'routine': 'bg-blue-600',
+                'under-repair': 'bg-amber-600',
+                'resolved': 'bg-emerald-600'
+            };
+            activeFilterName.className = `px-2.5 py-0.5 rounded-md ${bgColors[currentFilter] || 'bg-slate-700'} text-white font-bold text-xs`;
+        }
+
+        const noResultsRow = document.getElementById('breakdown-no-results');
+        if (noResultsRow) {
+            if (visibleCount === 0) {
+                noResultsRow.classList.remove('hidden');
+            } else {
+                noResultsRow.classList.add('hidden');
+            }
+        }
+    }
+
+    function resetBreakdownFilters() {
+        const searchInput = document.getElementById('breakdown-search-input');
+        if (searchInput) searchInput.value = '';
+        const clearBtn = document.getElementById('breakdown-search-clear');
+        if (clearBtn) clearBtn.classList.add('hidden');
+
+        document.getElementById('breakdown-device-filter').value = 'ALL';
+        document.getElementById('breakdown-type-filter').value = 'ALL';
+        document.getElementById('breakdown-status-filter').value = 'ALL';
+        setBreakdownFilter('all');
+    }
+
+    // Format Date to DD/MM/YYYY
+    function formatDateReadable(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        return dateStr;
+    }
+
+    // AJAX Submit Add New Breakdown
+    async function submitAddBreakdown(e) {
+        e.preventDefault();
+
+        const bDate = formatDateReadable(document.getElementById('modal-breakdown-date').value);
+        const bTime = document.getElementById('modal-breakdown-time').value;
+        const inDate = formatDateReadable(document.getElementById('modal-intimation-date').value);
+        const inTime = document.getElementById('modal-intimation-time').value;
+        const ckDate = formatDateReadable(document.getElementById('modal-checkin-date').value);
+        const ckTime = document.getElementById('modal-checkin-time').value;
+
+        const payload = {
+            breakdown_date: bDate,
+            breakdown_time: bTime,
+            asset_id: document.getElementById('modal-asset-id').value.trim(),
+            device_name: document.getElementById('modal-device-name').value,
+            location: document.getElementById('modal-location') ? document.getElementById('modal-location').value.trim() : '',
+            breakdown_cause: document.getElementById('modal-breakdown-cause').value.trim(),
+            equipment_type: document.getElementById('modal-equipment-type').value,
+            dept_hod_name: document.getElementById('modal-dept-hod').value.trim(),
+            intimation_datetime: `${inDate} ${inTime}`.trim(),
+            checkin_datetime: `${ckDate} ${ckTime}`.trim(),
+            tat_duration: document.getElementById('modal-tat').value.trim() || 'In Progress',
+            sign_dept_hod: document.getElementById('modal-sign-hod').value.trim() || 'Verified',
+            sign_it_cell: document.getElementById('modal-sign-it').value.trim() || 'Attended'
+        };
+
+        try {
+            const response = await fetch('/api/breakdown/add/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert(`✅ Equipment Breakdown recorded for Asset ${result.asset_id}!`);
+                window.location.reload();
+            } else {
+                alert('Error: ' + (result.error || 'Could not record breakdown.'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Connection error occurred while saving breakdown record.');
+        }
+    }
+
+    // AJAX Resolve Breakdown
+    async function submitResolveBreakdown(e) {
+        e.preventDefault();
+        const id = document.getElementById('resolve-breakdown-id').value;
+        const payload = {
+            repair_datetime: document.getElementById('resolve-repair-time').value.trim(),
+            tat_duration: document.getElementById('resolve-tat').value.trim(),
+            sign_it_cell: document.getElementById('resolve-sign-it').value.trim()
+        };
+
+        try {
+            const response = await fetch(`/api/breakdown/resolve/${id}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert(`✅ Breakdown #${id} marked as resolved!`);
+                window.location.reload();
+            } else {
+                alert('Error: ' + (result.error || 'Could not resolve record.'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Connection error occurred while resolving breakdown.');
+        }
+    }
+
+    // Auto-fill Device Info from Central Inventory
+    function autoFillBreakdownDevice(val, mode) {
+        if (!val) return;
+        const datalist = document.getElementById('breakdown-device-datalist');
+        if (!datalist) return;
+        const options = Array.from(datalist.options);
+        const match = options.find(opt => opt.value.toLowerCase() === val.trim().toLowerCase());
+        if (match) {
+            const system = match.getAttribute('data-system') || '';
+            const user = match.getAttribute('data-user') || '';
+            const prefix = mode === 'edit' ? 'edit' : 'modal';
+            
+            const devSelect = document.getElementById(`${prefix}-device-name`);
+            if (devSelect && system) {
+                const sysLower = system.toLowerCase();
+                if (sysLower.includes('monitor')) devSelect.value = 'Monitor';
+                else if (sysLower.includes('printer') && sysLower.includes('barcode')) devSelect.value = 'Barcode Printer';
+                else if (sysLower.includes('printer')) devSelect.value = 'Laser Printer';
+                else if (sysLower.includes('ups')) devSelect.value = 'UPS';
+                else if (sysLower.includes('keyboard')) devSelect.value = 'Keyboard';
+                else if (sysLower.includes('mouse')) devSelect.value = 'Mouse';
+                else if (sysLower.includes('scanner')) devSelect.value = 'Scanner';
+                else if (sysLower.includes('cpu') || sysLower.includes('pc') || sysLower.includes('computer') || sysLower.includes('workstation')) devSelect.value = 'CPU';
+            }
+
+            const hodInput = document.getElementById(`${prefix}-dept-hod`);
+            if (hodInput && !hodInput.value && user) {
+                hodInput.value = user;
+            }
+
+            const room = match.getAttribute('data-room') || '';
+            const locInput = document.getElementById(`${prefix}-location`);
+            if (locInput && !locInput.value && room) {
+                locInput.value = room;
+            }
+        }
+    }
+
+    // Open Breakdown Edit Modal
+    function openEditBreakdownModal(id) {
+        const row = document.getElementById(`breakdown-row-${id}`);
+        if (!row) return;
+
+        document.getElementById('edit-breakdown-id').value = id;
+        document.getElementById('edit-breakdown-subtitle').innerText = `Asset: ${row.getAttribute('data-asset')} • Incident #${id}`;
+
+        document.getElementById('edit-breakdown-date').value = row.getAttribute('data-bdate') || '';
+        document.getElementById('edit-breakdown-time').value = row.getAttribute('data-btime') || '';
+        document.getElementById('edit-asset-id').value = row.getAttribute('data-asset') || '';
+        document.getElementById('edit-device-name').value = row.getAttribute('data-device') || 'CPU';
+        if (document.getElementById('edit-location')) {
+            document.getElementById('edit-location').value = row.getAttribute('data-location') || '';
+        }
+        document.getElementById('edit-breakdown-cause').value = row.getAttribute('data-cause') || '';
+        document.getElementById('edit-equipment-type').value = row.getAttribute('data-type') || 'Routine';
+        document.getElementById('edit-status').value = row.getAttribute('data-status') || 'Under Repair';
+        document.getElementById('edit-dept-hod').value = row.getAttribute('data-dept-hod') || '';
+        document.getElementById('edit-it-staff').value = row.getAttribute('data-it-staff') || '';
+        document.getElementById('edit-intimation-datetime').value = row.getAttribute('data-intimation') || '';
+        document.getElementById('edit-checkin-datetime').value = row.getAttribute('data-checkin') || '';
+        document.getElementById('edit-repair-datetime').value = row.getAttribute('data-repair') || '';
+        document.getElementById('edit-tat').value = row.getAttribute('data-tat') || '';
+        document.getElementById('edit-sign-hod').value = row.getAttribute('data-sign-hod') || '';
+        document.getElementById('edit-sign-it').value = row.getAttribute('data-sign-it') || '';
+
+        document.getElementById('modal-edit-breakdown').classList.remove('hidden');
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+    }
+
+    // Close Breakdown Edit Modal
+    function closeEditBreakdownModal() {
+        document.getElementById('modal-edit-breakdown').classList.add('hidden');
+    }
+
+    // Submit Edit Breakdown
+    async function submitEditBreakdown(e) {
+        e.preventDefault();
+        const id = document.getElementById('edit-breakdown-id').value;
+        const payload = {
+            breakdown_date: document.getElementById('edit-breakdown-date').value.trim(),
+            breakdown_time: document.getElementById('edit-breakdown-time').value.trim(),
+            asset_id: document.getElementById('edit-asset-id').value.trim(),
+            device_name: document.getElementById('edit-device-name').value,
+            location: document.getElementById('edit-location') ? document.getElementById('edit-location').value.trim() : '',
+            breakdown_cause: document.getElementById('edit-breakdown-cause').value.trim(),
+            equipment_type: document.getElementById('edit-equipment-type').value,
+            status: document.getElementById('edit-status').value,
+            dept_hod_name: document.getElementById('edit-dept-hod').value.trim(),
+            it_staff_name: document.getElementById('edit-it-staff').value.trim(),
+            intimation_datetime: document.getElementById('edit-intimation-datetime').value.trim(),
+            checkin_datetime: document.getElementById('edit-checkin-datetime').value.trim(),
+            repair_datetime: document.getElementById('edit-repair-datetime').value.trim(),
+            tat_duration: document.getElementById('edit-tat').value.trim(),
+            sign_dept_hod: document.getElementById('edit-sign-hod').value.trim(),
+            sign_it_cell: document.getElementById('edit-sign-it').value.trim()
+        };
+
+        try {
+            const response = await fetch(`/api/breakdown/update/${id}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert(`✅ Incident #${id} updated successfully!`);
+                window.location.reload();
+            } else {
+                alert('Error: ' + (result.error || 'Failed to update record.'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Connection error occurred while updating breakdown incident.');
+        }
+    }
+
+    // Delete Breakdown Incident
+    async function deleteBreakdownRecord(id, assetId) {
+        if (!confirm(`Are you sure you want to permanently delete Breakdown Incident #${id} for Asset "${assetId}"?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/breakdown/delete/${id}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert(`🗑️ Breakdown incident #${id} deleted.`);
+                window.location.reload();
+            } else {
+                alert('Error: ' + (result.error || 'Could not delete incident.'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Connection error occurred while deleting incident.');
+        }
+    }
+
+    // Export Sheet (CSV)
+    function exportBreakdownCSV() {
+        const rows = document.querySelectorAll('#breakdown-master-table tr');
+        let csv = [];
+
+        csv.push([
+            "Sr. No.",
+            "Breakdown Date",
+            "Breakdown Time",
+            "Instrument/Equipment name",
+            "Location",
+            "Breakdown Cause",
+            "Type of equipment Critical/routine",
+            "Status",
+            "Intimation date & time to Bio Medical Engineer",
+            "Checkin Date & Time",
+            "Name of Departmental HOD",
+            "Name of BME staff",
+            "Repair Date & Time",
+            "Total Turn around time (TAT)",
+            "Sign of Departmental HOD",
+            "Sign of BME staff"
+        ]);
+
+        document.querySelectorAll('.breakdown-row').forEach((row, index) => {
+            if (!row.classList.contains('hidden')) {
+                const cols = row.querySelectorAll('td');
+                csv.push([
+                    index + 1,
+                    cols[1].innerText.trim(),
+                    cols[2].innerText.trim(),
+                    cols[3].innerText.replace(/\n/g, ' ').trim(),
+                    cols[4].innerText.trim(),
+                    cols[5].innerText.trim(),
+                    cols[6].innerText.trim(),
+                    cols[7].innerText.trim(),
+                    cols[8].innerText.trim(),
+                    cols[9].innerText.trim(),
+                    cols[10].innerText.trim(),
+                    cols[11].innerText.trim(),
+                    cols[12].innerText.trim(),
+                    cols[13].innerText.trim(),
+                    cols[14].innerText.trim(),
+                    cols[15].innerText.trim()
+                ]);
+            }
+        });
+
+        let csvContent = "data:text/csv;charset=utf-8," + csv.map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+        let encodedUri = encodeURI(csvContent);
+        let link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Equipment_Breakdown_Register_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // ==========================================
+    // EXCEL IMPORT & TEMPLATE EXPORT LOGIC
+    // ==========================================
+    let selectedExcelFile = null;
+    let parsedExcelRows = [];
+
+    function openExcelImportModal() {
+        const addModal = document.getElementById('modal-add-breakdown');
+        if (addModal && !addModal.classList.contains('hidden')) {
+            addModal.classList.add('hidden');
+        }
+        clearSelectedExcelFile();
+        document.getElementById('modal-import-excel').classList.remove('hidden');
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+    }
+
+    function closeExcelImportModal() {
+        document.getElementById('modal-import-excel').classList.add('hidden');
+        clearSelectedExcelFile();
+    }
+
+    function clearSelectedExcelFile() {
+        selectedExcelFile = null;
+        parsedExcelRows = [];
+        const fileInput = document.getElementById('excel-file-input');
+        if (fileInput) fileInput.value = '';
+        
+        const fileInfo = document.getElementById('excel-file-info');
+        if (fileInfo) fileInfo.classList.add('hidden');
+        
+        const dropzone = document.getElementById('excel-dropzone');
+        if (dropzone) dropzone.classList.remove('hidden');
+
+        const btn = document.getElementById('btn-confirm-import');
+        if (btn) btn.disabled = true;
+
+        const statusEl = document.getElementById('excel-import-status');
+        if (statusEl) {
+            statusEl.className = 'hidden p-3 rounded-xl text-xs font-semibold';
+            statusEl.innerHTML = '';
+        }
+    }
+
+    // Drag and Drop listeners on Excel dropzone
+    document.addEventListener('DOMContentLoaded', () => {
+        const dropzoneEl = document.getElementById('excel-dropzone');
+        if (dropzoneEl) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzoneEl.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzoneEl.classList.add('border-emerald-500', 'bg-emerald-50/50');
+                }, false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzoneEl.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzoneEl.classList.remove('border-emerald-500', 'bg-emerald-50/50');
+                }, false);
+            });
+            dropzoneEl.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files.length > 0) {
+                    handleExcelFileInput(files);
+                }
+            });
+        }
+    });
+
+    function handleExcelFileInput(files) {
+        if (!files || files.length === 0) return;
+        const file = files[0];
+        const validExtensions = ['.xlsx', '.xls', '.csv'];
+        const fileName = file.name.toLowerCase();
+        const isValid = validExtensions.some(ext => fileName.endsWith(ext));
+
+        if (!isValid) {
+            alert('Please select a valid Excel (.xlsx, .xls) or CSV (.csv) file.');
+            return;
+        }
+
+        selectedExcelFile = file;
+
+        // Display detected file info
+        document.getElementById('excel-file-name').innerText = file.name;
+        const sizeKB = (file.size / 1024).toFixed(1);
+        document.getElementById('excel-file-meta').innerText = `${sizeKB} KB • Analyzing rows...`;
+        document.getElementById('excel-dropzone').classList.add('hidden');
+        document.getElementById('excel-file-info').classList.remove('hidden');
+
+        // Parse file using SheetJS for instant preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                if (typeof XLSX !== 'undefined') {
+                    const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {defval: ''});
+                    parsedExcelRows = jsonData;
+
+                    renderExcelPreview(jsonData, sizeKB);
+                } else {
+                    document.getElementById('excel-file-meta').innerText = `${sizeKB} KB • Ready for server import`;
+                    document.getElementById('btn-confirm-import').disabled = false;
+                }
+            } catch (err) {
+                console.error('SheetJS parse error:', err);
+                document.getElementById('excel-file-meta').innerText = `${sizeKB} KB • Ready for server processing`;
+                document.getElementById('btn-confirm-import').disabled = false;
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function renderExcelPreview(rows, sizeKB) {
+        const tbody = document.getElementById('excel-preview-tbody');
+        tbody.innerHTML = '';
+
+        if (!rows || rows.length === 0) {
+            document.getElementById('excel-file-meta').innerText = `${sizeKB} KB • 0 valid records found`;
+            document.getElementById('btn-confirm-import').disabled = true;
+            return;
+        }
+
+        document.getElementById('excel-file-meta').innerText = `${sizeKB} KB • ${rows.length} breakdown record(s) detected`;
+        document.getElementById('btn-confirm-import').disabled = false;
+
+        const previewRows = rows.slice(0, 5);
+        previewRows.forEach(r => {
+            const tr = document.createElement('tr');
+            
+            const getVal = (aliases, fallback) => {
+                const lower = {};
+                Object.keys(r).forEach(k => lower[k.toLowerCase().trim()] = r[k]);
+                for (let a of aliases) {
+                    if (lower[a.toLowerCase()] !== undefined && lower[a.toLowerCase()] !== '') {
+                        return lower[a.toLowerCase()];
+                    }
+                }
+                return fallback || '-';
+            };
+
+            const asset = getVal(['asset id', 'asset_id', 'it asset id', 'asset no', 'instrument / equipment name'], 'Auto-assign');
+            const device = getVal(['device name', 'device_name', 'device', 'instrument name'], 'CPU');
+            const loc = getVal(['location', 'room', 'room / location', 'department', 'dept', 'ward'], '-');
+            const dt = getVal(['breakdown date', 'date', 'breakdown_date'], 'Today');
+            const type = getVal(['equipment type', 'type of equipment critical/routine', 'type'], 'Routine');
+            const hod = getVal(['dept hod name', 'name of departmental hod', 'hod name'], 'HOD');
+
+            tr.innerHTML = `
+                <td class="p-1.5 font-bold text-slate-800">${asset}</td>
+                <td class="p-1.5 text-slate-600">${device}</td>
+                <td class="p-1.5 text-slate-600 truncate max-w-[100px]">${loc}</td>
+                <td class="p-1.5 text-slate-600">${dt}</td>
+                <td class="p-1.5 font-semibold ${String(type).toLowerCase().includes('crit') ? 'text-rose-600' : 'text-slate-600'}">${type}</td>
+                <td class="p-1.5 text-slate-600 truncate max-w-[100px]">${hod}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+    }
+
+    async function submitExcelImport() {
+        if (!selectedExcelFile) return;
+
+        const btn = document.getElementById('btn-confirm-import');
+        const btnText = document.getElementById('btn-import-text');
+        const statusEl = document.getElementById('excel-import-status');
+
+        btn.disabled = true;
+        btnText.innerText = 'Importing...';
+        statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 block';
+        statusEl.innerHTML = '<span class="inline-block animate-pulse mr-1">⏳</span> Processing and registering records in database...';
+
+        const formData = new FormData();
+        formData.append('file', selectedExcelFile);
+
+        try {
+            const resp = await fetch('/api/breakdown/import-excel/', {
+                method: 'POST',
+                body: formData
+            });
+
+            const res = await resp.json();
+
+            if (res.success) {
+                statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300 block';
+                statusEl.innerHTML = `✅ ${res.message || 'Successfully imported breakdown records!'}`;
+                btnText.innerText = 'Done!';
+
+                setTimeout(() => {
+                    closeExcelImportModal();
+                    window.location.reload();
+                }, 1000);
+            } else {
+                statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 block';
+                statusEl.innerHTML = `❌ Error: ${res.error || 'Failed to import spreadsheet.'}`;
+                btn.disabled = false;
+                btnText.innerText = 'Try Again';
+            }
+        } catch (err) {
+            console.error('Import error:', err);
+            statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 block';
+            statusEl.innerHTML = `❌ Server network error: ${err.message}`;
+            btn.disabled = false;
+            btnText.innerText = 'Import to Table';
+        }
+    }
+
+    function downloadExcelTemplate() {
+        const headers = [
+            "Breakdown Date",
+            "Breakdown Time",
+            "Asset ID",
+            "Device Name",
+            "Location",
+            "Breakdown Cause",
+            "Equipment Type",
+            "Intimation DateTime",
+            "Checkin DateTime",
+            "Dept HOD Name",
+            "IT Staff Name",
+            "Repair DateTime",
+            "TAT Duration",
+            "Sign Dept HOD",
+            "Sign IT Cell",
+            "Status"
+        ];
+
+        const sampleRows = [
+            [
+                "26/07/2022",
+                "10:15",
+                "KH/IT/COMPUTER/1",
+                "CPU",
+                "Computer Lab 101, Academic Block",
+                "System boot error and corrupted RAM module",
+                "Routine",
+                "26/07/2022 10:30",
+                "26/07/2022 10:45",
+                "Dr. Vikram Sharma",
+                "Amit Verma",
+                "26/07/2022 11:30",
+                "45 minutes",
+                "Dr. Vikram Sharma",
+                "Amit Verma",
+                "Resolved"
+            ],
+            [
+                "27/07/2022",
+                "14:20",
+                "HOSP-ICU-00042",
+                "Monitor",
+                "ICU Ward 204, Hospital Block",
+                "Display flicker during ICU patient monitoring",
+                "Critical",
+                "27/07/2022 14:25",
+                "27/07/2022 14:35",
+                "Dr. Priya Patel",
+                "Vikram Chauhan",
+                "",
+                "",
+                "Dr. Priya Patel",
+                "Vikram Chauhan",
+                "Under Repair"
+            ],
+            [
+                "28/07/2022",
+                "09:10",
+                "IT-LSR-0089",
+                "Laser Printer",
+                "Admin Block, Ground Floor",
+                "Toner drum jam and roller feed slip",
+                "Routine",
+                "28/07/2022 09:15",
+                "28/07/2022 09:30",
+                "Prof. R. K. Nair",
+                "Amit Verma",
+                "28/07/2022 10:10",
+                "40 minutes",
+                "Prof. R. K. Nair",
+                "Amit Verma",
+                "Resolved"
+            ]
+        ];
+
+        if (typeof XLSX !== 'undefined') {
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
+            ws['!cols'] = [
+                {wch: 16}, {wch: 14}, {wch: 20}, {wch: 16}, {wch: 28}, {wch: 36},
+                {wch: 16}, {wch: 22}, {wch: 22}, {wch: 22}, {wch: 18},
+                {wch: 22}, {wch: 16}, {wch: 20}, {wch: 18}, {wch: 14}
+            ];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Breakdown_Register");
+            XLSX.writeFile(wb, "Equipment_Breakdown_Template.xlsx");
+        } else {
+            const csvRows = [headers, ...sampleRows];
+            let csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+            let encodedUri = encodeURI(csvContent);
+            let link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Equipment_Breakdown_Template.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+</script>
+{% endblock %}

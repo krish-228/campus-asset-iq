@@ -1,0 +1,1020 @@
+// Sample Data for PSM Hospital Device Tracker
+// Exclusively configured for PSM Hospital Healthcare Facility (Single Facility, 7 Levels: Basement, Ground Floor, and 5 Upper Clinical Floors).
+
+const INITIAL_SAMPLE_DATA = {
+    organizations: [
+        { id: "HOSP", name: "PSM Hospital", type: "Healthcare", color: "emerald" }
+    ],
+
+    buildings: [
+        // PSM Hospital Single Facility Complex
+        { id: "bldg-hosp-main", orgId: "HOSP", name: "PSM Hospital Main Medical Complex", code: "PSM-MAIN" }
+    ],
+
+    floors: [
+        // 7 Facility Levels: Basement (-1), Ground (0), 1st to 5th Floors (1..5)
+        { 
+            id: "fl-basement", 
+            buildingId: "bldg-hosp-main", 
+            name: "Basement Floor (Biomedical & IT Server Hub)", 
+            shortName: "Basement", 
+            code: "B", 
+            number: -1, 
+            icon: "server", 
+            dept: "Biomedical Engineering Workshop, Telemetry Hub & Central Stores" 
+        },
+        { 
+            id: "fl-gf", 
+            buildingId: "bldg-hosp-main", 
+            name: "Ground Floor (Emergency, Triage & Radiology)", 
+            shortName: "Ground Floor", 
+            code: "GF", 
+            number: 0, 
+            icon: "ambulance", 
+            dept: "Emergency & Trauma Triage, Registration, Billing & Radiology Imaging" 
+        },
+        { 
+            id: "fl-1", 
+            buildingId: "bldg-hosp-main", 
+            name: "1st Floor (Outpatient Department - OPD)", 
+            shortName: "1st Floor", 
+            code: "1F", 
+            number: 1, 
+            icon: "stethoscope", 
+            dept: "Specialist Consultation Clinics, Doctor Cabins & Central Pharmacy" 
+        },
+        { 
+            id: "fl-2", 
+            buildingId: "bldg-hosp-main", 
+            name: "2nd Floor (ICU Complex & Critical Care)", 
+            shortName: "2nd Floor", 
+            code: "2F", 
+            number: 2, 
+            icon: "heart-pulse", 
+            dept: "Intensive Care Units (ICU/CCU), Bedside Monitoring & Central Nursing Hub" 
+        },
+        { 
+            id: "fl-3", 
+            buildingId: "bldg-hosp-main", 
+            name: "3rd Floor (Operation Theatres & PACU)", 
+            shortName: "3rd Floor", 
+            code: "3F", 
+            number: 3, 
+            icon: "scissors", 
+            dept: "Modular Surgical Theatres (OT-1, OT-2) & Post-Anesthesia Recovery (PACU)" 
+        },
+        { 
+            id: "fl-4", 
+            buildingId: "bldg-hosp-main", 
+            name: "4th Floor (Inpatient Deluxe & Medical Wards)", 
+            shortName: "4th Floor", 
+            code: "4F", 
+            number: 4, 
+            icon: "bed", 
+            dept: "Inpatient Care Suites, Deluxe Recovery Rooms & Step-Down Telemetry" 
+        },
+        { 
+            id: "fl-5", 
+            buildingId: "bldg-hosp-main", 
+            name: "5th Floor (Pathology Labs & Blood Bank)", 
+            shortName: "5th Floor", 
+            code: "5F", 
+            number: 5, 
+            icon: "microscope", 
+            dept: "Clinical Biochemistry, Automated Hematology, Blood Bank & Medical Admin" 
+        }
+    ],
+
+    rooms: [
+        // Basement Rooms
+        { id: "rm-bme-lab", floorId: "fl-basement", roomNumber: "B-01", name: "Biomedical Engineering Workshop", type: "Engineering Lab" },
+        { id: "rm-server-room", floorId: "fl-basement", roomNumber: "B-02", name: "Hospital IT Server & Telemetry Hub", type: "Server Hub" },
+
+        // Ground Floor Rooms
+        { id: "rm-hosp-triage", floorId: "fl-gf", roomNumber: "G-01", name: "Emergency & Trauma Triage Desk 01", type: "Emergency Station" },
+        { id: "rm-diag-ct", floorId: "fl-gf", roomNumber: "G-02", name: "CT / MRI Diagnostic Console 01", type: "Medical Imaging" },
+        { id: "rm-diag-xray", floorId: "fl-gf", roomNumber: "G-03", name: "Digital X-Ray Diagnostic Station", type: "Diagnostic Room" },
+
+        // 1st Floor Rooms (OPD)
+        { id: "rm-opd-c1", floorId: "fl-1", roomNumber: "101", name: "OPD Consultation Room 104", type: "Doctor Cabin" },
+        { id: "rm-opd-bill", floorId: "fl-1", roomNumber: "102", name: "OPD Registration & Billing 02", type: "Billing Counter" },
+        { id: "rm-pharmacy", floorId: "fl-1", roomNumber: "103", name: "Central Hospital Pharmacy Counter", type: "Pharmacy Desk" },
+
+        // 2nd Floor Rooms (ICU)
+        { id: "rm-hosp-icu1", floorId: "fl-2", roomNumber: "201", name: "ICU Bedside Monitoring Pod A", type: "Critical Care" },
+        { id: "rm-hosp-icu2", floorId: "fl-2", roomNumber: "202", name: "ICU Central Nursing Telemetry Station", type: "Nurse Station" },
+
+        // 3rd Floor Rooms (OT)
+        { id: "rm-ot-1", floorId: "fl-3", roomNumber: "301", name: "Modular Operation Theatre OT-1", type: "Surgical Theatre" },
+        { id: "rm-pacu", floorId: "fl-3", roomNumber: "302", name: "PACU Post-Anesthesia Recovery Hub", type: "Recovery Ward" },
+
+        // 4th Floor Rooms (Inpatient Wards)
+        { id: "rm-ward-4a", floorId: "fl-4", roomNumber: "401", name: "Inpatient Deluxe Ward Station 4A", type: "Inpatient Ward" },
+        { id: "rm-stepdown", floorId: "fl-4", roomNumber: "402", name: "Step-Down Telemetry Desk", type: "Monitoring Desk" },
+
+        // 5th Floor Rooms (Pathology & Blood Bank)
+        { id: "rm-path-bio", floorId: "fl-5", roomNumber: "501", name: "Automated Biochemistry Analyzer Desk", type: "Medical Lab" },
+        { id: "rm-blood-bank", floorId: "fl-5", roomNumber: "502", name: "Central Blood Bank & Cryo-Storage", type: "Blood Bank" }
+    ],
+
+    users: [
+        {
+            id: "usr-dr-sharma",
+            empId: "MED-00042",
+            fullName: "Dr. Vikram Sharma",
+            orgId: "HOSP",
+            department: "Emergency & Critical Care",
+            designation: "Chief Intensivist / HOD",
+            email: "vikram.sharma@hospital.org",
+            phone: "9811223344",
+            status: "Active"
+        },
+        {
+            id: "usr-nurse-kavita",
+            empId: "MED-00115",
+            fullName: "Kavita Nair",
+            orgId: "HOSP",
+            department: "ICU Nursing",
+            designation: "Senior Nursing Officer",
+            email: "kavita.nair@hospital.org",
+            phone: "9877001122",
+            status: "Active"
+        },
+        {
+            id: "usr-dr-mehta",
+            empId: "MED-00078",
+            fullName: "Dr. Aarti Mehta",
+            orgId: "HOSP",
+            department: "Radiology",
+            designation: "Consultant Radiologist",
+            email: "aarti.mehta@hospital.org",
+            phone: "9900112233",
+            status: "Active"
+        },
+        {
+            id: "usr-triage-nurse",
+            empId: "MED-00142",
+            fullName: "Staff Nurse Rekha",
+            orgId: "HOSP",
+            department: "Emergency & Trauma Care",
+            designation: "Emergency Triage Officer",
+            email: "rekha.menon@hospital.org",
+            phone: "9811442200",
+            status: "Active"
+        },
+        {
+            id: "usr-bill-exec",
+            empId: "MED-00205",
+            fullName: "Ramesh Patel",
+            orgId: "HOSP",
+            department: "Patient Billing & Registration",
+            designation: "Senior Billing Executive",
+            email: "ramesh.patel@hospital.org",
+            phone: "9866554433",
+            status: "Active"
+        },
+        {
+            id: "usr-xray-tech",
+            empId: "MED-00188",
+            fullName: "Suresh Verma",
+            orgId: "HOSP",
+            department: "Radiology & Imaging",
+            designation: "Chief Radiographer",
+            email: "suresh.verma@hospital.org",
+            phone: "9877889900",
+            status: "Active"
+        },
+        {
+            id: "usr-path-lead",
+            empId: "MED-00064",
+            fullName: "Dr. Pooja Iyer",
+            orgId: "HOSP",
+            department: "Central Pathology",
+            designation: "Chief Clinical Pathologist",
+            email: "pooja.iyer@hospital.org",
+            phone: "9822334455",
+            status: "Active"
+        },
+        {
+            id: "usr-biomed-lead",
+            empId: "MED-00030",
+            fullName: "Er. Rajesh Kulkarni",
+            orgId: "HOSP",
+            department: "Biomedical Engineering",
+            designation: "Chief Biomedical Engineer",
+            email: "rajesh.bme@hospital.org",
+            phone: "9844001122",
+            status: "Active"
+        },
+        {
+            id: "usr-dr-joshi",
+            empId: "MED-00055",
+            fullName: "Dr. Ananya Joshi",
+            orgId: "HOSP",
+            department: "Surgical Sciences & OT",
+            designation: "Senior Consultant Surgeon / OT Incharge",
+            email: "ananya.joshi@hospital.org",
+            phone: "9833445566",
+            status: "Active"
+        },
+        {
+            id: "usr-ward-nurse",
+            empId: "MED-00164",
+            fullName: "Sister Priya Nair",
+            orgId: "HOSP",
+            department: "Inpatient Care & Deluxe Wards",
+            designation: "Senior Ward Incharge",
+            email: "priya.ward@hospital.org",
+            phone: "9844556677",
+            status: "Active"
+        }
+    ],
+
+    devices: [
+        // ==========================================
+        // BASEMENT FLOOR (Level -1) — Code: 0.01
+        // ==========================================
+        {
+            id: "dev-bme-01",
+            assetId: "PSM/IT/B/C-0.01",
+            deviceType: "C",
+            serialNumber: "SN-HP-DL380-15",
+            orgId: "HOSP",
+            roomId: "rm-bme-lab",
+            assignedUserId: "usr-biomed-lead",
+            monitorSpec: "HP 24\" Cleanable Industrial Console",
+            cpuProcessor: "Intel Xeon E-2388G (8 cores, 5.1 GHz)",
+            storageRam: "2TB Enterprise NVMe / 64GB ECC RAM",
+            ipAddress: "10.20.0.15",
+            macAddress: "A0-36-9F-12-88-01",
+            operatingSystem: "Windows Server 2022 Datacenter",
+            purchaseDate: "10-Feb-2024",
+            warrantyExpiryDate: "09-Feb-2029",
+            status: "Active"
+        },
+        {
+            id: "dev-bme-m01",
+            assetId: "PSM/IT/B/M-0.01",
+            deviceType: "M",
+            serialNumber: "SN-LOGI-BME-01",
+            orgId: "HOSP",
+            roomId: "rm-bme-lab",
+            assignedUserId: "usr-biomed-lead",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "Logitech Optical Sensor (1000 DPI)",
+            storageRam: "USB Plug-and-Play / 1.8m Shielded Cable",
+            ipAddress: "10.20.0.16",
+            macAddress: "A0-36-9F-12-88-02",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "10-Feb-2024",
+            warrantyExpiryDate: "09-Feb-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-bme-k01",
+            assetId: "PSM/IT/B/K-0.01",
+            deviceType: "K",
+            serialNumber: "SN-SEAL-KB-01",
+            orgId: "HOSP",
+            roomId: "rm-bme-lab",
+            assignedUserId: "usr-biomed-lead",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "IP68 Waterproof Silicone Membrane Controller",
+            storageRam: "USB Cleanable Keyboard / Antimicrobial",
+            ipAddress: "10.20.0.17",
+            macAddress: "A0-36-9F-12-88-03",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "10-Feb-2024",
+            warrantyExpiryDate: "09-Feb-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-bme-p01",
+            assetId: "PSM/IT/B/P-0.01",
+            deviceType: "P",
+            serialNumber: "SN-ZEBRA-ZD421-B1",
+            orgId: "HOSP",
+            roomId: "rm-server-room",
+            assignedUserId: "usr-biomed-lead",
+            monitorSpec: "LED Status Matrix Panel",
+            cpuProcessor: "ARM Cortex-A7 32-bit RISC Engine",
+            storageRam: "512GB Flash / 256MB SDRAM / Direct Thermal 203 DPI",
+            ipAddress: "10.20.0.18",
+            macAddress: "A0-36-9F-12-88-04",
+            operatingSystem: "Link-OS Enterprise",
+            purchaseDate: "10-Feb-2024",
+            warrantyExpiryDate: "09-Feb-2029",
+            status: "Active"
+        },
+
+        // ==========================================
+        // GROUND FLOOR (Level 0) — Code: 001..004
+        // ==========================================
+        {
+            id: "dev-22",
+            assetId: "PSM/IT/GF/C-001",
+            deviceType: "C",
+            serialNumber: "SN-HP-ED800-11",
+            orgId: "HOSP",
+            roomId: "rm-hosp-triage",
+            assignedUserId: "usr-triage-nurse",
+            monitorSpec: "HP Healthcare Edition HC241 24\" Cleanable",
+            cpuProcessor: "Intel Core i5-10500 (6 cores, 3.1 GHz)",
+            storageRam: "512GB SSD / 16GB DDR4",
+            ipAddress: "10.20.10.11",
+            macAddress: "B4-2E-99-12-34-56",
+            operatingSystem: "Windows 11 Pro Medical Edition",
+            purchaseDate: "12-May-2024",
+            warrantyExpiryDate: "11-May-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-23",
+            assetId: "PSM/IT/GF/C-002",
+            deviceType: "C",
+            serialNumber: "SN-ZEBRA-TC52-01",
+            orgId: "HOSP",
+            roomId: "rm-hosp-triage",
+            assignedUserId: null,
+            monitorSpec: "5.0\" HD Antimicrobial Glove-Touch Display",
+            cpuProcessor: "Qualcomm Snapdragon 660 Octa-Core 2.2 GHz",
+            storageRam: "64GB Flash / 4GB RAM",
+            ipAddress: "10.20.10.12",
+            macAddress: "B4-2E-99-12-34-57",
+            operatingSystem: "Android 13 Enterprise",
+            purchaseDate: "12-May-2024",
+            warrantyExpiryDate: "11-May-2026",
+            status: "Active"
+        },
+        {
+            id: "dev-08",
+            assetId: "PSM/IT/GF/C-003",
+            deviceType: "C",
+            serialNumber: "SN-GE-MED-4410",
+            orgId: "HOSP",
+            roomId: "rm-diag-ct",
+            assignedUserId: "usr-dr-mehta",
+            monitorSpec: "Barco Coronis 3MP Diagnostic Grayscale Dual",
+            cpuProcessor: "Intel Xeon W-2245 (8 cores, 4.5 GHz)",
+            storageRam: "4TB NVMe RAID / 64GB ECC DDR4",
+            ipAddress: "10.20.30.18",
+            macAddress: "70-85-C2-91-88-00",
+            operatingSystem: "Windows 10 Enterprise LTSC",
+            purchaseDate: "10-Aug-2023",
+            warrantyExpiryDate: "09-Aug-2028",
+            status: "Active"
+        },
+        {
+            id: "dev-27",
+            assetId: "PSM/IT/GF/C-004",
+            deviceType: "C",
+            serialNumber: "SN-PHIL-XR-22",
+            orgId: "HOSP",
+            roomId: "rm-diag-xray",
+            assignedUserId: "usr-xray-tech",
+            monitorSpec: "Eizo Radiforce 3MP Grayscale Medical Diagnostic",
+            cpuProcessor: "Intel Core i7-11700 (8 cores, 4.9 GHz)",
+            storageRam: "1TB NVMe SSD + 2TB PACS Local / 32GB DDR4",
+            ipAddress: "10.20.30.22",
+            macAddress: "70-85-C2-91-88-22",
+            operatingSystem: "Windows 10 Enterprise LTSC",
+            purchaseDate: "15-Jul-2023",
+            warrantyExpiryDate: "14-Jul-2028",
+            status: "Active"
+        },
+        {
+            id: "dev-emg-m01",
+            assetId: "PSM/IT/GF/M-001",
+            deviceType: "M",
+            serialNumber: "SN-LOGI-EMG-01",
+            orgId: "HOSP",
+            roomId: "rm-hosp-triage",
+            assignedUserId: "usr-triage-nurse",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "Antimicrobial Optical Sensor (1200 DPI)",
+            storageRam: "USB Cleanable Wired Mouse",
+            ipAddress: "10.20.10.13",
+            macAddress: "B4-2E-99-12-34-60",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "12-May-2024",
+            warrantyExpiryDate: "11-May-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-emg-k01",
+            assetId: "PSM/IT/GF/K-001",
+            deviceType: "K",
+            serialNumber: "SN-SEAL-EMG-01",
+            orgId: "HOSP",
+            roomId: "rm-hosp-triage",
+            assignedUserId: "usr-triage-nurse",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "Silicone Sealed Membrane Keyboard",
+            storageRam: "USB Disinfectable Hospital Keyboard",
+            ipAddress: "10.20.10.14",
+            macAddress: "B4-2E-99-12-34-61",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "12-May-2024",
+            warrantyExpiryDate: "11-May-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-emg-p01",
+            assetId: "PSM/IT/GF/P-001",
+            deviceType: "P",
+            serialNumber: "SN-ZEBRA-HC100-G1",
+            orgId: "HOSP",
+            roomId: "rm-hosp-triage",
+            assignedUserId: "usr-triage-nurse",
+            monitorSpec: "Cartridge Status Display",
+            cpuProcessor: "Zebra ZPL-II Thermal Core Processor",
+            storageRam: "Patient ID Wristband 300 DPI Thermal Direct",
+            ipAddress: "10.20.10.15",
+            macAddress: "B4-2E-99-12-34-62",
+            operatingSystem: "Link-OS Enterprise",
+            purchaseDate: "12-May-2024",
+            warrantyExpiryDate: "11-May-2027",
+            status: "Active"
+        },
+
+        // ==========================================
+        // 1ST FLOOR (Level 1 - OPD & Pharmacy) — Code: 101..102
+        // ==========================================
+        {
+            id: "dev-09",
+            assetId: "PSM/IT/1F/C-101",
+            deviceType: "C",
+            serialNumber: "SN-DELL-OPD-104",
+            orgId: "HOSP",
+            roomId: "rm-opd-c1",
+            assignedUserId: "usr-dr-sharma",
+            monitorSpec: "HP 23.8\" All-In-One FHD Display",
+            cpuProcessor: "Intel Core i3-13100 (4 cores, 4.5 GHz)",
+            storageRam: "256GB SSD / 8GB DDR4",
+            ipAddress: "10.20.20.67",
+            macAddress: "90-B1-1C-54-32-11",
+            operatingSystem: "Windows 11 Pro",
+            purchaseDate: "18-Oct-2024",
+            warrantyExpiryDate: "17-Oct-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-26",
+            assetId: "PSM/IT/1F/C-102",
+            deviceType: "C",
+            serialNumber: "SN-LEN-NEO50-81",
+            orgId: "HOSP",
+            roomId: "rm-opd-bill",
+            assignedUserId: "usr-bill-exec",
+            monitorSpec: "Dual 21.5\" Countertop Display + Thermal Receipt Unit",
+            cpuProcessor: "Intel Core i5-12400 (6 cores, 4.4 GHz)",
+            storageRam: "512GB SSD / 16GB DDR4",
+            ipAddress: "10.20.20.81",
+            macAddress: "90-B1-1C-54-32-81",
+            operatingSystem: "Windows 11 Pro",
+            purchaseDate: "20-Sep-2024",
+            warrantyExpiryDate: "19-Sep-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-opd-m01",
+            assetId: "PSM/IT/1F/M-101",
+            deviceType: "M",
+            serialNumber: "SN-DELL-MS116-101",
+            orgId: "HOSP",
+            roomId: "rm-opd-c1",
+            assignedUserId: "usr-dr-sharma",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "Dell Optical LED Tracking (1000 DPI)",
+            storageRam: "USB Wired Standard Clinic Mouse",
+            ipAddress: "10.20.20.68",
+            macAddress: "90-B1-1C-54-32-12",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "18-Oct-2024",
+            warrantyExpiryDate: "17-Oct-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-opd-k01",
+            assetId: "PSM/IT/1F/K-101",
+            deviceType: "K",
+            serialNumber: "SN-DELL-KB216-101",
+            orgId: "HOSP",
+            roomId: "rm-opd-c1",
+            assignedUserId: "usr-dr-sharma",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "Dell Multimedia Chiclet Keyboard",
+            storageRam: "USB Wired Full-Size English Layout",
+            ipAddress: "10.20.20.69",
+            macAddress: "90-B1-1C-54-32-13",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "18-Oct-2024",
+            warrantyExpiryDate: "17-Oct-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-opd-p01",
+            assetId: "PSM/IT/1F/P-101",
+            deviceType: "P",
+            serialNumber: "SN-EPSON-TM88-101",
+            orgId: "HOSP",
+            roomId: "rm-pharmacy",
+            assignedUserId: "usr-bill-exec",
+            monitorSpec: "Receipt Status LED Indicator",
+            cpuProcessor: "Epson ESC/POS High-Speed Thermal Controller",
+            storageRam: "350mm/sec High-Speed Thermal Prescription Printer",
+            ipAddress: "10.20.20.95",
+            macAddress: "90-B1-1C-54-32-95",
+            operatingSystem: "ESC/POS Medical Network Print Server",
+            purchaseDate: "20-Sep-2024",
+            warrantyExpiryDate: "19-Sep-2027",
+            status: "Active"
+        },
+
+        // ==========================================
+        // 2ND FLOOR (Level 2 - ICU & Critical Care) — Code: 201..204
+        // ==========================================
+        {
+            id: "dev-06",
+            assetId: "PSM/IT/2F/C-201",
+            deviceType: "C",
+            serialNumber: "SN-MED-99321",
+            orgId: "HOSP",
+            roomId: "rm-hosp-icu1",
+            assignedUserId: "usr-dr-sharma",
+            monitorSpec: "Medical Grade Antimicrobial 24\" Touch Display",
+            cpuProcessor: "Intel Core i5-12500E (Fanless Medical Grade)",
+            storageRam: "512GB M.2 SSD / 16GB ECC RAM",
+            ipAddress: "10.20.10.42",
+            macAddress: "E4-54-E8-71-22-31",
+            operatingSystem: "Windows 11 Pro Medical Edition",
+            purchaseDate: "05-Jan-2025",
+            warrantyExpiryDate: "04-Jan-2030",
+            status: "Active"
+        },
+        {
+            id: "dev-24",
+            assetId: "PSM/IT/2F/C-202",
+            deviceType: "C",
+            serialNumber: "SN-MR-BV-45",
+            orgId: "HOSP",
+            roomId: "rm-hosp-icu1",
+            assignedUserId: null,
+            monitorSpec: "Mindray 12.1\" Touch Multi-parameter Medical Screen",
+            cpuProcessor: "Embedded Quad-Core Medical Grade SoC",
+            storageRam: "128GB eMMC / 8GB RAM",
+            ipAddress: "10.20.10.45",
+            macAddress: "E4-54-E8-71-22-35",
+            operatingSystem: "Embedded Medical OS",
+            purchaseDate: "05-Jan-2025",
+            warrantyExpiryDate: "04-Jan-2030",
+            status: "Active"
+        },
+        {
+            id: "dev-07",
+            assetId: "PSM/IT/2F/C-203",
+            deviceType: "C",
+            serialNumber: "SN-MED-99322",
+            orgId: "HOSP",
+            roomId: "rm-hosp-icu2",
+            assignedUserId: "usr-nurse-kavita",
+            monitorSpec: "Dual 24\" Dell Medical Display",
+            cpuProcessor: "Intel Core i5-13400 (10 cores)",
+            storageRam: "512GB SSD / 16GB DDR4",
+            ipAddress: "10.20.10.43",
+            macAddress: "E4-54-E8-71-22-32",
+            operatingSystem: "Windows 11 Pro",
+            purchaseDate: "05-Jan-2025",
+            warrantyExpiryDate: "04-Jan-2028",
+            status: "Active"
+        },
+        {
+            id: "dev-25",
+            assetId: "PSM/IT/2F/C-204",
+            deviceType: "C",
+            serialNumber: "SN-ADV-POC-49",
+            orgId: "HOSP",
+            roomId: "rm-hosp-icu2",
+            assignedUserId: "usr-nurse-kavita",
+            monitorSpec: "Advantech 24\" Antimicrobial Touch with Dual Battery",
+            cpuProcessor: "Intel Core i7-1185G7E (Fanless Medical Grade)",
+            storageRam: "512GB Industrial NVMe / 32GB RAM",
+            ipAddress: "10.20.10.49",
+            macAddress: "E4-54-E8-71-22-39",
+            operatingSystem: "Windows 11 IoT Enterprise",
+            purchaseDate: "08-Feb-2025",
+            warrantyExpiryDate: "07-Feb-2030",
+            status: "Active"
+        },
+        {
+            id: "dev-icu-m01",
+            assetId: "PSM/IT/2F/M-201",
+            deviceType: "M",
+            serialNumber: "SN-MED-MSE-201",
+            orgId: "HOSP",
+            roomId: "rm-hosp-icu2",
+            assignedUserId: "usr-nurse-kavita",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "IP68 Fully Sealed Washable Optical Sensor",
+            storageRam: "Silicone Sealed Clinical Mouse",
+            ipAddress: "10.20.10.44",
+            macAddress: "E4-54-E8-71-22-44",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "05-Jan-2025",
+            warrantyExpiryDate: "04-Jan-2028",
+            status: "Active"
+        },
+        {
+            id: "dev-icu-k01",
+            assetId: "PSM/IT/2F/K-201",
+            deviceType: "K",
+            serialNumber: "SN-MED-KBD-201",
+            orgId: "HOSP",
+            roomId: "rm-hosp-icu2",
+            assignedUserId: "usr-nurse-kavita",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "Antimicrobial Sealed Backlit Keyboard Controller",
+            storageRam: "Washable Medical Grade Keyboard",
+            ipAddress: "10.20.10.46",
+            macAddress: "E4-54-E8-71-22-46",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "05-Jan-2025",
+            warrantyExpiryDate: "04-Jan-2028",
+            status: "Active"
+        },
+        {
+            id: "dev-icu-p01",
+            assetId: "PSM/IT/2F/P-201",
+            deviceType: "P",
+            serialNumber: "SN-HP-LJ404-201",
+            orgId: "HOSP",
+            roomId: "rm-hosp-icu2",
+            assignedUserId: "usr-nurse-kavita",
+            monitorSpec: "2-Line Backlit LCD Display",
+            cpuProcessor: "HP 1200MHz Dual-Core Clinical Print Engine",
+            storageRam: "40 ppm Duplex Laser Telemetry Chart Printer",
+            ipAddress: "10.20.10.48",
+            macAddress: "E4-54-E8-71-22-48",
+            operatingSystem: "HP FutureSmart Firmware",
+            purchaseDate: "05-Jan-2025",
+            warrantyExpiryDate: "04-Jan-2028",
+            status: "Active"
+        },
+
+        // ==========================================
+        // 3RD FLOOR (Level 3 - Operation Theatres) — Code: 301
+        // ==========================================
+        {
+            id: "dev-ot-01",
+            assetId: "PSM/IT/3F/C-301",
+            deviceType: "C",
+            serialNumber: "SN-MIN-ANESTH-55",
+            orgId: "HOSP",
+            roomId: "rm-ot-1",
+            assignedUserId: "usr-dr-joshi",
+            monitorSpec: "Mindray 19\" High-Res Surgical Touch Display",
+            cpuProcessor: "Intel Core i7-11700E (Fanless Medical Controller)",
+            storageRam: "512GB Industrial SSD / 32GB ECC RAM",
+            ipAddress: "10.20.50.55",
+            macAddress: "00-1B-21-99-44-55",
+            operatingSystem: "Windows 11 IoT Enterprise Medical",
+            purchaseDate: "14-Mar-2024",
+            warrantyExpiryDate: "13-Mar-2029",
+            status: "Active"
+        },
+        {
+            id: "dev-ot-m01",
+            assetId: "PSM/IT/3F/M-301",
+            deviceType: "M",
+            serialNumber: "SN-SURG-MSE-301",
+            orgId: "HOSP",
+            roomId: "rm-ot-1",
+            assignedUserId: "usr-dr-joshi",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "Hermetically Sealed Autoclavable Optical Sensor",
+            storageRam: "IP68 Sterilizable Surgical Mouse",
+            ipAddress: "10.20.50.56",
+            macAddress: "00-1B-21-99-44-56",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "14-Mar-2024",
+            warrantyExpiryDate: "13-Mar-2029",
+            status: "Active"
+        },
+        {
+            id: "dev-ot-k01",
+            assetId: "PSM/IT/3F/K-301",
+            deviceType: "K",
+            serialNumber: "SN-SURG-KBD-301",
+            orgId: "HOSP",
+            roomId: "rm-ot-1",
+            assignedUserId: "usr-dr-joshi",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "Integrated Touchpad Silicone Controller",
+            storageRam: "Autoclavable Medical Keyboard with Integrated Touchpad",
+            ipAddress: "10.20.50.57",
+            macAddress: "00-1B-21-99-44-57",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "14-Mar-2024",
+            warrantyExpiryDate: "13-Mar-2029",
+            status: "Active"
+        },
+        {
+            id: "dev-ot-p01",
+            assetId: "PSM/IT/3F/P-301",
+            deviceType: "P",
+            serialNumber: "SN-SONY-UPDR80-301",
+            orgId: "HOSP",
+            roomId: "rm-pacu",
+            assignedUserId: "usr-dr-joshi",
+            monitorSpec: "Color Calibration LCD Screen",
+            cpuProcessor: "Sony Dye-Sublimation High-Definition Imaging Engine",
+            storageRam: "300 DPI Medical Endoscopy Photographic Print Engine",
+            ipAddress: "10.20.50.60",
+            macAddress: "00-1B-21-99-44-60",
+            operatingSystem: "Medical Imaging Direct Driver",
+            purchaseDate: "14-Mar-2024",
+            warrantyExpiryDate: "13-Mar-2029",
+            status: "Active"
+        },
+
+        // ==========================================
+        // 4TH FLOOR (Level 4 - Inpatient Deluxe Wards) — Code: 401
+        // ==========================================
+        {
+            id: "dev-ward-01",
+            assetId: "PSM/IT/4F/C-401",
+            deviceType: "C",
+            serialNumber: "SN-HP-PD600-72",
+            orgId: "HOSP",
+            roomId: "rm-ward-4a",
+            assignedUserId: "usr-ward-nurse",
+            monitorSpec: "HP 23.8\" Antimicrobial Cleanable Display",
+            cpuProcessor: "Intel Core i5-12500 (6 cores, 4.6 GHz)",
+            storageRam: "512GB SSD / 16GB DDR4",
+            ipAddress: "10.20.60.72",
+            macAddress: "B4-2E-99-44-66-72",
+            operatingSystem: "Windows 11 Pro",
+            purchaseDate: "18-Aug-2024",
+            warrantyExpiryDate: "17-Aug-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-wrd-m01",
+            assetId: "PSM/IT/4F/M-401",
+            deviceType: "M",
+            serialNumber: "SN-HP-M100-401",
+            orgId: "HOSP",
+            roomId: "rm-ward-4a",
+            assignedUserId: "usr-ward-nurse",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "HP Ergonomic Optical Tracking (1200 DPI)",
+            storageRam: "USB Cleanable Clinic Mouse",
+            ipAddress: "10.20.60.73",
+            macAddress: "B4-2E-99-44-66-73",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "18-Aug-2024",
+            warrantyExpiryDate: "17-Aug-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-wrd-k01",
+            assetId: "PSM/IT/4F/K-401",
+            deviceType: "K",
+            serialNumber: "SN-HP-K100-401",
+            orgId: "HOSP",
+            roomId: "rm-ward-4a",
+            assignedUserId: "usr-ward-nurse",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "HP Healthcare Edition Antimicrobial Keyboard",
+            storageRam: "Spill-Resistant Membrane USB Keyboard",
+            ipAddress: "10.20.60.74",
+            macAddress: "B4-2E-99-44-66-74",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "18-Aug-2024",
+            warrantyExpiryDate: "17-Aug-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-wrd-p01",
+            assetId: "PSM/IT/4F/P-401",
+            deviceType: "P",
+            serialNumber: "SN-BR-L2350-401",
+            orgId: "HOSP",
+            roomId: "rm-ward-4a",
+            assignedUserId: "usr-ward-nurse",
+            monitorSpec: "Status LED Indicator Panel",
+            cpuProcessor: "Brother High-Efficiency Laser Processor",
+            storageRam: "32 ppm Duplex Ward Discharge Report Laser Printer",
+            ipAddress: "10.20.60.80",
+            macAddress: "B4-2E-99-44-66-80",
+            operatingSystem: "Brother Wireless Print Core",
+            purchaseDate: "18-Aug-2024",
+            warrantyExpiryDate: "17-Aug-2027",
+            status: "Active"
+        },
+
+        // ==========================================
+        // 5TH FLOOR (Level 5 - Pathology & Blood Bank) — Code: 501..502
+        // ==========================================
+        {
+            id: "dev-28",
+            assetId: "PSM/IT/5F/C-501",
+            deviceType: "C",
+            serialNumber: "SN-SIEMENS-ATELLICA-31",
+            orgId: "HOSP",
+            roomId: "rm-path-bio",
+            assignedUserId: "usr-path-lead",
+            monitorSpec: "Siemens 21.5\" Sealed Industrial Touchscreen",
+            cpuProcessor: "Intel Core i5-11500E (Fanless Industrial Controller)",
+            storageRam: "512GB Industrial M.2 SSD / 16GB ECC DDR4",
+            ipAddress: "10.20.40.31",
+            macAddress: "00-50-56-C0-00-31",
+            operatingSystem: "Windows 10 IoT LTSC",
+            purchaseDate: "11-Nov-2024",
+            warrantyExpiryDate: "10-Nov-2029",
+            status: "Active"
+        },
+        {
+            id: "dev-blood-01",
+            assetId: "PSM/IT/5F/C-502",
+            deviceType: "C",
+            serialNumber: "SN-DELL-OPT-88",
+            orgId: "HOSP",
+            roomId: "rm-blood-bank",
+            assignedUserId: "usr-path-lead",
+            monitorSpec: "Dell 24\" FHD Barcode-Scanner Integrated Display",
+            cpuProcessor: "Intel Core i5-13500 (14 cores, 4.8 GHz)",
+            storageRam: "512GB SSD / 16GB DDR5",
+            ipAddress: "10.20.40.88",
+            macAddress: "70-85-C2-44-88-88",
+            operatingSystem: "Windows 11 Pro",
+            purchaseDate: "22-Oct-2024",
+            warrantyExpiryDate: "21-Oct-2027",
+            status: "Active"
+        },
+        {
+            id: "dev-path-m01",
+            assetId: "PSM/IT/5F/M-501",
+            deviceType: "M",
+            serialNumber: "SN-LOGI-M100-501",
+            orgId: "HOSP",
+            roomId: "rm-path-bio",
+            assignedUserId: "usr-path-lead",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "Chemical-Resistant Optical Sensor (1000 DPI)",
+            storageRam: "Bleach-Cleanable Lab Workstation Mouse",
+            ipAddress: "10.20.40.32",
+            macAddress: "00-50-56-C0-00-32",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "11-Nov-2024",
+            warrantyExpiryDate: "10-Nov-2029",
+            status: "Active"
+        },
+        {
+            id: "dev-path-k01",
+            assetId: "PSM/IT/5F/K-501",
+            deviceType: "K",
+            serialNumber: "SN-MED-KB-501",
+            orgId: "HOSP",
+            roomId: "rm-path-bio",
+            assignedUserId: "usr-path-lead",
+            monitorSpec: "N/A - Peripherals",
+            cpuProcessor: "IP68 Chemical-Proof Silicone Membrane Keypad",
+            storageRam: "Sanitizable Pathology Lab Keyboard",
+            ipAddress: "10.20.40.33",
+            macAddress: "00-50-56-C0-00-33",
+            operatingSystem: "Hardware Peripheral (HID)",
+            purchaseDate: "11-Nov-2024",
+            warrantyExpiryDate: "10-Nov-2029",
+            status: "Active"
+        },
+        {
+            id: "dev-path-p01",
+            assetId: "PSM/IT/5F/P-501",
+            deviceType: "P",
+            serialNumber: "SN-ZEBRA-ZT230-501",
+            orgId: "HOSP",
+            roomId: "rm-blood-bank",
+            assignedUserId: "usr-path-lead",
+            monitorSpec: "Multilingual Graphic LCD Display",
+            cpuProcessor: "Zebra Rugged Thermal Transfer Processing Unit",
+            storageRam: "Cryo-Resistant Blood Bag Label Printer 300 DPI",
+            ipAddress: "10.20.40.89",
+            macAddress: "70-85-C2-44-88-89",
+            operatingSystem: "Link-OS Enterprise",
+            purchaseDate: "22-Oct-2024",
+            warrantyExpiryDate: "21-Oct-2029",
+            status: "Active"
+        }
+    ],
+
+    // Location History for Hospital Devices
+    locationHistories: [
+        {
+            id: "lh-01",
+            deviceId: "dev-06",
+            changedDate: "15-May-2026",
+            fromLocation: "Ground Floor / Emergency Triage Desk 01",
+            toLocation: "2nd Floor / ICU Bedside Monitoring Pod A",
+            changedBy: "Biomedical Admin",
+            reason: "Critical care bed expansion deployment"
+        },
+        {
+            id: "lh-02",
+            deviceId: "dev-25",
+            changedDate: "10-Jun-2026",
+            fromLocation: "Basement / Biomedical Engineering Workshop",
+            toLocation: "2nd Floor / ICU Central Nursing Telemetry Station",
+            changedBy: "Er. Rajesh Kulkarni",
+            reason: "Completed quarterly telemetry validation"
+        }
+    ],
+
+    // Assignment History for Hospital Devices
+    assignmentHistories: [
+        {
+            id: "ah-01",
+            deviceId: "dev-06",
+            userId: "usr-dr-sharma",
+            fromDate: "05-Jan-2025",
+            toDate: "-",
+            location: "2nd Floor / ICU Bedside Monitoring Pod A",
+            assignedBy: "Medical Superintendent",
+            remarks: "Assigned as primary ICU clinical monitor"
+        },
+        {
+            id: "ah-02",
+            deviceId: "dev-07",
+            userId: "usr-nurse-kavita",
+            fromDate: "05-Jan-2025",
+            toDate: "-",
+            location: "2nd Floor / ICU Central Nursing Telemetry Station",
+            assignedBy: "Nursing Superintendent",
+            remarks: "Dedicated nursing central station controller"
+        },
+        {
+            id: "ah-03",
+            deviceId: "dev-08",
+            userId: "usr-dr-mehta",
+            fromDate: "10-Aug-2023",
+            toDate: "-",
+            location: "Ground Floor / CT / MRI Diagnostic Console 01",
+            assignedBy: "HOD Radiology",
+            remarks: "High precision diagnostic CT console assignment"
+        },
+        {
+            id: "ah-04",
+            deviceId: "dev-ot-01",
+            userId: "usr-dr-joshi",
+            fromDate: "14-Mar-2024",
+            toDate: "-",
+            location: "3rd Floor / Modular Operation Theatre OT-1",
+            assignedBy: "Director of Surgery",
+            remarks: "Surgical suite anesthesia telemetry monitor"
+        }
+    ],
+
+    // Login Sessions for Hospital Staff
+    loginSessions: [
+        {
+            id: "ls-01",
+            deviceId: "dev-06",
+            userName: "Dr. Vikram Sharma (MED-00042)",
+            loginTime: "Today 07:45 AM",
+            logoutTime: "Active Clinical Session",
+            ipAddress: "10.20.10.42",
+            duration: "3h 45m",
+            status: "Online"
+        },
+        {
+            id: "ls-02",
+            deviceId: "dev-07",
+            userName: "Kavita Nair (MED-00115)",
+            loginTime: "Today 06:30 AM",
+            logoutTime: "Active Clinical Session",
+            ipAddress: "10.20.10.43",
+            duration: "5h 00m",
+            status: "Online"
+        },
+        {
+            id: "ls-03",
+            deviceId: "dev-08",
+            userName: "Dr. Aarti Mehta (MED-00078)",
+            loginTime: "Yesterday 09:15 AM",
+            logoutTime: "Yesterday 05:45 PM",
+            ipAddress: "10.20.30.18",
+            duration: "8h 30m",
+            status: "Completed"
+        },
+        {
+            id: "ls-04",
+            deviceId: "dev-ot-01",
+            userName: "Dr. Ananya Joshi (MED-00055)",
+            loginTime: "Today 08:00 AM",
+            logoutTime: "Active Clinical Session",
+            ipAddress: "10.20.50.55",
+            duration: "3h 30m",
+            status: "Online"
+        }
+    ]
+};

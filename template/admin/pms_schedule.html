@@ -1,0 +1,1606 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Preventive Maintenance Schedule (PMS) - CampusAssetIQ Admin{% endblock %}
+{% block page_title %}Equipment Preventive Maintenance Service (PMS) Matrix{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+    @media print {
+        #admin-sidebar, header, .no-print, footer, #modal-log-pms, #modal-add-pms, #modal-edit-pms, #modal-import-pms-excel { display: none !important; }
+        main { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+        .print-table { font-size: 11px !important; width: 100% !important; }
+        .print-table th, .print-table td { padding: 5px 6px !important; }
+    }
+</style>
+{% endblock %}
+
+
+
+{% block content %}
+<!-- Main Workspace Content -->
+    <main class="flex-1 max-w-[1650px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+
+        <!-- Unified Admin Hero Banner (Location Explorer Gradient) -->
+        <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-200 text-xs font-semibold border border-blue-400/30 mb-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span> Section 7 Preventive Maintenance (PMS)
+                </div>
+                <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2.5">
+                    <i data-lucide="calendar-check" class="w-6 h-6 text-blue-300"></i>
+                    Equipment Preventive Maintenance Service (PMS) Matrix
+                </h1>
+                <p class="text-slate-300 text-xs sm:text-sm mt-1 max-w-3xl">
+                    Comprehensive schedule tracking physical equipment installation, quarterly calibration cycles, vendor maintenance contracts, and compliance dates across campus hardware.
+                </p>
+            </div>
+            
+            <!-- Quick Action Buttons -->
+            <div class="flex items-center gap-2.5 flex-wrap no-print">
+                <button onclick="openPMSExcelImportModal()" class="flex items-center gap-2 bg-emerald-600/90 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2.5 rounded-xl border border-emerald-400/40 text-xs sm:text-sm font-bold transition-all shadow-sm active:scale-95">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-200"></i>
+                    <span>Import Excel</span>
+                </button>
+                <a href="{% url 'equipment_breakdown' %}{% if selected_org and selected_org != 'ALL' %}?org={{ selected_org }}{% endif %}" class="flex items-center gap-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 hover:text-white px-4 py-2.5 rounded-xl border border-indigo-400/40 text-xs sm:text-sm font-bold transition-all shadow-sm active:scale-95">
+                    <i data-lucide="alert-octagon" class="w-4 h-4 text-indigo-300"></i>
+                    <span>Equipment Breakdown Register</span>
+                </a>
+                <button onclick="openAddPMSModal()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 active:scale-95">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Add Equipment</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 4 KPI Performance Metrics Cards (Elevated Command Cards matching Inventory & Audit) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 no-print">
+            <!-- Total Equipment -->
+            <div class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-indigo-300 group transition-all">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200/60 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                    <i data-lucide="cpu" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Equipment</div>
+                    <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ total_count }}</div>
+                    <div class="text-[10px] text-slate-500 font-medium">Active Campus Assets</div>
+                </div>
+            </div>
+
+            <!-- Completed All Cycles -->
+            <div class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-emerald-300 group transition-all">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">All 4 Cycles Done</div>
+                    <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight">{{ completed_count }}</div>
+                    <div class="text-[10px] text-emerald-600/90 font-medium">100% Fully Serviced</div>
+                </div>
+            </div>
+
+            <!-- Pending 4th PMS -->
+            <div class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-amber-300 group transition-all">
+                <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/60 group-hover:bg-amber-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                    <i data-lucide="clock" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Pending 4th PMS</div>
+                    <div class="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight">{{ pending_count }}</div>
+                    <div class="text-[10px] text-amber-600/90 font-medium">Awaiting Final Cycle</div>
+                </div>
+            </div>
+
+            <!-- Due Soon / Attention -->
+            <div class="kpi-stat-card bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs flex items-center gap-4 hover:border-blue-300 group transition-all">
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200/60 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center font-bold shrink-0 transition-colors shadow-2xs">
+                    <i data-lucide="calendar" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">Due This Month</div>
+                    <div class="text-2xl sm:text-3xl font-black text-blue-600 tracking-tight">{{ due_soon_count }}</div>
+                    <div class="text-[10px] text-blue-600/90 font-medium">Vendor Engineer Dispatched</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Quick-Filter Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 text-sm font-semibold no-print scrollbar-none">
+            <button onclick="setCategoryFilter('ALL')" id="pill-all" class="category-pill px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-xs transition-all flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="layers" class="w-4 h-4"></i>
+                <span>All Equipment (134)</span>
+            </button>
+            <button onclick="setCategoryFilter('computer')" id="pill-computer" class="category-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="monitor" class="w-4 h-4 text-blue-600"></i>
+                <span>Computers (35)</span>
+            </button>
+            <button onclick="setCategoryFilter('printer')" id="pill-printer" class="category-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="printer" class="w-4 h-4 text-emerald-600"></i>
+                <span>Printers (20)</span>
+            </button>
+            <button onclick="setCategoryFilter('cub')" id="pill-cub" class="category-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="network" class="w-4 h-4 text-indigo-600"></i>
+                <span>CUB / Hubs (10)</span>
+            </button>
+            <button onclick="setCategoryFilter('landline')" id="pill-landline" class="category-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="phone" class="w-4 h-4 text-violet-600"></i>
+                <span>Landlines (68)</span>
+            </button>
+            <button onclick="setCategoryFilter('cctv')" id="pill-cctv" class="category-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="camera" class="w-4 h-4 text-amber-600"></i>
+                <span>CCTV (1)</span>
+            </button>
+        </div>
+
+        <!-- Filter Bar & Search Controls -->
+        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs flex flex-col md:flex-row gap-3 items-center justify-between no-print">
+            <div class="flex items-center gap-2 w-full md:w-auto flex-1 max-w-lg">
+                <div class="relative w-full">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="pms-search-input" onkeyup="filterPMSTable()" placeholder="Search by Asset Code (e.g. KH/IT/COMPUTER/1), Equipment, Vendor..." value="{{ search }}" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+                <!-- Company Filter -->
+                <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-700 font-semibold">
+                    <i data-lucide="building-2" class="w-4 h-4 text-slate-400"></i>
+                    <span>Company:</span>
+                    <select id="pms-company-filter" onchange="filterPMSTable()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+                        <option value="ALL">All Companies</option>
+                        {% for comp in companies %}
+                        <option value="{{ comp }}" {% if filter_company == comp %}selected{% endif %}>{{ comp }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-700 font-semibold">
+                    <i data-lucide="filter" class="w-4 h-4 text-slate-400"></i>
+                    <span>Status:</span>
+                    <select id="pms-status-filter" onchange="filterPMSTable()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+                        <option value="ALL">All Statuses</option>
+                        <option value="Completed" {% if filter_status == 'Completed' %}selected{% endif %}>Completed (All 4 Done)</option>
+                        <option value="Pending 4th PMS" {% if filter_status == 'Pending 4th PMS' %}selected{% endif %}>Pending 4th PMS</option>
+                        <option value="Due Soon" {% if filter_status == 'Due Soon' %}selected{% endif %}>Due Soon</option>
+                    </select>
+                </div>
+
+                <!-- Page Size Selector -->
+                <div class="flex items-center gap-1.5 text-xs sm:text-sm text-slate-700 font-semibold">
+                    <span>Rows:</span>
+                    <select id="pms-page-size" onchange="changePageSize()" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+                        <option value="35">35 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                        <option value="ALL" selected>All 134</option>
+                    </select>
+                </div>
+
+                <!-- Reset Filter -->
+                <button onclick="resetPMSFilters()" class="px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors">
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Master Maintenance Schedule Table (Exact Columns, Large Clear Fonts) -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2.5">
+                    <i data-lucide="table-2" class="w-5 h-5 text-indigo-600"></i>
+                    <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Physical Hardware Calibration & PMS Register</h2>
+                    <span id="filtered-records-badge" class="px-2.5 py-0.5 rounded-full text-xs bg-indigo-100 text-indigo-800 font-bold">{{ records|length }} Records</span>
+                </div>
+                <!-- Action Buttons: Horizontal Mouse Scroll & Export -->
+                <div class="flex items-center gap-2.5 flex-wrap no-print">
+                    <!-- Mouse Cursor Horizontal Scroll Buttons -->
+                    <div class="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200">
+                        <button type="button" onclick="scrollTableHorizontally('pms-master-table', -400)" title="Scroll Left with Mouse Cursor (or click & drag table)" class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-200 text-slate-700 transition-all shadow-2xs active:scale-95 flex items-center gap-1 text-xs font-bold">
+                            <i data-lucide="chevron-left" class="w-4 h-4 text-indigo-600"></i>
+                            <span>Scroll Left</span>
+                        </button>
+                        <span class="px-2 text-[11px] font-bold text-slate-500 hidden sm:flex items-center gap-1 select-none" title="You can click anywhere on the table and drag left or right with your mouse">
+                            <i data-lucide="move-horizontal" class="w-3.5 h-3.5 text-indigo-600"></i>
+                            <span>Drag with cursor</span>
+                        </span>
+                        <button type="button" onclick="scrollTableHorizontally('pms-master-table', 400)" title="Scroll Right with Mouse Cursor (or click & drag table)" class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-200 text-slate-700 transition-all shadow-2xs active:scale-95 flex items-center gap-1 text-xs font-bold">
+                            <span>Scroll Right</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-indigo-600"></i>
+                        </button>
+                    </div>
+
+                    <button onclick="openPMSExcelImportModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-300 text-xs font-bold transition-all shadow-2xs hover:border-emerald-400 active:scale-95">
+                        <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        <span>Import Excel</span>
+                    </button>
+                    <button onclick="exportPMSToCSV()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-300 text-xs font-bold transition-all shadow-2xs hover:border-slate-400">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-indigo-600"></i>
+                        <span>Export (CSV)</span>
+                    </button>
+                    <button onclick="window.print()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-300 text-xs font-bold transition-all shadow-2xs hover:border-slate-400">
+                        <i data-lucide="printer" class="w-3.5 h-3.5 text-indigo-600"></i>
+                        <span>Print</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto max-h-[750px] scrollbar-thin">
+                <table class="w-full text-left text-sm border-collapse print-table" id="pms-master-table">
+                    <!-- Column Group Header -->
+                    <thead class="sticky top-0 z-20 bg-slate-100 text-slate-700 font-bold border-b border-slate-300 shadow-2xs">
+                        <tr class="divide-x divide-slate-200 uppercase text-xs tracking-wider">
+                            <th scope="col" class="py-3.5 px-3 w-14 text-center bg-slate-200/90 font-extrabold text-slate-800">Sr. No.</th>
+                            <th scope="col" class="py-3.5 px-4 min-w-[170px] bg-slate-200/90 font-extrabold text-slate-800">Name of the equipment</th>
+                            <th scope="col" class="py-3.5 px-3 w-28 text-center bg-slate-200/90 font-extrabold text-slate-800">Name of company</th>
+                            <th scope="col" class="py-3.5 px-4 min-w-[130px] text-center bg-slate-200/90 font-extrabold text-slate-800">Date of installation</th>
+                            <th scope="col" class="py-3.5 px-4 min-w-[190px] bg-slate-200/90 font-extrabold text-slate-800">Asset coding</th>
+                            <th scope="col" class="py-3.5 px-3.5 min-w-[140px] text-center bg-slate-200/90 font-extrabold text-slate-800">Maintainance frequency</th>
+                            
+                            <!-- 1st PMS -->
+                            <th scope="col" class="py-3.5 px-3.5 text-center min-w-[130px] bg-emerald-100/90 text-emerald-950 font-extrabold border-l border-emerald-300">1st PMS done date</th>
+                            
+                            <!-- 2nd PMS -->
+                            <th scope="col" class="py-3.5 px-3.5 text-center min-w-[130px] bg-blue-100/90 text-blue-950 font-extrabold border-l border-blue-300">Due date of 2nd PMS</th>
+                            <th scope="col" class="py-3.5 px-3.5 text-center min-w-[130px] bg-emerald-100/90 text-emerald-950 font-extrabold">2nd PMS done date</th>
+                            
+                            <!-- 3rd PMS -->
+                            <th scope="col" class="py-3.5 px-3.5 text-center min-w-[130px] bg-blue-100/90 text-blue-950 font-extrabold border-l border-blue-300">Due date of 3rd PMS</th>
+                            <th scope="col" class="py-3.5 px-3.5 text-center min-w-[130px] bg-emerald-100/90 text-emerald-950 font-extrabold">3rd PMS done date</th>
+                            
+                            <!-- 4th PMS -->
+                            <th scope="col" class="py-3.5 px-3.5 text-center min-w-[130px] bg-blue-100/90 text-blue-950 font-extrabold border-l border-blue-300">Due date of 4th PMS</th>
+                            <th scope="col" class="py-3.5 px-4 text-center min-w-[140px] bg-amber-100/90 text-amber-950 font-extrabold">4th PMS done date</th>
+
+                            <!-- Action -->
+                            <th scope="col" class="py-3.5 px-3 w-20 text-center bg-slate-200/90 font-extrabold text-slate-800 no-print">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 bg-white" id="pms-table-body">
+                        {% for item in records %}
+                        <tr class="hover:bg-indigo-50/40 transition-colors divide-x divide-slate-100 text-slate-800 pms-row"
+                            id="pms-row-{{ item.id }}"
+                            data-id="{{ item.id }}"
+                            data-asset="{{ item.asset_code }}"
+                            data-equipment="{{ item.equipment_name }}"
+                            data-company="{{ item.company_name }}"
+                            data-install="{{ item.installation_date }}"
+                            data-frequency="{{ item.maintenance_frequency }}"
+                            data-pms1-done="{{ item.pms1_done_date }}"
+                            data-pms2-due="{{ item.pms2_due_date }}"
+                            data-pms2-done="{{ item.pms2_done_date }}"
+                            data-pms3-due="{{ item.pms3_due_date }}"
+                            data-pms3-done="{{ item.pms3_done_date }}"
+                            data-pms4-due="{{ item.pms4_due_date }}"
+                            data-pms4-done="{{ item.pms4_done_date }}"
+                            data-location="{{ item.department_location }}"
+                            data-notes="{{ item.engineer_notes }}"
+                            data-status="{{ item.status }}">
+                            
+                            <!-- Sr. No. (Large Clear Text) -->
+                            <td class="py-3 px-3 text-center font-bold text-slate-600 bg-slate-50/60 text-sm">
+                                {{ forloop.counter }}
+                            </td>
+
+                            <!-- Equipment Name (Large Font with Icon) -->
+                            <td class="py-3 px-4 font-bold text-slate-900 text-sm">
+                                <div class="flex items-center gap-2.5">
+                                    {% if 'computer' in item.equipment_name|lower %}
+                                    <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+                                        <i data-lucide="monitor" class="w-4 h-4"></i>
+                                    </div>
+                                    {% elif 'printer' in item.equipment_name|lower %}
+                                    <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                                        <i data-lucide="printer" class="w-4 h-4"></i>
+                                    </div>
+                                    {% elif 'cub' in item.equipment_name|lower or 'hub' in item.equipment_name|lower %}
+                                    <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
+                                        <i data-lucide="network" class="w-4 h-4"></i>
+                                    </div>
+                                    {% elif 'landline' in item.equipment_name|lower or 'phone' in item.equipment_name|lower %}
+                                    <div class="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0 border border-violet-100">
+                                        <i data-lucide="phone" class="w-4 h-4"></i>
+                                    </div>
+                                    {% elif 'cctv' in item.equipment_name|lower or 'camera' in item.equipment_name|lower %}
+                                    <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
+                                        <i data-lucide="camera" class="w-4 h-4"></i>
+                                    </div>
+                                    {% else %}
+                                    <div class="w-7 h-7 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center shrink-0 border border-slate-100">
+                                        <i data-lucide="cpu" class="w-4 h-4"></i>
+                                    </div>
+                                    {% endif %}
+                                    <span class="capitalize">{{ item.equipment_name }}</span>
+                                </div>
+                            </td>
+
+                            <!-- Company -->
+                            <td class="py-3 px-3 text-center font-bold text-sm text-slate-800">
+                                {{ item.company_name }}
+                            </td>
+
+                            <!-- Installation Date -->
+                            <td class="py-3 px-4 text-center font-mono text-sm font-semibold text-slate-700">
+                                {{ item.installation_date }}
+                            </td>
+
+                            <!-- Asset Coding (High Contrast Badge) -->
+                            <td class="py-3 px-4 font-mono text-sm font-bold text-slate-900">
+                                <span class="bg-indigo-50 text-indigo-800 px-2.5 py-1 rounded-md border border-indigo-200 shadow-3xs inline-block">
+                                    {{ item.asset_code }}
+                                </span>
+                            </td>
+
+                            <!-- Maintenance Frequency -->
+                            <td class="py-3 px-3.5 text-center font-bold text-xs tracking-wider text-slate-600 uppercase">
+                                <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
+                                    {{ item.maintenance_frequency }}
+                                </span>
+                            </td>
+
+                            <!-- 1st PMS Done Date -->
+                            <td class="py-3 px-3.5 text-center font-mono text-sm text-emerald-800 font-bold bg-emerald-50/40">
+                                <span class="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-100/70 px-2.5 py-1 rounded-md border border-emerald-200">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    {{ item.pms1_done_date }}
+                                </span>
+                            </td>
+
+                            <!-- Due Date of 2nd PMS -->
+                            <td class="py-3 px-3.5 text-center font-mono text-sm font-semibold text-blue-800 bg-blue-50/30">
+                                {{ item.pms2_due_date }}
+                            </td>
+
+                            <!-- 2nd PMS Done Date -->
+                            <td class="py-3 px-3.5 text-center font-mono text-sm text-emerald-800 font-bold bg-emerald-50/40">
+                                <span class="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-100/70 px-2.5 py-1 rounded-md border border-emerald-200">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    {{ item.pms2_done_date }}
+                                </span>
+                            </td>
+
+                            <!-- Due Date of 3rd PMS -->
+                            <td class="py-3 px-3.5 text-center font-mono text-sm font-semibold text-blue-800 bg-blue-50/30">
+                                {{ item.pms3_due_date }}
+                            </td>
+
+                            <!-- 3rd PMS Done Date -->
+                            <td class="py-3 px-3.5 text-center font-mono text-sm text-emerald-800 font-bold bg-emerald-50/40">
+                                <span class="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-100/70 px-2.5 py-1 rounded-md border border-emerald-200">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    {{ item.pms3_done_date }}
+                                </span>
+                            </td>
+
+                            <!-- Due Date of 4th PMS -->
+                            <td class="py-3 px-3.5 text-center font-mono text-sm font-semibold text-blue-800 bg-blue-50/30">
+                                {{ item.pms4_due_date }}
+                            </td>
+
+                            <!-- 4th PMS Done Date -->
+                            <td class="py-3 px-4 text-center font-mono text-sm" id="cell-pms4-{{ item.id }}">
+                                {% if item.pms4_done_date %}
+                                <span class="inline-flex items-center gap-1.5 text-emerald-800 font-bold bg-emerald-100 px-2.5 py-1 rounded-md border border-emerald-300">
+                                    <i data-lucide="check-check" class="w-4 h-4 text-emerald-700"></i>
+                                    {{ item.pms4_done_date }}
+                                </span>
+                                {% else %}
+                                <button onclick="openLogPMSModal('{{ item.id }}', '{{ item.asset_code }}', '{{ item.equipment_name }}', '{{ item.pms4_due_date }}')" class="inline-flex items-center gap-1 text-amber-800 hover:text-amber-900 font-bold bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1 rounded-md text-xs transition-colors shadow-3xs active:scale-95 no-print">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                    <span>Log Done</span>
+                                </button>
+                                <span class="hidden print:inline text-slate-400 font-semibold">Pending</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Row Action (Edit Complete / Delete) -->
+                            <td class="py-3 px-3 text-center no-print">
+                                <div class="flex items-center justify-center gap-1">
+                                    <button onclick="openEditPMSModal('{{ item.id }}')" title="Edit Complete Schedule" class="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors active:scale-95">
+                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="deletePMSRecord('{{ item.id }}', '{{ item.asset_code }}')" title="Delete Record" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors active:scale-95">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="14" class="py-16 text-center text-slate-400">
+                                <i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300 mb-2"></i>
+                                <p class="text-base font-bold text-slate-600">No equipment maintenance records found</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Table Footer Summary -->
+            <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row items-center justify-between text-sm text-slate-600 font-medium gap-2">
+                <div>
+                    Showing <span class="font-bold text-slate-900" id="showing-count">{{ records|length }}</span> of <span class="font-bold text-slate-900">{{ total_count }}</span> total equipment registered in database
+                </div>
+                <div class="flex items-center gap-5 text-xs font-semibold">
+                    <span class="inline-flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-xs"></span> 4th PMS Completed
+                    </span>
+                    <span class="inline-flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-amber-500 shadow-xs"></span> Pending 4th PMS
+                    </span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer (Standard Unified Theme) -->
+    <footer class="bg-white border-t border-slate-200 py-3.5 text-center text-xs text-slate-500 mt-auto no-print">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div>CampusAssetIQ &bull; PSM Hospital Healthcare Hardware Lifecycle Tracker</div>
+            <div class="flex items-center gap-3 font-semibold">
+                <a href="{% url 'inventory' %}" class="hover:underline text-indigo-600">Devices Inventory</a>
+                <span>&bull;</span>
+                <a href="{% url 'admin_complaints' %}" class="hover:underline text-indigo-600">Helpdesk Complaints</a>
+                <span>&bull;</span>
+                <a href="{% url 'pms_schedule' %}" class="hover:underline text-indigo-600">PMS Schedule</a>
+            </div>
+        </div>
+    </footer>
+{% endblock %}
+
+{% block modals %}
+<!-- Modal 1: Log PMS Service Completion -->
+    <div id="modal-log-pms" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center">
+                        <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base">Log 4th PMS Service Completion</h3>
+                        <p class="text-xs text-slate-500" id="modal-pms-subtitle">Asset: KH/IT/COMPUTER/1</p>
+                    </div>
+                </div>
+                <button onclick="closeLogPMSModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="form-log-pms" onsubmit="submitLogPMS(event)" class="space-y-4 text-sm">
+                <input type="hidden" id="modal-pms-id" value="">
+                
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">4th PMS Completion Date *</label>
+                    <input type="text" id="modal-pms-date" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-mono font-medium">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Status Classification</label>
+                    <select id="modal-pms-status" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-semibold">
+                        <option value="Completed">All Cycles Completed (Full Clearance)</option>
+                        <option value="Due Soon">Due Soon / In Followup</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Service Engineer / Inspection Notes</label>
+                    <textarea id="modal-pms-notes" rows="3" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden text-xs">Quarterly system fan blow-out, thermal paste check, power supply testing and OS health diagnostic completed.</textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="closeLogPMSModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-semibold text-slate-700 text-xs">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold text-white shadow-xs text-xs">Save Completion</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Add New Equipment PMS Schedule -->
+    <div id="modal-add-pms" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base">Add New Equipment Schedule</h3>
+                        <p class="text-xs text-slate-500">Register preventive maintenance calendar for campus asset</p>
+                    </div>
+                </div>
+                <button onclick="closeAddPMSModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="form-add-pms" onsubmit="submitAddPMS(event)" class="space-y-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Equipment Name *</label>
+                        <input type="text" id="add-equipment-name" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Company / OEM *</label>
+                        <input type="text" id="add-company-name" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+                            <span>Asset Coding (Tag) *</span>
+                            <span class="text-[10px] text-indigo-600 font-semibold">Inventory Linked</span>
+                        </label>
+                        <input type="text" id="add-asset-code" list="pms-inventory-datalist" oninput="onSelectPMSInventoryAsset(this.value)" placeholder="e.g. KH/IT/COMPUTER/1 or select asset..." required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-mono font-bold uppercase">
+                        <datalist id="pms-inventory-datalist">
+                            {% for dev in inventory_devices %}
+                            <option value="{{ dev.asset_id }}">{{ dev.asset_id }} - {{ dev.assigned_user_name }} ({{ dev.building_name }} {{ dev.room_name }})</option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Installation Date *</label>
+                        <input type="text" id="add-install-date" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-mono font-medium">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Maintenance Frequency</label>
+                        <select id="add-frequency" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-semibold">
+                            <option value="QUARTERLY">QUARTERLY (Every 90 Days)</option>
+                            <option value="HALF-YEARLY">HALF-YEARLY (Every 180 Days)</option>
+                            <option value="ANNUALLY">ANNUALLY (Once a Year)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Location / Department</label>
+                        <input type="text" id="add-location" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium">
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-600"></i>
+                            <span>PMS Service Dates Matrix</span>
+                        </h4>
+                        <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <i data-lucide="sparkles" class="w-3 h-3 text-indigo-500"></i> Auto Due-Date Engine Active
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 text-xs bg-slate-50/70 p-3 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-slate-700 font-bold mb-1">1st PMS Done Date</label>
+                            <input type="text" id="add-pms1-done" oninput="autoCalculatePMSDueDates()" placeholder="DD-MM-YYYY (e.g. 15-01-2026)" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-slate-900">
+                        </div>
+                        <div>
+                            <label class="flex items-center justify-between text-slate-700 font-bold mb-1">
+                                <span>Due Date of 2nd PMS</span>
+                                <span class="text-[9px] text-indigo-700 bg-indigo-100/80 px-1.5 py-0.2 rounded font-bold border border-indigo-200">Auto</span>
+                            </label>
+                            <input type="text" id="add-pms2-due" placeholder="Auto calculated" class="w-full px-3 py-2 bg-indigo-50/40 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-indigo-950">
+                        </div>
+                        <div>
+                            <label class="block text-slate-700 font-bold mb-1">2nd PMS Done Date</label>
+                            <input type="text" id="add-pms2-done" oninput="autoCalculatePMSDueDates()" placeholder="DD-MM-YYYY (e.g. 15-04-2026)" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-slate-900">
+                        </div>
+                        <div>
+                            <label class="flex items-center justify-between text-slate-700 font-bold mb-1">
+                                <span>Due Date of 3rd PMS</span>
+                                <span class="text-[9px] text-indigo-700 bg-indigo-100/80 px-1.5 py-0.2 rounded font-bold border border-indigo-200">Auto</span>
+                            </label>
+                            <input type="text" id="add-pms3-due" placeholder="Auto calculated" class="w-full px-3 py-2 bg-indigo-50/40 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-indigo-950">
+                        </div>
+                        <div>
+                            <label class="block text-slate-700 font-bold mb-1">3rd PMS Done Date</label>
+                            <input type="text" id="add-pms3-done" oninput="autoCalculatePMSDueDates()" placeholder="DD-MM-YYYY (e.g. 15-07-2026)" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-slate-900">
+                        </div>
+                        <div>
+                            <label class="flex items-center justify-between text-slate-700 font-bold mb-1">
+                                <span>Due Date of 4th PMS</span>
+                                <span class="text-[9px] text-indigo-700 bg-indigo-100/80 px-1.5 py-0.2 rounded font-bold border border-indigo-200">Auto</span>
+                            </label>
+                            <input type="text" id="add-pms4-due" placeholder="Auto calculated" class="w-full px-3 py-2 bg-indigo-50/40 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-indigo-950">
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-indigo-700 font-semibold mt-2 flex items-center gap-1.5">
+                        <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
+                        <span>Due dates auto-populate based on frequency (Quarterly: +3 months, Half-Yearly: +6 months, Annually: +12 months) and remain customizable.</span>
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeAddPMSModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-semibold text-slate-700 text-xs">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold text-white shadow-xs text-xs">Create Schedule Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Edit Equipment PMS Schedule -->
+    <div id="modal-edit-pms" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center">
+                        <i data-lucide="edit-3" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base">Edit PMS Schedule Record</h3>
+                        <p class="text-xs text-slate-500" id="edit-pms-subtitle">Update maintenance schedule, cycle dates, or status</p>
+                    </div>
+                </div>
+                <button onclick="closeEditPMSModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="form-edit-pms" onsubmit="submitEditPMS(event)" class="space-y-4 text-sm">
+                <input type="hidden" id="edit-pms-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Equipment Name *</label>
+                        <input type="text" id="edit-equipment-name" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Company / OEM *</label>
+                        <input type="text" id="edit-company-name" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Asset Coding (Tag) *</label>
+                        <input type="text" id="edit-asset-code" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-mono font-bold uppercase">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Installation Date *</label>
+                        <input type="text" id="edit-install-date" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-mono font-medium">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Frequency</label>
+                        <select id="edit-frequency" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-semibold text-xs">
+                            <option value="QUARTERLY">QUARTERLY (90 Days)</option>
+                            <option value="HALF-YEARLY">HALF-YEARLY (180 Days)</option>
+                            <option value="ANNUALLY">ANNUALLY (1 Year)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Status</label>
+                        <select id="edit-status" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-semibold text-xs">
+                            <option value="Completed">Completed</option>
+                            <option value="Pending 4th PMS">Pending 4th PMS</option>
+                            <option value="Due Soon">Due Soon</option>
+                            <option value="Overdue">Overdue</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Location</label>
+                        <input type="text" id="edit-location" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium text-xs">
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-600"></i>
+                            <span>PMS Service Dates Matrix</span>
+                        </h4>
+                        <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <i data-lucide="sparkles" class="w-3 h-3 text-indigo-500"></i> Auto Due-Date Engine
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 text-xs bg-slate-50/70 p-3 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-slate-700 font-bold mb-1">1st PMS Done Date</label>
+                            <input type="text" id="edit-pms1-done" oninput="autoCalculateEditPMSDueDates()" placeholder="DD-MM-YYYY" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-slate-900">
+                        </div>
+                        <div>
+                            <label class="flex items-center justify-between text-slate-700 font-bold mb-1">
+                                <span>Due Date 2nd PMS</span>
+                                <span class="text-[9px] text-indigo-700 bg-indigo-100/80 px-1.5 py-0.2 rounded font-bold border border-indigo-200">Auto</span>
+                            </label>
+                            <input type="text" id="edit-pms2-due" class="w-full px-3 py-2 bg-indigo-50/40 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-indigo-950">
+                        </div>
+                        <div>
+                            <label class="block text-slate-700 font-bold mb-1">2nd PMS Done Date</label>
+                            <input type="text" id="edit-pms2-done" oninput="autoCalculateEditPMSDueDates()" placeholder="DD-MM-YYYY" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-slate-900">
+                        </div>
+                        <div>
+                            <label class="flex items-center justify-between text-slate-700 font-bold mb-1">
+                                <span>Due Date 3rd PMS</span>
+                                <span class="text-[9px] text-indigo-700 bg-indigo-100/80 px-1.5 py-0.2 rounded font-bold border border-indigo-200">Auto</span>
+                            </label>
+                            <input type="text" id="edit-pms3-due" class="w-full px-3 py-2 bg-indigo-50/40 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-indigo-950">
+                        </div>
+                        <div>
+                            <label class="block text-slate-700 font-bold mb-1">3rd PMS Done Date</label>
+                            <input type="text" id="edit-pms3-done" oninput="autoCalculateEditPMSDueDates()" placeholder="DD-MM-YYYY" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-slate-900">
+                        </div>
+                        <div>
+                            <label class="flex items-center justify-between text-slate-700 font-bold mb-1">
+                                <span>Due Date 4th PMS</span>
+                                <span class="text-[9px] text-indigo-700 bg-indigo-100/80 px-1.5 py-0.2 rounded font-bold border border-indigo-200">Auto</span>
+                            </label>
+                            <input type="text" id="edit-pms4-due" class="w-full px-3 py-2 bg-indigo-50/40 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-indigo-950">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-slate-700 font-bold mb-1">4th PMS Done Date</label>
+                            <input type="text" id="edit-pms4-done" placeholder="DD-MM-YYYY (if service completed)" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-slate-900">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Engineer / Service Notes</label>
+                    <textarea id="edit-notes" rows="2" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden text-xs"></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeEditPMSModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-semibold text-slate-700 text-xs">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold text-white shadow-xs text-xs flex items-center gap-1.5 active:scale-95">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Save Changes</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: Import Equipment PMS Schedule Excel / CSV -->
+    <div id="modal-import-pms-excel" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center">
+                        <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base">Import Equipment PMS Matrix Excel</h3>
+                        <p class="text-xs text-slate-500">Upload .xlsx, .xls or .csv to register hardware maintenance schedules</p>
+                    </div>
+                </div>
+                <button onclick="closePMSExcelImportModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4 text-xs sm:text-sm">
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-xs">Need an Excel spreadsheet template?</h4>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Download pre-formatted 13-column sheet with PMS calibration headers.</p>
+                    </div>
+                    <button type="button" onclick="downloadPMSTemplate()" class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-bold transition-all shadow-2xs hover:border-emerald-400 active:scale-95">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        <span>Template (.xlsx)</span>
+                    </button>
+                </div>
+
+                <!-- Dropzone -->
+                <div id="pms-excel-dropzone" onclick="document.getElementById('pms-excel-file-input').click()" class="border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50/60 hover:bg-emerald-50/30 rounded-2xl p-7 text-center cursor-pointer transition-all group">
+                    <input type="file" id="pms-excel-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handlePMSExcelFileInput(this.files)">
+                    <div class="w-13 h-13 mx-auto rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                        <i data-lucide="file-spreadsheet" class="w-7 h-7"></i>
+                    </div>
+                    <p class="font-bold text-slate-800 text-sm">Click to select or drag and drop Excel file</p>
+                    <p class="text-xs text-slate-500 mt-1">Supports Microsoft Excel (.xlsx, .xls) and CSV (.csv) up to 10MB</p>
+                </div>
+
+                <!-- Detected / Preview Card -->
+                <div id="pms-excel-file-info" class="hidden p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>
+                            <div>
+                                <span id="pms-excel-file-name" class="font-bold text-slate-800 block text-xs truncate max-w-[280px]">file.xlsx</span>
+                                <span id="pms-excel-file-meta" class="text-[11px] text-slate-500">0 KB • 0 records detected</span>
+                            </div>
+                        </div>
+                        <button type="button" onclick="clearSelectedPMSExcelFile()" class="text-xs font-semibold text-rose-600 hover:underline">Remove</button>
+                    </div>
+
+                    <div id="pms-excel-preview-container" class="max-h-44 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
+                        <table class="w-full text-[11px] text-left border-collapse" id="pms-excel-preview-table">
+                            <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-1.5">Asset Tag</th>
+                                    <th class="p-1.5">Equipment</th>
+                                    <th class="p-1.5">Company</th>
+                                    <th class="p-1.5">Install Date</th>
+                                    <th class="p-1.5">1st Done</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pms-excel-preview-tbody" class="divide-y divide-slate-100">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="pms-excel-import-status" class="hidden p-3 rounded-xl text-xs font-semibold"></div>
+
+                <div class="pt-2 flex items-center justify-end gap-3 border-t border-slate-200">
+                    <button type="button" onclick="closePMSExcelImportModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold transition-all">
+                        Cancel
+                    </button>
+                    <button type="button" id="btn-pms-confirm-import" onclick="submitPMSExcelImport()" disabled class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-all shadow-md flex items-center gap-2 active:scale-95">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <span id="btn-pms-import-text">Import to Table</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <!-- Linked Inventory Devices Payload (JSON MIME type prevents IDE script parser errors) -->
+    <script type="application/json" id="inventory-devices-data">
+        [
+            {% for dev in inventory_devices %}
+            {
+                "asset_id": "{{ dev.asset_id|escapejs }}",
+                "user_name": "{{ dev.assigned_user_name|escapejs }}",
+                "location": "{{ dev.building_name|escapejs }} {{ dev.room_name|escapejs }}",
+                "purchase_date": "{{ dev.purchase_date|escapejs }}"
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    </script>
+    <script>
+        let currentCategory = 'ALL';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+        // Category Pill Filter
+        function setCategoryFilter(category) {
+            currentCategory = category;
+
+            // Highlight selected pill
+            document.querySelectorAll('.category-pill').forEach(pill => {
+                pill.className = 'category-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap';
+            });
+            const selectedPill = document.getElementById(`pill-${category.toLowerCase()}`);
+            if (selectedPill) {
+                selectedPill.className = 'category-pill px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-xs transition-all flex items-center gap-2 whitespace-nowrap';
+            }
+
+            filterPMSTable();
+        }
+
+        // Filter Table by Search Text, Company, Status, and Category
+        function filterPMSTable() {
+            const searchVal = document.getElementById('pms-search-input').value.toLowerCase().trim();
+            const companyVal = document.getElementById('pms-company-filter').value;
+            const statusVal = document.getElementById('pms-status-filter').value;
+
+            const rows = document.querySelectorAll('.pms-row');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const asset = row.getAttribute('data-asset') || '';
+                const equipment = row.getAttribute('data-equipment') || '';
+                const company = row.getAttribute('data-company') || '';
+                const status = row.getAttribute('data-status') || '';
+
+                const matchesCategory = (currentCategory === 'ALL') || equipment.includes(currentCategory);
+                const matchesSearch = !searchVal || asset.includes(searchVal) || equipment.includes(searchVal) || company.toLowerCase().includes(searchVal);
+                const matchesCompany = (companyVal === 'ALL') || (company === companyVal);
+                const matchesStatus = (statusVal === 'ALL') || (status === statusVal);
+
+                if (matchesCategory && matchesSearch && matchesCompany && matchesStatus) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('filtered-records-badge').innerText = `${visibleCount} Records`;
+            document.getElementById('showing-count').innerText = visibleCount;
+        }
+
+        function resetPMSFilters() {
+            document.getElementById('pms-search-input').value = '';
+            document.getElementById('pms-company-filter').value = 'ALL';
+            document.getElementById('pms-status-filter').value = 'ALL';
+            setCategoryFilter('ALL');
+        }
+
+        // Modal Controls
+        function openLogPMSModal(id, assetCode, equipmentName, dueDate) {
+            document.getElementById('modal-pms-id').value = id;
+            document.getElementById('modal-pms-subtitle').innerText = `Asset: ${assetCode} (${equipmentName}) • Due: ${dueDate}`;
+            
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const yyyy = today.getFullYear();
+            document.getElementById('modal-pms-date').value = `${dd}-${mm}-${yyyy}`;
+
+            document.getElementById('modal-log-pms').classList.remove('hidden');
+        }
+
+        function closeLogPMSModal() {
+            document.getElementById('modal-log-pms').classList.add('hidden');
+        }
+
+        function openAddPMSModal() {
+            document.getElementById('modal-add-pms').classList.remove('hidden');
+            // Auto calculate if dates already exist
+            autoCalculatePMSDueDates();
+            lucide.createIcons();
+        }
+
+        function closeAddPMSModal() {
+            document.getElementById('modal-add-pms').classList.add('hidden');
+        }
+
+        // --- Smart PMS Due Date Auto-Calculation Engine ---
+        function parseFlexibleDate(dateStr) {
+            if (!dateStr) return null;
+            const str = dateStr.trim();
+            // Match DD-MM-YYYY or DD/MM/YYYY
+            const ddmmyyyy = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+            if (ddmmyyyy) {
+                const day = parseInt(ddmmyyyy[1], 10);
+                const month = parseInt(ddmmyyyy[2], 10) - 1;
+                const year = parseInt(ddmmyyyy[3], 10);
+                const d = new Date(year, month, day);
+                if (!isNaN(d.getTime())) return d;
+            }
+            // Match YYYY-MM-DD
+            const yyyymmdd = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+            if (yyyymmdd) {
+                const year = parseInt(yyyymmdd[1], 10);
+                const month = parseInt(yyyymmdd[2], 10) - 1;
+                const day = parseInt(yyyymmdd[3], 10);
+                const d = new Date(year, month, day);
+                if (!isNaN(d.getTime())) return d;
+            }
+            return null;
+        }
+
+        function formatDisplayDate(dateObj) {
+            if (!dateObj || isNaN(dateObj.getTime())) return '';
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const yyyy = dateObj.getFullYear();
+            return `${dd}-${mm}-${yyyy}`;
+        }
+
+        function addMonthsToDate(baseDate, months) {
+            if (!baseDate) return null;
+            const d = new Date(baseDate.getTime());
+            const targetMonth = d.getMonth() + months;
+            d.setMonth(targetMonth);
+            // Handle month rollover clipping (e.g. 31st to 30th/28th)
+            if (d.getMonth() !== (targetMonth % 12 + 12) % 12) {
+                d.setDate(0);
+            }
+            return d;
+        }
+
+        function autoCalculatePMSDueDates() {
+            const freqSelect = document.getElementById('add-frequency');
+            const freqVal = freqSelect ? freqSelect.value.toUpperCase() : 'QUARTERLY';
+            
+            let intervalMonths = 3; // Default Quarterly
+            if (freqVal.includes('HALF')) {
+                intervalMonths = 6;
+            } else if (freqVal.includes('ANNUAL')) {
+                intervalMonths = 12;
+            }
+
+            const installInput = document.getElementById('add-install-date');
+            const pms1DoneInput = document.getElementById('add-pms1-done');
+            const pms2DueInput = document.getElementById('add-pms2-due');
+            const pms2DoneInput = document.getElementById('add-pms2-done');
+            const pms3DueInput = document.getElementById('add-pms3-due');
+            const pms3DoneInput = document.getElementById('add-pms3-done');
+            const pms4DueInput = document.getElementById('add-pms4-due');
+
+            const pms1Done = pms1DoneInput ? pms1DoneInput.value.trim() : '';
+            const installDate = installInput ? installInput.value.trim() : '';
+            const pms2Done = pms2DoneInput ? pms2DoneInput.value.trim() : '';
+            const pms3Done = pms3DoneInput ? pms3DoneInput.value.trim() : '';
+
+            // Step 1: Base for 2nd PMS Due Date
+            const baseForPMS2 = parseFlexibleDate(pms1Done) || parseFlexibleDate(installDate);
+            let calculatedDue2 = null;
+            if (baseForPMS2 && pms2DueInput) {
+                calculatedDue2 = addMonthsToDate(baseForPMS2, intervalMonths);
+                pms2DueInput.value = formatDisplayDate(calculatedDue2);
+            }
+
+            // Step 2: Base for 3rd PMS Due Date (2nd Done Date if present, else 2nd Due Date)
+            const baseForPMS3 = parseFlexibleDate(pms2Done) || calculatedDue2 || (pms2DueInput ? parseFlexibleDate(pms2DueInput.value) : null);
+            let calculatedDue3 = null;
+            if (baseForPMS3 && pms3DueInput) {
+                calculatedDue3 = addMonthsToDate(baseForPMS3, intervalMonths);
+                pms3DueInput.value = formatDisplayDate(calculatedDue3);
+            }
+
+            // Step 3: Base for 4th PMS Due Date (3rd Done Date if present, else 3rd Due Date)
+            const baseForPMS4 = parseFlexibleDate(pms3Done) || calculatedDue3 || (pms3DueInput ? parseFlexibleDate(pms3DueInput.value) : null);
+            if (baseForPMS4 && pms4DueInput) {
+                const calculatedDue4 = addMonthsToDate(baseForPMS4, intervalMonths);
+                pms4DueInput.value = formatDisplayDate(calculatedDue4);
+            }
+        }
+
+        // Attach listeners on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const freq = document.getElementById('add-frequency');
+            if (freq) freq.addEventListener('change', autoCalculatePMSDueDates);
+
+            const install = document.getElementById('add-install-date');
+            if (install) install.addEventListener('input', autoCalculatePMSDueDates);
+        });
+
+        // AJAX Submit Log 4th PMS
+        async function submitLogPMS(e) {
+            e.preventDefault();
+            const pmsId = document.getElementById('modal-pms-id').value;
+            const doneDate = document.getElementById('modal-pms-date').value.trim();
+            const status = document.getElementById('modal-pms-status').value;
+            const notes = document.getElementById('modal-pms-notes').value.trim();
+
+            try {
+                const response = await fetch(`/api/pms/update/${pmsId}/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pms4_done_date: doneDate,
+                        status: status,
+                        engineer_notes: notes
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    const targetCell = document.getElementById(`cell-pms4-${pmsId}`);
+                    if (targetCell) {
+                        targetCell.innerHTML = `
+                            <span class="inline-flex items-center gap-1.5 text-emerald-800 font-bold bg-emerald-100 px-2.5 py-1 rounded-md border border-emerald-300">
+                                <i data-lucide="check-check" class="w-4 h-4 text-emerald-700"></i>
+                                ${result.pms4_done_date}
+                            </span>
+                        `;
+                        lucide.createIcons();
+                    }
+                    closeLogPMSModal();
+                    alert(`✅ PMS Record updated successfully! 4th PMS recorded: ${result.pms4_done_date}`);
+                } else {
+                    alert('Error: ' + (result.error || 'Could not update record'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection error occurred while updating PMS record.');
+            }
+        }
+
+        // AJAX Submit Add New PMS
+        async function submitAddPMS(e) {
+            e.preventDefault();
+            const payload = {
+                equipment_name: document.getElementById('add-equipment-name').value.trim(),
+                company_name: document.getElementById('add-company-name').value.trim(),
+                asset_code: document.getElementById('add-asset-code').value.trim().toUpperCase(),
+                installation_date: document.getElementById('add-install-date').value.trim(),
+                maintenance_frequency: document.getElementById('add-frequency').value,
+                department_location: document.getElementById('add-location').value.trim(),
+                pms1_done_date: document.getElementById('add-pms1-done').value.trim(),
+                pms2_due_date: document.getElementById('add-pms2-due').value.trim(),
+                pms2_done_date: document.getElementById('add-pms2-done').value.trim(),
+                pms3_due_date: document.getElementById('add-pms3-due').value.trim(),
+                pms3_done_date: document.getElementById('add-pms3-done').value.trim(),
+                pms4_due_date: document.getElementById('add-pms4-due').value.trim(),
+            };
+
+            try {
+                const response = await fetch('/api/pms/add/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(`✅ Equipment ${result.asset_code} registered in PMS schedule!`);
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (result.error || 'Could not add record'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection error occurred while saving equipment.');
+            }
+        }
+
+        // Export Clean CSV matching the user's Excel format
+        function exportPMSToCSV() {
+            const rows = document.querySelectorAll('#pms-master-table tr');
+            let csv = [];
+            
+            // Header matching user's photo
+            csv.push([
+                "Sr. No.",
+                "Name of the equipment",
+                "Name of the company",
+                "Date of installation",
+                "Asset coding",
+                "Maintainance frequency",
+                "1st PMS done date",
+                "Due date of 2nd PMS",
+                "2nd PMS done date",
+                "Due date of 3rd PMS",
+                "3rd PMS done date",
+                "Due date of 4th PMS",
+                "4th PMS done date"
+            ].join(","));
+
+            const dataRows = document.querySelectorAll('#pms-table-body tr.pms-row');
+            dataRows.forEach((row, idx) => {
+                if (row.style.display !== 'none') {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 13) {
+                        const sr = idx + 1;
+                        const equip = `"${cells[1].innerText.trim()}"`;
+                        const comp = `"${cells[2].innerText.trim()}"`;
+                        const install = `"${cells[3].innerText.trim()}"`;
+                        const code = `"${cells[4].innerText.trim()}"`;
+                        const freq = `"${cells[5].innerText.trim()}"`;
+                        const pms1_done = `"${cells[6].innerText.trim()}"`;
+                        const pms2_due = `"${cells[7].innerText.trim()}"`;
+                        const pms2_done = `"${cells[8].innerText.trim()}"`;
+                        const pms3_due = `"${cells[9].innerText.trim()}"`;
+                        const pms3_done = `"${cells[10].innerText.trim()}"`;
+                        const pms4_due = `"${cells[11].innerText.trim()}"`;
+                        const pms4_done = `"${cells[12].innerText.trim().replace('Log Done', '')}"`;
+
+                        csv.push([sr, equip, comp, install, code, freq, pms1_done, pms2_due, pms2_done, pms3_due, pms3_done, pms4_due, pms4_done].join(","));
+                    }
+                }
+            });
+
+            const csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `CampusAssetIQ_PMS_Schedule_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ==========================================
+        // CONNECTED INVENTORY ASSET AUTO-FILL
+        // ==========================================
+        let inventoryDevicesData = [];
+        try {
+            const rawDevicesEl = document.getElementById('inventory-devices-data');
+            if (rawDevicesEl && rawDevicesEl.textContent) {
+                inventoryDevicesData = JSON.parse(rawDevicesEl.textContent);
+            }
+        } catch (e) {
+            console.error("Failed to parse inventory devices payload:", e);
+        }
+
+        function onSelectPMSInventoryAsset(val) {
+            if (!val) return;
+            const cleanVal = val.trim().toUpperCase();
+            const matched = inventoryDevicesData.find(d => d.asset_id.toUpperCase() === cleanVal);
+            if (matched) {
+                const equipInput = document.getElementById('add-equipment-name');
+                const compInput = document.getElementById('add-company-name');
+                const locInput = document.getElementById('add-location');
+                const installInput = document.getElementById('add-install-date');
+
+                // Determine equipment type from asset_id
+                const assetLower = matched.asset_id.toLowerCase();
+                if (equipInput && !equipInput.value) {
+                    if (assetLower.includes('/d-') || assetLower.includes('mon')) equipInput.value = 'Monitor';
+                    else if (assetLower.includes('/p-') || assetLower.includes('prt')) equipInput.value = 'Printer';
+                    else equipInput.value = 'Computer';
+                }
+                if (compInput && !compInput.value) compInput.value = 'HP';
+                if (locInput && !locInput.value) locInput.value = matched.location.trim();
+                if (installInput && !installInput.value && matched.purchase_date) installInput.value = matched.purchase_date;
+            }
+        }
+
+        // ==========================================
+        // EDIT PMS RECORD MODAL & LOGIC
+        // ==========================================
+        function openEditPMSModal(id) {
+            const row = document.getElementById(`pms-row-${id}`);
+            if (!row) return;
+
+            document.getElementById('edit-pms-id').value = id;
+            document.getElementById('edit-pms-subtitle').innerText = `Asset: ${row.dataset.asset} • ID #${id}`;
+            document.getElementById('edit-equipment-name').value = row.dataset.equipment || '';
+            document.getElementById('edit-company-name').value = row.dataset.company || '';
+            document.getElementById('edit-asset-code').value = row.dataset.asset || '';
+            document.getElementById('edit-install-date').value = row.dataset.install || '';
+            document.getElementById('edit-frequency').value = row.dataset.frequency || 'QUARTERLY';
+            document.getElementById('edit-status').value = row.dataset.status || 'Pending 4th PMS';
+            document.getElementById('edit-location').value = row.dataset.location || '';
+            document.getElementById('edit-notes').value = row.dataset.notes || '';
+
+            document.getElementById('edit-pms1-done').value = row.dataset.pms1Done || '';
+            document.getElementById('edit-pms2-due').value = row.dataset.pms2Due || '';
+            document.getElementById('edit-pms2-done').value = row.dataset.pms2Done || '';
+            document.getElementById('edit-pms3-due').value = row.dataset.pms3Due || '';
+            document.getElementById('edit-pms3-done').value = row.dataset.pms3Done || '';
+            document.getElementById('edit-pms4-due').value = row.dataset.pms4Due || '';
+            document.getElementById('edit-pms4-done').value = row.dataset.pms4Done || '';
+
+            document.getElementById('modal-edit-pms').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeEditPMSModal() {
+            document.getElementById('modal-edit-pms').classList.add('hidden');
+        }
+
+        function autoCalculateEditPMSDueDates() {
+            const freqSelect = document.getElementById('edit-frequency');
+            const freqVal = freqSelect ? freqSelect.value.toUpperCase() : 'QUARTERLY';
+            
+            let intervalMonths = 3;
+            if (freqVal.includes('HALF')) intervalMonths = 6;
+            else if (freqVal.includes('ANNUAL')) intervalMonths = 12;
+
+            const installInput = document.getElementById('edit-install-date');
+            const pms1DoneInput = document.getElementById('edit-pms1-done');
+            const pms2DueInput = document.getElementById('edit-pms2-due');
+            const pms2DoneInput = document.getElementById('edit-pms2-done');
+            const pms3DueInput = document.getElementById('edit-pms3-due');
+            const pms3DoneInput = document.getElementById('edit-pms3-done');
+            const pms4DueInput = document.getElementById('edit-pms4-due');
+
+            const pms1Done = pms1DoneInput ? pms1DoneInput.value.trim() : '';
+            const installDate = installInput ? installInput.value.trim() : '';
+            const pms2Done = pms2DoneInput ? pms2DoneInput.value.trim() : '';
+            const pms3Done = pms3DoneInput ? pms3DoneInput.value.trim() : '';
+
+            const baseForPMS2 = parseFlexibleDate(pms1Done) || parseFlexibleDate(installDate);
+            let calculatedDue2 = null;
+            if (baseForPMS2 && pms2DueInput) {
+                calculatedDue2 = addMonthsToDate(baseForPMS2, intervalMonths);
+                pms2DueInput.value = formatDisplayDate(calculatedDue2);
+            }
+
+            const baseForPMS3 = parseFlexibleDate(pms2Done) || calculatedDue2 || (pms2DueInput ? parseFlexibleDate(pms2DueInput.value) : null);
+            let calculatedDue3 = null;
+            if (baseForPMS3 && pms3DueInput) {
+                calculatedDue3 = addMonthsToDate(baseForPMS3, intervalMonths);
+                pms3DueInput.value = formatDisplayDate(calculatedDue3);
+            }
+
+            const baseForPMS4 = parseFlexibleDate(pms3Done) || calculatedDue3 || (pms3DueInput ? parseFlexibleDate(pms3DueInput.value) : null);
+            if (baseForPMS4 && pms4DueInput) {
+                const calculatedDue4 = addMonthsToDate(baseForPMS4, intervalMonths);
+                pms4DueInput.value = formatDisplayDate(calculatedDue4);
+            }
+        }
+
+        async function submitEditPMS(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-pms-id').value;
+            const payload = {
+                equipment_name: document.getElementById('edit-equipment-name').value.trim(),
+                company_name: document.getElementById('edit-company-name').value.trim(),
+                asset_code: document.getElementById('edit-asset-code').value.trim().toUpperCase(),
+                installation_date: document.getElementById('edit-install-date').value.trim(),
+                maintenance_frequency: document.getElementById('edit-frequency').value,
+                status: document.getElementById('edit-status').value,
+                department_location: document.getElementById('edit-location').value.trim(),
+                engineer_notes: document.getElementById('edit-notes').value.trim(),
+                pms1_done_date: document.getElementById('edit-pms1-done').value.trim(),
+                pms2_due_date: document.getElementById('edit-pms2-due').value.trim(),
+                pms2_done_date: document.getElementById('edit-pms2-done').value.trim(),
+                pms3_due_date: document.getElementById('edit-pms3-due').value.trim(),
+                pms3_done_date: document.getElementById('edit-pms3-done').value.trim(),
+                pms4_due_date: document.getElementById('edit-pms4-due').value.trim(),
+                pms4_done_date: document.getElementById('edit-pms4-done').value.trim()
+            };
+
+            try {
+                const response = await fetch(`/api/pms/update/${id}/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(`✅ PMS Record for ${result.asset_code} successfully updated in database!`);
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (result.error || 'Could not update record'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection error occurred while updating PMS record.');
+            }
+        }
+
+        // ==========================================
+        // DELETE PMS RECORD
+        // ==========================================
+        async function deletePMSRecord(id, assetCode) {
+            if (!confirm(`Are you sure you want to delete PMS schedule record for "${assetCode}" from the database?`)) {
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/api/pms/delete/${id}/`, { method: 'POST' });
+                const res = await resp.json();
+                if (res.success) {
+                    const row = document.getElementById(`pms-row-${id}`);
+                    if (row) row.remove();
+                    alert(`✅ PMS Record ${assetCode} deleted successfully!`);
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (res.error || 'Failed to delete record'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Network error while deleting record.');
+            }
+        }
+
+        // ==========================================
+        // PMS EXCEL IMPORT & TEMPLATE DOWNLOAD
+        // ==========================================
+        let selectedPMSExcelFile = null;
+
+        function openPMSExcelImportModal() {
+            clearSelectedPMSExcelFile();
+            document.getElementById('modal-import-pms-excel').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closePMSExcelImportModal() {
+            document.getElementById('modal-import-pms-excel').classList.add('hidden');
+            clearSelectedPMSExcelFile();
+        }
+
+        function clearSelectedPMSExcelFile() {
+            selectedPMSExcelFile = null;
+            const input = document.getElementById('pms-excel-file-input');
+            if (input) input.value = '';
+
+            const info = document.getElementById('pms-excel-file-info');
+            if (info) info.classList.add('hidden');
+
+            const drop = document.getElementById('pms-excel-dropzone');
+            if (drop) drop.classList.remove('hidden');
+
+            const btn = document.getElementById('btn-pms-confirm-import');
+            if (btn) btn.disabled = true;
+
+            const st = document.getElementById('pms-excel-import-status');
+            if (st) {
+                st.className = 'hidden p-3 rounded-xl text-xs font-semibold';
+                st.innerHTML = '';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropzoneEl = document.getElementById('pms-excel-dropzone');
+            if (dropzoneEl) {
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropzoneEl.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzoneEl.classList.add('border-emerald-500', 'bg-emerald-50/50');
+                    }, false);
+                });
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropzoneEl.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzoneEl.classList.remove('border-emerald-500', 'bg-emerald-50/50');
+                    }, false);
+                });
+                dropzoneEl.addEventListener('drop', (e) => {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    if (files && files.length > 0) {
+                        handlePMSExcelFileInput(files);
+                    }
+                });
+            }
+        });
+
+        function handlePMSExcelFileInput(files) {
+            if (!files || files.length === 0) return;
+            const file = files[0];
+            const valid = ['.xlsx', '.xls', '.csv'].some(ext => file.name.toLowerCase().endsWith(ext));
+            if (!valid) {
+                alert('Please upload a valid .xlsx, .xls, or .csv Excel spreadsheet.');
+                return;
+            }
+
+            selectedPMSExcelFile = file;
+            document.getElementById('pms-excel-file-name').innerText = file.name;
+            const sizeKB = (file.size / 1024).toFixed(1);
+            document.getElementById('pms-excel-file-meta').innerText = `${sizeKB} KB • Analyzing rows...`;
+            document.getElementById('pms-excel-dropzone').classList.add('hidden');
+            document.getElementById('pms-excel-file-info').classList.remove('hidden');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    if (typeof XLSX !== 'undefined') {
+                        const wb = XLSX.read(data, {type: 'array', cellDates: true});
+                        const ws = wb.Sheets[wb.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(ws, {defval: ''});
+                        renderPMSExcelPreview(jsonData, sizeKB);
+                    } else {
+                        document.getElementById('pms-excel-file-meta').innerText = `${sizeKB} KB • Ready for server import`;
+                        document.getElementById('btn-pms-confirm-import').disabled = false;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    document.getElementById('pms-excel-file-meta').innerText = `${sizeKB} KB • Ready for server processing`;
+                    document.getElementById('btn-pms-confirm-import').disabled = false;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function renderPMSExcelPreview(rows, sizeKB) {
+            const tbody = document.getElementById('pms-excel-preview-tbody');
+            tbody.innerHTML = '';
+
+            if (!rows || rows.length === 0) {
+                document.getElementById('pms-excel-file-meta').innerText = `${sizeKB} KB • 0 valid records found`;
+                document.getElementById('btn-pms-confirm-import').disabled = true;
+                return;
+            }
+
+            document.getElementById('pms-excel-file-meta').innerText = `${sizeKB} KB • ${rows.length} PMS calibration records ready`;
+            document.getElementById('btn-pms-confirm-import').disabled = false;
+
+            const preview = rows.slice(0, 5);
+            preview.forEach(r => {
+                const tr = document.createElement('tr');
+                const lower = {};
+                Object.keys(r).forEach(k => lower[k.toLowerCase().trim()] = r[k]);
+
+                const getV = (aliases, def) => {
+                    for (let a of aliases) {
+                        if (lower[a.toLowerCase()] !== undefined && lower[a.toLowerCase()] !== '') {
+                            return lower[a.toLowerCase()];
+                        }
+                    }
+                    return def;
+                };
+
+                const tag = getV(['asset coding', 'asset code', 'tag', 'code'], 'KH/IT/COMP/1');
+                const equip = getV(['name of the equipment', 'equipment name', 'equipment'], 'Computer');
+                const comp = getV(['name of company', 'company', 'oem'], 'HP');
+                const install = getV(['date of installation', 'install date'], '08-11-2021');
+                const pms1 = getV(['1st pms done date', 'pms1 done', 'pms1'], 'Done');
+
+                tr.innerHTML = `
+                    <td class="p-1.5 font-mono font-bold text-slate-900">${tag}</td>
+                    <td class="p-1.5 text-slate-700">${equip}</td>
+                    <td class="p-1.5 text-slate-600">${comp}</td>
+                    <td class="p-1.5 text-slate-600">${install}</td>
+                    <td class="p-1.5 text-emerald-700 font-bold">${pms1}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        async function submitPMSExcelImport() {
+            if (!selectedPMSExcelFile) return;
+
+            const btn = document.getElementById('btn-pms-confirm-import');
+            const btnText = document.getElementById('btn-pms-import-text');
+            const statusEl = document.getElementById('pms-excel-import-status');
+
+            btn.disabled = true;
+            btnText.innerText = 'Importing...';
+            statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 block';
+            statusEl.innerHTML = '<span class="inline-block animate-pulse mr-1">⏳</span> Registering PMS matrix schedules in database...';
+
+            const formData = new FormData();
+            formData.append('file', selectedPMSExcelFile);
+
+            try {
+                const resp = await fetch('/api/pms/import-excel/', {
+                    method: 'POST',
+                    body: formData
+                });
+                const res = await resp.json();
+
+                if (res.success) {
+                    statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300 block';
+                    statusEl.innerHTML = `✅ ${res.message || 'Successfully imported PMS schedules!'}`;
+                    btnText.innerText = 'Done!';
+
+                    setTimeout(() => {
+                        closePMSExcelImportModal();
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 block';
+                    statusEl.innerHTML = `❌ Error: ${res.error || 'Failed to import spreadsheet.'}`;
+                    btn.disabled = false;
+                    btnText.innerText = 'Try Again';
+                }
+            } catch (err) {
+                console.error(err);
+                statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 block';
+                statusEl.innerHTML = `❌ Server connection error: ${err.message}`;
+                btn.disabled = false;
+                btnText.innerText = 'Import to Table';
+            }
+        }
+
+        function downloadPMSTemplate() {
+            const headers = [
+                "Name of the equipment",
+                "Name of company",
+                "Date of installation",
+                "Asset coding",
+                "Maintainance frequency",
+                "1st PMS done date",
+                "Due date of 2nd PMS",
+                "2nd PMS done date",
+                "Due date of 3rd PMS",
+                "3rd PMS done date",
+                "Due date of 4th PMS",
+                "4th PMS done date",
+                "Status",
+                "Location / Department"
+            ];
+
+            const sampleRows = [
+                ["Computer", "HP", "08-11-2021", "KH/IT/COMPUTER/1", "QUARTERLY", "08-08-2022", "08-11-2022", "09-11-2022", "09-02-2023", "09-02-2023", "09-05-2023", "09-05-2023", "Completed", "IT Lab 101"],
+                ["Computer", "Dell", "08-11-2021", "KH/IT/COMPUTER/2", "QUARTERLY", "08-08-2022", "08-11-2022", "09-11-2022", "09-02-2023", "09-02-2023", "09-05-2023", "", "Pending 4th PMS", "IT Lab 102"],
+                ["Laser Printer", "Canon", "15-01-2022", "KH/IT/PRINTER/1", "QUARTERLY", "15-04-2022", "15-07-2022", "16-07-2022", "16-10-2022", "16-10-2022", "16-01-2023", "16-01-2023", "Completed", "Admin Office Room 12"]
+            ];
+
+            if (typeof XLSX !== 'undefined') {
+                const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
+                ws['!cols'] = [
+                    {wch: 22}, {wch: 16}, {wch: 18}, {wch: 22}, {wch: 20},
+                    {wch: 18}, {wch: 18}, {wch: 18}, {wch: 18}, {wch: 18},
+                    {wch: 18}, {wch: 18}, {wch: 16}, {wch: 22}
+                ];
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "PMS_Schedule");
+                XLSX.writeFile(wb, "Equipment_PMS_Schedule_Template.xlsx");
+            } else {
+                const csvRows = [headers, ...sampleRows];
+                let csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+                let encodedUri = encodeURI(csvContent);
+                let link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "Equipment_PMS_Schedule_Template.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+    </script>
+{% endblock %}
