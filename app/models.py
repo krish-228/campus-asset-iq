@@ -91,6 +91,7 @@ class DeviceAsset(models.Model):
     assigned_user_id = models.CharField(max_length=50, blank=True, null=True)
     assigned_user_name = models.CharField(max_length=150, blank=True, default="Unassigned")
     assigned_emp_id = models.CharField(max_length=50, blank=True)
+    assigned_designation = models.CharField(max_length=150, blank=True, default="")
     
     monitor_spec = models.CharField(max_length=255, blank=True)
     cpu_processor = models.CharField(max_length=255, blank=True)

@@ -93,6 +93,57 @@ function initAppState() {
         saveAppState();
     }
 
+    // DIRECT POSTGRESQL SERVER-SIDE INGESTION (Instant sub-millisecond render)
+    const serverDevicesEl = document.getElementById('server-devices-payload');
+    if (serverDevicesEl && serverDevicesEl.textContent.trim()) {
+        try {
+            const serverDevices = JSON.parse(serverDevicesEl.textContent);
+            if (Array.isArray(serverDevices) && serverDevices.length > 0) {
+                serverDevices.forEach(dbDev => {
+                    if (!dbDev.roomId && dbDev.roomName && appState.rooms) {
+                        const matchRoom = appState.rooms.find(r =>
+                            r.name.toLowerCase().includes(dbDev.roomName.toLowerCase()) ||
+                            dbDev.roomName.toLowerCase().includes(r.name.toLowerCase())
+                        );
+                        if (matchRoom) {
+                            dbDev.roomId = matchRoom.id;
+                        } else if (appState.rooms.length > 0) {
+                            dbDev.roomId = appState.rooms[0].id;
+                        }
+                    }
+                });
+                appState.devices = serverDevices;
+                saveAppState();
+            }
+        } catch (e) {
+            console.warn("Server devices payload parsing fallback:", e);
+        }
+    }
+
+    const serverLogsEl = document.getElementById('server-audit-logs-payload');
+    if (serverLogsEl && serverLogsEl.textContent.trim()) {
+        try {
+            const serverLogs = JSON.parse(serverLogsEl.textContent);
+            if (Array.isArray(serverLogs) && serverLogs.length > 0) {
+                appState.assignmentHistories = serverLogs.map(log => ({
+                    id: `db-${log.id}`,
+                    deviceId: log.deviceAssetId,
+                    userId: null,
+                    fromUserName: log.fromUserName,
+                    toUserName: log.toUserName,
+                    fromDate: log.handoverDate,
+                    toDate: "-",
+                    location: "Campus Lab",
+                    assignedBy: log.assignedBy,
+                    remarks: log.remarks
+                }));
+                saveAppState();
+            }
+        } catch (e) {
+            console.warn("Server audit logs payload parsing fallback:", e);
+        }
+    }
+
     // Always lock active organization to HOSP
     appState.selectedOrg = "HOSP";
     localStorage.setItem("CAMPUS_SELECTED_ORG", "HOSP");
@@ -250,6 +301,7 @@ function getFilteredDevices() {
             const user = (appState.users || []).find(u => (u.id && u.id === dev.assignedUserId) || (u.empId && (u.empId === dev.empId || u.empId === dev.assignedEmpId)));
             const userName = (user ? (user.fullName || user.name || "") : (dev.assignedUserName || dev.assigned_user_name || "")).toLowerCase();
             const empId = (user ? (user.empId || "") : (dev.empId || dev.assignedEmpId || "")).toLowerCase();
+            const desig = (dev.designation || dev.assignedDesignation || dev.assigned_designation || (user ? user.designation : "")).toLowerCase();
             const room = appState.rooms.find(r => r.id === dev.roomId);
             const roomName = room ? (room.name || "").toLowerCase() : "";
 
@@ -264,6 +316,7 @@ function getFilteredDevices() {
                 (dev.operatingSystem || "").toLowerCase().includes(q) ||
                 userName.includes(q) ||
                 empId.includes(q) ||
+                desig.includes(q) ||
                 roomName.includes(q);
 
             if (!matches) return false;
@@ -384,16 +437,15 @@ function renderInventoryTable() {
 
         const assignedName = (dev.assignedUserName || dev.assigned_user_name || (user ? user.fullName : '') || '').trim();
         const assignedEmp = (dev.empId || dev.assigned_emp_id || (user ? user.empId : '') || '').trim();
+        const assignedDesig = (dev.designation || dev.assignedDesignation || dev.assigned_designation || (user ? user.designation : '') || '').trim();
         const isUnassigned = !assignedName || assignedName.toLowerCase() === 'unassigned' || assignedName.toLowerCase().includes('unassigned / spare') || assignedName.toLowerCase().startsWith('unassigned');
 
         let userDisplay = '';
         if (!isUnassigned) {
             const displayName = user ? user.fullName : assignedName;
             const displayEmp = assignedEmp || (user ? user.empId : '');
-            const displayDept = user
-                ? (user.designation || user.department || 'Hospital Staff')
-                : (displayEmp ? 'Clinical Staff' : 'Assigned Custodian');
-            const deptSnippet = (user && user.department) ? ` &bull; ${user.department}` : (displayDept ? ` &bull; ${displayDept}` : '');
+            const desigText = assignedDesig || (user ? (user.designation || user.department) : '') || 'Assigned Custodian';
+            const deptText = (user && user.department && user.department !== desigText) ? user.department : '';
 
             userDisplay = `
                 <div class="cursor-pointer group" onclick="${displayEmp ? `openSearchUserModal('${displayEmp}')` : ''}" title="Click to inspect profile and assignment history">
@@ -402,8 +454,13 @@ function renderInventoryTable() {
                             <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
                             <span class="truncate">${displayName}</span>
                         </div>
-                        <div class="text-xs text-slate-500 font-medium truncate">${displayDept}</div>
-                        <div class="text-[11px] text-slate-400 font-mono truncate">${displayEmp ? `${displayEmp}${deptSnippet}` : 'Verified Custodian'}</div>
+                        <div class="text-xs text-indigo-600 font-semibold truncate flex items-center gap-1 mt-0.5" title="${desigText}">
+                            <i data-lucide="briefcase" class="w-3 h-3 text-indigo-400 shrink-0"></i>
+                            <span class="truncate">${desigText}</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400 font-mono truncate mt-0.5">
+                            ${displayEmp ? displayEmp : ''}${displayEmp && deptText ? ' &bull; ' : ''}${deptText}
+                        </div>
                     </div>
                 </div>
             `;
@@ -1060,24 +1117,29 @@ function populateUserPopup(user) {
 }
 
 function populateUserPopupWithDevice(user, assignedDev) {
-    const isUnassigned = !user || !user.id || user.empId === "UNASSIGNED";
+    const assignedName = assignedDev ? (assignedDev.assignedUserName || assignedDev.assigned_user_name || "") : "";
+    const assignedDesig = assignedDev ? (assignedDev.designation || assignedDev.assignedDesignation || assignedDev.assigned_designation || "") : "";
+    const assignedEmp = assignedDev ? (assignedDev.empId || assignedDev.assigned_emp_id || "") : "";
+
+    const isCustomStaff = (!user || !user.id || user.empId === "UNASSIGNED") && assignedName && assignedName.toLowerCase() !== "unassigned" && !assignedName.toLowerCase().startsWith("unassigned");
+    const isUnassigned = !isCustomStaff && (!user || !user.id || user.empId === "UNASSIGNED");
 
     // User Profile Card Fields
     const initialsEl = document.getElementById("user-popup-initials");
-    if (initialsEl) initialsEl.textContent = isUnassigned ? "SP" : getUserInitials(user.fullName);
+    if (initialsEl) initialsEl.textContent = isUnassigned ? "SP" : getUserInitials(isCustomStaff ? assignedName : (user ? user.fullName : assignedName));
 
     const empEl = document.getElementById("user-popup-empid");
-    if (empEl) empEl.textContent = isUnassigned ? "— (Ready for Deployment)" : user.empId;
+    if (empEl) empEl.textContent = isUnassigned ? "— (Ready for Deployment)" : (isCustomStaff ? (assignedEmp || "STAFF") : (user ? user.empId : assignedEmp));
     const fnEl = document.getElementById("user-popup-fullname");
-    if (fnEl) fnEl.textContent = isUnassigned ? "Unassigned Hardware Pool (Spare)" : user.fullName;
+    if (fnEl) fnEl.textContent = isUnassigned ? "Unassigned Hardware Pool (Spare)" : (isCustomStaff ? assignedName : (user ? user.fullName : assignedName));
     const deptEl = document.getElementById("user-popup-department");
-    if (deptEl) deptEl.textContent = isUnassigned ? "IT Spares & Inventory Storage" : user.department;
+    if (deptEl) deptEl.textContent = isUnassigned ? "IT Spares & Inventory Storage" : (isCustomStaff ? (assignedDev ? (assignedDev.roomName || "Clinical Wing") : "PSM Hospital") : (user ? user.department : "Hospital Staff"));
     const desEl = document.getElementById("user-popup-designation");
-    if (desEl) desEl.textContent = isUnassigned ? "Spare System" : user.designation;
+    if (desEl) desEl.textContent = isUnassigned ? "Spare System" : (assignedDesig || (user ? user.designation : "") || "Assigned Custodian");
     const emEl = document.getElementById("user-popup-email");
-    if (emEl) emEl.textContent = isUnassigned ? "it-desk@campus.edu" : user.email;
+    if (emEl) emEl.textContent = isUnassigned ? "it-desk@campus.edu" : (isCustomStaff ? `${assignedName.toLowerCase().replace(/\s+/g, '.')}@hospital.org` : (user ? user.email : "staff@hospital.org"));
     const phEl = document.getElementById("user-popup-phone");
-    if (phEl) phEl.textContent = isUnassigned ? "Helpdesk Ext. 101" : user.phone;
+    if (phEl) phEl.textContent = isUnassigned ? "Helpdesk Ext. 101" : ((user && user.phone) ? user.phone : "Clinical Ext. 204");
     const stEl = document.getElementById("user-popup-status");
     if (stEl) {
         if (isUnassigned) {
@@ -1085,7 +1147,7 @@ function populateUserPopupWithDevice(user, assignedDev) {
             stEl.textContent = assignedDev ? assignedDev.status : "Spare Pool";
         } else {
             stEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
-            stEl.textContent = user.status || "Active";
+            stEl.textContent = (user && user.status) ? user.status : "Active Custodian";
         }
     }
 
@@ -1393,6 +1455,7 @@ function openAddDeviceModal(editId = null) {
             } else {
                 setVal("dev-input-user-name", "");
             }
+            setVal("dev-input-designation", dev.designation || dev.assignedDesignation || dev.assigned_designation || (knownUserMatch ? knownUserMatch.designation : "") || "");
             setVal("dev-select-status", dev.status);
             setVal("dev-input-warranty", dev.warrantyExpiryDate);
         }
@@ -1402,6 +1465,8 @@ function openAddDeviceModal(editId = null) {
         if (editIdInput) editIdInput.value = "";
         const userSelectEl = document.getElementById("dev-select-user");
         if (userSelectEl) userSelectEl.value = "";
+        setVal("dev-input-user-name", "");
+        setVal("dev-input-designation", "");
         const typeSelect = document.getElementById("dev-select-type");
         if (typeSelect) typeSelect.value = "C";
 
@@ -1535,6 +1600,15 @@ async function handleSaveDevice(e) {
         assignedUserName = typedUserName;
     }
 
+    const typedDesigEl = document.getElementById("dev-input-designation");
+    let assignedDesignation = typedDesigEl ? typedDesigEl.value.trim() : "";
+    if (!assignedDesignation && userEl && userEl.value) {
+        const matchedUser = (appState.users || []).find(u => u.id === userEl.value);
+        if (matchedUser && matchedUser.designation) {
+            assignedDesignation = matchedUser.designation;
+        }
+    }
+
     const today = new Date();
     const purchaseDate = `${String(today.getDate()).padStart(2, '0')}-${today.toLocaleString('default', { month: 'short' })}-${today.getFullYear()}`;
 
@@ -1552,6 +1626,8 @@ async function handleSaveDevice(e) {
         assignedUserId,
         assignedUserName,
         assignedEmpId,
+        assignedDesignation,
+        designation: assignedDesignation,
         cpuProcessor,
         storageRam,
         monitorSpec,
@@ -3475,8 +3551,15 @@ function initCampusTrackerApp() {
     if (window.lucide && typeof window.lucide.createIcons === 'function') {
         lucide.createIcons();
     }
-    syncDevicesFromDatabase();
-    syncAuditLogsFromDatabase();
+    
+    // Check if server-side data was already provided in the HTML payload
+    const hasServerPayload = document.getElementById('server-devices-payload');
+    if (!hasServerPayload) {
+        // Fallback to client-side fetch only if server payload was not present
+        syncDevicesFromDatabase();
+        syncAuditLogsFromDatabase();
+    }
+
     if (window.initTableDragScroll) window.initTableDragScroll();
 
     // Auto-open Add Device Modal if requested via URL param (from other admin pages)

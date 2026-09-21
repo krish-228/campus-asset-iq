@@ -35,7 +35,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Universal Custom CSS -->
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v={% now 'U' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=5.2">
 
     <style>
         /* ========================================================= */
@@ -511,7 +511,7 @@
     {% block modals %}{% endblock %}
 
     <!-- Core Scripts with Cache Busting -->
-    <script src="{% static 'js/table_scroll.js' %}?v={% now 'U' %}"></script>
+    <script src="{% static 'js/table_scroll.js' %}?v=5.2"></script>
 
     <!-- Sidebar Animation & Interactivity Script -->
     <script>
@@ -562,6 +562,14 @@
             }
         });
     </script>
+
+    <!-- Direct PostgreSQL Server-Side Data Ingestion Payloads (Instant Sub-Millisecond Render) -->
+    {% if devices_json %}
+    <script type="application/json" id="server-devices-payload">{{ devices_json|safe }}</script>
+    {% endif %}
+    {% if audit_logs_json %}
+    <script type="application/json" id="server-audit-logs-payload">{{ audit_logs_json|safe }}</script>
+    {% endif %}
 
     {% block extra_scripts %}{% endblock %}
 </body>

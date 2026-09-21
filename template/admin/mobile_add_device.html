@@ -336,7 +336,8 @@
                         <input type="text" id="input-user-name" name="assigned_user_name"
                             list="staff-datalist"
                             placeholder="e.g. Dr. Vikram Sharma"
-                            class="mobile-input text-sm">
+                            class="mobile-input text-sm"
+                            oninput="handleStaffInput(this.value)">
                         <datalist id="staff-datalist">
                             {% for s in staff_list %}
                             <option value="{{ s.full_name }} ({{ s.emp_id }})"></option>
@@ -348,6 +349,29 @@
                         <input type="text" id="input-emp-id" name="assigned_emp_id"
                             placeholder="e.g. MED-00042"
                             class="mobile-input uppercase font-mono text-sm">
+                    </div>
+
+                    <!-- Directly Below Staff / Doctor Name: Designation Input -->
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                            <i data-lucide="briefcase" class="w-3 h-3 text-violet-400"></i>
+                            <span>Designation</span>
+                        </label>
+                        <input type="text" id="input-designation" name="assigned_designation"
+                            list="designation-datalist"
+                            placeholder="e.g. Software Engineer"
+                            class="mobile-input text-sm">
+                        <datalist id="designation-datalist">
+                            <option value="Software Engineer"></option>
+                            <option value="Senior Software Engineer"></option>
+                            <option value="IT Systems Administrator"></option>
+                            <option value="Biomedical Lead Engineer"></option>
+                            <option value="Chief Intensivist / HOD"></option>
+                            <option value="Consultant Radiologist"></option>
+                            <option value="Senior Nursing Officer"></option>
+                            <option value="Triage Nurse Officer"></option>
+                            <option value="Clinical Data Analyst"></option>
+                        </datalist>
                     </div>
                 </div>
             </div>
@@ -648,10 +672,40 @@
             saveDraft();
         }
 
+        const staffLookup = {
+            {% for s in staff_list %}
+            "{{ s.full_name|escapejs }}": { empId: "{{ s.emp_id|escapejs }}", desig: "{{ s.designation|escapejs }}" },
+            "{{ s.full_name|escapejs }} ({{ s.emp_id|escapejs }})": { empId: "{{ s.emp_id|escapejs }}", desig: "{{ s.designation|escapejs }}" },
+            {% endfor %}
+        };
+
+        function handleStaffInput(val) {
+            const clean = (val || '').trim();
+            if (staffLookup[clean]) {
+                const s = staffLookup[clean];
+                if (s.empId) document.getElementById('input-emp-id').value = s.empId;
+                if (s.desig) document.getElementById('input-designation').value = s.desig;
+            } else {
+                const match = clean.match(/^(.*?)\s*\(([^)]+)\)$/);
+                if (match) {
+                    const nameOnly = match[1].trim();
+                    const empOnly = match[2].trim();
+                    document.getElementById('input-user-name').value = nameOnly;
+                    document.getElementById('input-emp-id').value = empOnly;
+                    if (staffLookup[nameOnly] && staffLookup[nameOnly].desig) {
+                        document.getElementById('input-designation').value = staffLookup[nameOnly].desig;
+                    }
+                }
+            }
+            saveDraft();
+        }
+
         // Set Unassigned Custodian
         function setUnassigned() {
             document.getElementById('input-user-name').value = "Unassigned";
             document.getElementById('input-emp-id').value = "";
+            const desigInput = document.getElementById('input-designation');
+            if (desigInput) desigInput.value = "";
             saveDraft();
         }
 
@@ -791,6 +845,7 @@
                 room: document.getElementById('input-room').value,
                 user_name: document.getElementById('input-user-name').value,
                 emp_id: document.getElementById('input-emp-id').value,
+                designation: document.getElementById('input-designation')?.value || '',
                 cpu: document.getElementById('input-cpu').value,
                 ram: document.getElementById('input-ram').value,
                 os: document.getElementById('input-os').value,
@@ -824,6 +879,9 @@
                     if (draft.room) document.getElementById('input-room').value = draft.room;
                     if (draft.user_name) document.getElementById('input-user-name').value = draft.user_name;
                     if (draft.emp_id) document.getElementById('input-emp-id').value = draft.emp_id;
+                    if (draft.designation && document.getElementById('input-designation')) {
+                        document.getElementById('input-designation').value = draft.designation;
+                    }
                     if (draft.cpu) document.getElementById('input-cpu').value = draft.cpu;
                     if (draft.ram) document.getElementById('input-ram').value = draft.ram;
                     if (draft.os) document.getElementById('input-os').value = draft.os;
@@ -886,6 +944,8 @@
             submitText.textContent = "Saving to PostgreSQL Database...";
 
             // Assemble payload
+            const assignedUserName = document.getElementById('input-user-name').value.trim() || 'Unassigned';
+            const assignedDesig = (document.getElementById('input-designation')?.value || '').trim();
             const payload = {
                 asset_id: assetId,
                 device_type: currentCategory,
@@ -894,8 +954,9 @@
                 building_name: document.getElementById('input-building').value.trim(),
                 floor_name: currentFloor,
                 room_name: roomName,
-                assigned_user_name: document.getElementById('input-user-name').value.trim() || 'Unassigned',
+                assigned_user_name: assignedUserName,
                 assigned_emp_id: document.getElementById('input-emp-id').value.trim(),
+                assigned_designation: assignedDesig,
                 status: document.getElementById('input-status').value,
                 cpu_processor: document.getElementById('input-cpu').value.trim(),
                 storage_ram: document.getElementById('input-ram').value.trim(),
@@ -924,7 +985,10 @@
                     document.getElementById('modal-saved-tag').textContent = assetId;
                     document.getElementById('modal-saved-type').textContent = `${currentCategory} (${payload.status})`;
                     document.getElementById('modal-saved-room').textContent = `${roomName} • ${currentFloor}`;
-                    document.getElementById('modal-saved-custodian').textContent = payload.assigned_user_name || 'Unassigned';
+                    const custodianSummary = (assignedDesig && assignedUserName.toLowerCase() !== 'unassigned')
+                        ? `${assignedUserName} • ${assignedDesig}`
+                        : assignedUserName;
+                    document.getElementById('modal-saved-custodian').textContent = custodianSummary;
                     
                     const printTagBtn = document.getElementById('btn-modal-print-tag');
                     if (data.tag_url) {

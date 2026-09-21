@@ -26,7 +26,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v={% now 'U' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=5.2">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -235,10 +235,18 @@
         </div>
     </footer>
 
+    <!-- Direct PostgreSQL Server-Side Data Ingestion Payloads -->
+    {% if devices_json %}
+    <script type="application/json" id="server-devices-payload">{{ devices_json|safe }}</script>
+    {% endif %}
+    {% if audit_logs_json %}
+    <script type="application/json" id="server-audit-logs-payload">{{ audit_logs_json|safe }}</script>
+    {% endif %}
+
     <!-- Scripts -->
-    <script src="{% static 'js/data.js' %}"></script>
-    <script src="{% static 'js/qr_generator.js' %}"></script>
-    <script src="{% static 'js/app.js' %}"></script>
+    <script src="{% static 'js/data.js' %}?v=5.2"></script>
+    <script src="{% static 'js/qr_generator.js' %}?v=5.2"></script>
+    <script src="{% static 'js/app.js' %}?v=5.2"></script>
     <script>
         function openUniversityComingSoonModal() {
             const modal = document.getElementById('modal-uni-coming-soon');

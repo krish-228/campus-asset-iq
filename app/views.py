@@ -1058,6 +1058,13 @@ def ensure_sample_devices():
     DeviceAsset.objects.filter(org_id='UNI').delete()
     for d in SAMPLE_DEVICES:
         dev_type = normalize_device_type(d.get('deviceType', ''), d.get('assetId', ''))
+        assigned_user = d.get('assignedUserName', 'Unassigned')
+        desig = d.get('designation', '')
+        if not desig and assigned_user and assigned_user.lower() != 'unassigned':
+            for s in SAMPLE_STAFF:
+                if s.get('fullName', '').lower() == assigned_user.lower():
+                    desig = s.get('designation', '')
+                    break
         DeviceAsset.objects.update_or_create(
             dev_id=d.get('id', ''),
             defaults={
@@ -1072,6 +1079,7 @@ def ensure_sample_devices():
                 'assigned_user_id': d.get('assignedUserId', ''),
                 'assigned_user_name': d.get('assignedUserName', 'Unassigned'),
                 'assigned_emp_id': d.get('empId', ''),
+                'assigned_designation': desig,
                 'monitor_spec': d.get('monitorSpec', ''),
                 'cpu_processor': d.get('cpuProcessor', ''),
                 'storage_ram': d.get('storageRam', ''),
@@ -1104,6 +1112,8 @@ def api_get_devices(request):
             'assignedUserId': d.assigned_user_id,
             'assignedUserName': d.assigned_user_name,
             'empId': d.assigned_emp_id,
+            'designation': d.assigned_designation or '',
+            'assignedDesignation': d.assigned_designation or '',
             'monitorSpec': d.monitor_spec,
             'cpuProcessor': d.cpu_processor,
             'storageRam': d.storage_ram,
@@ -1257,6 +1267,20 @@ def api_save_device(request):
     assigned_user_id = data.get('assignedUserId') or data.get('assigned_user_id') or ''
     assigned_user_name = (data.get('assignedUserName') or data.get('assigned_user_name') or 'Unassigned').strip()
     assigned_emp_id = (data.get('assignedEmpId') or data.get('assigned_emp_id') or data.get('empId') or '').strip()
+    assigned_designation = (data.get('assignedDesignation') or data.get('assigned_designation') or data.get('designation') or '').strip()
+
+    # If designation is empty and a known staff is assigned, auto-fill from UserProfile or SAMPLE_STAFF
+    if not assigned_designation and assigned_user_name and assigned_user_name.lower() != 'unassigned':
+        prof = UserProfile.objects.filter(full_name__iexact=assigned_user_name).first()
+        if not prof and assigned_emp_id:
+            prof = UserProfile.objects.filter(emp_id__iexact=assigned_emp_id).first()
+        if prof and prof.designation:
+            assigned_designation = prof.designation
+        else:
+            for s in SAMPLE_STAFF:
+                if s.get('fullName', '').lower() == assigned_user_name.lower():
+                    assigned_designation = s.get('designation', '')
+                    break
 
     cpu_processor = (data.get('cpuProcessor') or data.get('cpu_processor') or 'Intel Core i5 (Standard)').strip()
     storage_ram = (data.get('storageRam') or data.get('storage_ram') or '16GB RAM / 512GB SSD').strip()
@@ -1290,6 +1314,7 @@ def api_save_device(request):
         dev.assigned_user_id = assigned_user_id
         dev.assigned_user_name = assigned_user_name
         dev.assigned_emp_id = assigned_emp_id
+        dev.assigned_designation = assigned_designation
         dev.cpu_processor = cpu_processor
         dev.storage_ram = storage_ram
         dev.monitor_spec = monitor_spec
@@ -1316,6 +1341,7 @@ def api_save_device(request):
             assigned_user_id=assigned_user_id,
             assigned_user_name=assigned_user_name,
             assigned_emp_id=assigned_emp_id,
+            assigned_designation=assigned_designation,
             cpu_processor=cpu_processor,
             storage_ram=storage_ram,
             monitor_spec=monitor_spec,
@@ -1360,6 +1386,8 @@ def api_save_device(request):
             'assignedUserId': dev.assigned_user_id,
             'assignedUserName': dev.assigned_user_name,
             'empId': dev.assigned_emp_id,
+            'designation': dev.assigned_designation or '',
+            'assignedDesignation': dev.assigned_designation or '',
             'cpuProcessor': dev.cpu_processor,
             'storageRam': dev.storage_ram,
             'monitorSpec': dev.monitor_spec,
@@ -1641,6 +1669,7 @@ def user_signup_view(request):
             dev_existing.assigned_emp_id = emp_id
             dev_existing.assigned_user_name = full_name
             dev_existing.assigned_user_id = emp_id
+            dev_existing.assigned_designation = designation
             dev_existing.save()
         else:
             clean_dev_id = f"dev-{emp_id}".lower().replace('/', '-')
@@ -1661,6 +1690,7 @@ def user_signup_view(request):
                 assigned_user_id=emp_id,
                 assigned_user_name=full_name,
                 assigned_emp_id=emp_id,
+                assigned_designation=designation,
                 monitor_spec='24" Dell UltraSharp FHD LED',
                 cpu_processor='Intel Core i5-12400 (6 cores, 12 threads)',
                 storage_ram='512GB NVMe SSD / 16GB DDR4 RAM',
@@ -2032,23 +2062,84 @@ def admin_update_complaint(request, ticket_id):
 # EXISTING ADMIN PAGES (100% PRESERVED DESIGN & FUNCTIONALITY)
 # ============================================================================
 
+def get_serialized_devices_and_logs():
+    """
+    Direct server-side data serialization from PostgreSQL for instant, zero-latency rendering.
+    Bypasses secondary client-side fetch('/api/devices/') and fetch('/api/audit-logs/') calls.
+    """
+    ensure_sample_devices()
+    devices_qs = DeviceAsset.objects.filter(org_id='HOSP')
+    devices_data = []
+    for d in devices_qs:
+        devices_data.append({
+            'id': d.dev_id,
+            'assetId': d.asset_id,
+            'deviceType': d.device_type or normalize_device_type('', d.asset_id),
+            'serialNumber': d.serial_number,
+            'orgId': d.org_id,
+            'orgName': d.org_name,
+            'buildingName': d.building_name,
+            'floorName': d.floor_name,
+            'roomName': d.room_name,
+            'assignedUserId': d.assigned_user_id,
+            'assignedUserName': d.assigned_user_name,
+            'empId': d.assigned_emp_id,
+            'designation': d.assigned_designation or '',
+            'assignedDesignation': d.assigned_designation or '',
+            'monitorSpec': d.monitor_spec,
+            'cpuProcessor': d.cpu_processor,
+            'storageRam': d.storage_ram,
+            'ipAddress': d.ip_address,
+            'macAddress': d.mac_address,
+            'operatingSystem': d.operating_system,
+            'purchaseDate': d.purchase_date,
+            'warrantyExpiryDate': d.warranty_expiry_date,
+            'status': d.status,
+        })
+
+    logs_qs = CustodyTransferLog.objects.all().order_by('-created_at')
+    logs_data = []
+    for l in logs_qs:
+        logs_data.append({
+            'id': l.id,
+            'deviceAssetId': l.device_asset_id,
+            'fromUserName': l.from_user_name,
+            'toUserName': l.to_user_name,
+            'toEmpId': l.to_emp_id,
+            'handoverDate': l.handover_date,
+            'assignedBy': l.assigned_by,
+            'remarks': l.remarks,
+            'createdAt': l.created_at.strftime('%Y-%m-%d %H:%M')
+        })
+
+    return json.dumps(devices_data), json.dumps(logs_data)
+
+
 @admin_required
 def index(request):
     """Landing Portal Gateway (Swaminarayan University vs PSM Hospital)"""
     pending_count = DeviceComplaint.objects.filter(status='Pending').count()
-    return render(request, "admin/index.html", {'pending_tickets': pending_count})
+    devices_json, audit_logs_json = get_serialized_devices_and_logs()
+    return render(request, "admin/index.html", {
+        'pending_tickets': pending_count,
+        'devices_json': devices_json,
+        'audit_logs_json': audit_logs_json,
+        'selected_org': 'HOSP'
+    })
 
 @admin_required
 def inventory(request):
     """1. Devices Inventory: Dedicated to PSM Hospital"""
-    ensure_sample_devices()
     org = request.GET.get('org', 'HOSP')
     if org == 'UNI':
         return redirect('/inventory/?org=HOSP')
     pending_count = DeviceComplaint.objects.filter(status='Pending').count()
+    devices_json, audit_logs_json = get_serialized_devices_and_logs()
     context = {
         'selected_org': 'HOSP',
         'pending_tickets': pending_count,
+        'devices_json': devices_json,
+        'audit_logs_json': audit_logs_json,
     }
     return render(request, "admin/inventory.html", context)
 
@@ -2089,8 +2180,20 @@ def mobile_add_device_view(request):
         ]
 
     # PSM Hospital clinical and administrative staff
-    staff_qs = UserProfile.objects.filter(org_id='HOSP').values('full_name', 'emp_id', 'department', 'org_id')[:30]
-    staff_list = list(staff_qs) if staff_qs else [s for s in SAMPLE_STAFF if s.get('orgId') == 'HOSP']
+    staff_qs = UserProfile.objects.filter(org_id='HOSP').values('full_name', 'emp_id', 'department', 'designation', 'org_id')[:30]
+    if staff_qs.exists():
+        staff_list = list(staff_qs)
+    else:
+        staff_list = [
+            {
+                'full_name': s.get('fullName', ''),
+                'emp_id': s.get('empId', ''),
+                'department': s.get('department', ''),
+                'designation': s.get('designation', ''),
+                'org_id': s.get('orgId', 'HOSP')
+            }
+            for s in SAMPLE_STAFF if s.get('orgId') == 'HOSP'
+        ]
 
     context = {
         'today_str': today_str,
@@ -2225,7 +2328,14 @@ def user(request):
     if org == 'UNI':
         return redirect('/user/?org=HOSP')
     pending_count = DeviceComplaint.objects.filter(status='Pending').count()
-    return render(request, "admin/user.html", {'selected_org': 'HOSP', 'pending_tickets': pending_count})
+    devices_json, audit_logs_json = get_serialized_devices_and_logs()
+    context = {
+        'selected_org': 'HOSP',
+        'pending_tickets': pending_count,
+        'devices_json': devices_json,
+        'audit_logs_json': audit_logs_json,
+    }
+    return render(request, "admin/user.html", context)
 
 @admin_required
 def location(request):
@@ -2234,7 +2344,14 @@ def location(request):
     if org == 'UNI':
         return redirect('/location/?org=HOSP')
     pending_count = DeviceComplaint.objects.filter(status='Pending').count()
-    return render(request, "admin/location.html", {'selected_org': 'HOSP', 'pending_tickets': pending_count})
+    devices_json, audit_logs_json = get_serialized_devices_and_logs()
+    context = {
+        'selected_org': 'HOSP',
+        'pending_tickets': pending_count,
+        'devices_json': devices_json,
+        'audit_logs_json': audit_logs_json,
+    }
+    return render(request, "admin/location.html", context)
 
 @admin_required
 def audit(request):
@@ -2243,7 +2360,14 @@ def audit(request):
     if org == 'UNI':
         return redirect('/audit/?org=HOSP')
     pending_count = DeviceComplaint.objects.filter(status='Pending').count()
-    return render(request, "admin/audit.html", {'selected_org': 'HOSP', 'pending_tickets': pending_count})
+    devices_json, audit_logs_json = get_serialized_devices_and_logs()
+    context = {
+        'selected_org': 'HOSP',
+        'pending_tickets': pending_count,
+        'devices_json': devices_json,
+        'audit_logs_json': audit_logs_json,
+    }
+    return render(request, "admin/audit.html", context)
 
 @admin_required
 def tag(request):
@@ -2252,7 +2376,14 @@ def tag(request):
     if org == 'UNI':
         return redirect('/tag/?org=HOSP')
     pending_count = DeviceComplaint.objects.filter(status='Pending').count()
-    return render(request, "admin/tag.html", {'selected_org': 'HOSP', 'pending_tickets': pending_count})
+    devices_json, audit_logs_json = get_serialized_devices_and_logs()
+    context = {
+        'selected_org': 'HOSP',
+        'pending_tickets': pending_count,
+        'devices_json': devices_json,
+        'audit_logs_json': audit_logs_json,
+    }
+    return render(request, "admin/tag.html", context)
 
 
 @admin_required
