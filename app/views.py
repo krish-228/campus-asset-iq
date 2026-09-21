@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.conf import settings
 import json
 import urllib.parse
 import random
@@ -1267,7 +1268,15 @@ def api_save_device(request):
     purchase_date = (data.get('purchaseDate') or data.get('purchase_date') or timezone.now().strftime('%d-%b-%Y')).strip()
     warranty_expiry_date = (data.get('warrantyExpiryDate') or data.get('warranty_expiry_date') or (datetime.date.today() + datetime.timedelta(days=1095)).strftime('%d-%b-%Y')).strip()
 
+    is_edit_request = bool(data.get('is_edit') or data.get('editId') or data.get('edit_id') or data.get('allow_overwrite'))
     dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
+
+    if dev and not is_edit_request:
+        return JsonResponse({
+            'success': False,
+            'message': f'Asset Tag "{asset_id}" is already registered to {dev.device_type} in {dev.room_name}. Please click "Auto Generate" for the next unique code.'
+        }, status=409)
+
     is_new = False
     if dev:
         dev.device_type = device_type
@@ -1738,6 +1747,7 @@ def submit_complaint(request):
 def get_active_tunnel_url():
     """Retrieve the active trycloudflare HTTPS URL if tunnel is running."""
     import glob, re, os
+    from django.conf import settings
     try:
         tunnel_file = os.path.join(settings.BASE_DIR, "tunnel_url.txt")
         if os.path.exists(tunnel_file):
@@ -1755,6 +1765,7 @@ def get_active_tunnel_url():
     except Exception:
         pass
     return "https://remark-valentine-fax-discipline.trycloudflare.com"
+
 
 
 # ============================================================================
@@ -2103,16 +2114,20 @@ def api_generate_asset_id(request):
     Generates a unique, standardized hardware asset tag strictly for PSM Hospital.
     Format: PSM/IT/<TYPE>/<MMYY>/<XXX>
     Example:
-      - Mouse:    PSM/IT/M/0826/001 or PSM/IT/M/0926/001
-      - CPU:      PSM/IT/C/0926/001
-      - Display:  PSM/IT/D/0926/001
-      - Printer:  PSM/IT/P/0926/001
-      - Keyboard: PSM/IT/K/0926/001
-      - Tablet:   PSM/IT/T/0926/001
-      - UPS:      PSM/IT/U/0926/001
+      - Mouse:    PSM/IT/M/0926/001 or PSM/IT/M/0926/002
+      - CPU:      PSM/IT/C/0926/003
+      - Display:  PSM/IT/D/0926/004
+      - Printer:  PSM/IT/P/0926/005
+      - Keyboard: PSM/IT/K/0926/006
+      - Tablet:   PSM/IT/T/0926/007
+      - UPS:      PSM/IT/U/0926/008
     Guarantees 100% collision-free against PostgreSQL DeviceAsset table.
     """
+    import re
+
     raw_type = (request.GET.get('type') or request.POST.get('type') or 'CPU').strip().upper()
+    current_val = (request.GET.get('current') or request.POST.get('current') or '').strip().upper()
+    force_next = request.GET.get('next') in ('1', 'true', 'True')
     
     type_letter_map = {
         'M': 'M', 'MOUSE': 'M',
@@ -2127,32 +2142,81 @@ def api_generate_asset_id(request):
 
     now = timezone.localtime()
     mmyy = now.strftime("%m%y")  # e.g. "0926"
-
     prefix = f"PSM/IT/{type_letter}/{mmyy}/"
 
-    # Ensure XXX is globally unique for every device registered in this month
-    month_pattern = f"/{mmyy}/"
-    existing_month_tags = set(DeviceAsset.objects.filter(asset_id__contains=month_pattern).values_list('asset_id', flat=True))
+    # Scan ALL existing tags in PostgreSQL to guarantee global uniqueness
+    all_tags = list(DeviceAsset.objects.all().values_list('asset_id', flat=True))
+    used_numbers = set()
 
-    max_num = 0
-    for tag in existing_month_tags:
-        parts = tag.strip().split('/')
-        if len(parts) >= 5:
+    for tag in all_tags:
+        tag_str = str(tag).strip().upper()
+        # 1. Match /{mmyy}/(\d+)
+        m = re.search(rf'/{mmyy}/(\d+)', tag_str)
+        if m:
             try:
-                num = int(parts[4])
-                if num > max_num:
-                    max_num = num
-            except (ValueError, TypeError):
+                used_numbers.add(int(m.group(1)))
+            except ValueError:
+                pass
+        # 2. Match standard 5-part structure
+        parts = tag_str.split('/')
+        if len(parts) >= 5 and parts[3] == mmyy:
+            try:
+                used_numbers.add(int(parts[4]))
+            except ValueError:
                 pass
 
-    next_num = max_num + 1
+    max_used = max(used_numbers) if used_numbers else 0
+
+    cur_num = 0
+    if current_val:
+        m_cur = re.search(r'(\d+)$', current_val)
+        if m_cur:
+            try:
+                cur_num = int(m_cur.group(1))
+            except ValueError:
+                pass
+
+    # If the user explicitly requested next number (e.g. clicked Auto Generate again)
+    if force_next and cur_num > 0:
+        start_num = max(max_used + 1, cur_num + 1)
+    else:
+        start_num = max_used + 1
+
+    next_num = start_num
     candidate = f"{prefix}{next_num:03d}"
 
-    while DeviceAsset.objects.filter(asset_id__iexact=candidate).exists():
+    # Strict PostgreSQL collision verification loop
+    while (next_num in used_numbers) or DeviceAsset.objects.filter(asset_id__iexact=candidate).exists():
         next_num += 1
         candidate = f"{prefix}{next_num:03d}"
 
-    return JsonResponse({'success': True, 'asset_id': candidate})
+    return JsonResponse({'success': True, 'asset_id': candidate, 'seq_num': next_num})
+
+
+@csrf_exempt
+def api_check_asset_id(request):
+    """Real-time validation API: checks if an asset_id already exists in PostgreSQL."""
+    asset_id = (request.GET.get('asset_id') or request.POST.get('asset_id') or '').strip().upper()
+    if not asset_id:
+        return JsonResponse({'exists': False, 'valid': False, 'message': 'Empty ID'})
+
+    dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
+    if dev:
+        return JsonResponse({
+            'exists': True,
+            'valid': True,
+            'asset_id': dev.asset_id,
+            'device_type': dev.device_type,
+            'location': f"{dev.room_name} ({dev.floor_name})",
+            'status': dev.status,
+            'message': f"Already registered to {dev.device_type} in {dev.room_name}."
+        })
+    return JsonResponse({
+        'exists': False,
+        'valid': True,
+        'asset_id': asset_id,
+        'message': "Tag is available & unique."
+    })
 
 @admin_required
 def user(request):

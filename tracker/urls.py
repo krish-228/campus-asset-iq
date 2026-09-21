@@ -59,6 +59,7 @@ urlpatterns = [
     path('add-device/', views.mobile_add_device_view, name='mobile_add_device_alias'),
     path('add-device', views.mobile_add_device_view),
     path('api/devices/quick-generate-id/', views.api_generate_asset_id, name='api_generate_asset_id'),
+    path('api/devices/check-asset-id/', views.api_check_asset_id, name='api_check_asset_id'),
     path('user/', views.user, name='user'),
     path('users/', views.user, name='users'),
     path('location/', views.location, name='location'),

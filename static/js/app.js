@@ -17,7 +17,7 @@ function initAppState() {
     const urlParams = new URLSearchParams(window.location.search);
     let orgParam = urlParams.get('org');
     const searchParam = urlParams.get('search');
-    
+
     // Always start with complete PSM Hospital INITIAL_SAMPLE_DATA structure
     appState = {
         selectedOrg: "HOSP",
@@ -33,13 +33,13 @@ function initAppState() {
             const parsed = JSON.parse(saved);
             // Detect and purge legacy University data, outdated floor structure (< 7 floors), or past legacy tags
             const hasLegacyUni = (parsed.buildings && parsed.buildings.some(b => b.id === 'bldg-cs' || b.orgId === 'UNI')) ||
-                                 (parsed.devices && parsed.devices.some(d => d.orgId === 'UNI'));
-            const needsFloorRefresh = !parsed.floors || parsed.floors.length < 7 || 
-                                      !parsed.floors.some(f => f.id === 'fl-basement') || 
-                                      !parsed.floors.some(f => f.id === 'fl-5');
+                (parsed.devices && parsed.devices.some(d => d.orgId === 'UNI'));
+            const needsFloorRefresh = !parsed.floors || parsed.floors.length < 7 ||
+                !parsed.floors.some(f => f.id === 'fl-basement') ||
+                !parsed.floors.some(f => f.id === 'fl-5');
             // Purge if any past tags exist (e.g. 0826/063, HOSP-ICU-, or static B on GF)
             const hasLegacyTags = !parsed.devices || parsed.devices.some(d => !d.assetId || !d.assetId.match(/^PSM\/IT\/(B|GF|[1-5]F)\/[CMKP]-(0\.0\d+|\d{3})$/));
-            
+
             if (hasLegacyUni || needsFloorRefresh || hasLegacyTags) {
                 // Clear out old cached data completely and force fresh 7-floor PSM Hospital data
                 localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
@@ -152,9 +152,9 @@ function selectOrganization(orgCode) {
     saveAppState();
     updateEntityUI();
 
-    const isLanding = window.location.pathname === "/" || 
-                      window.location.pathname.endsWith("index.html") || 
-                      window.location.pathname === "";
+    const isLanding = window.location.pathname === "/" ||
+        window.location.pathname.endsWith("index.html") ||
+        window.location.pathname === "";
 
     if (isLanding) {
         if (window.location.protocol === "file:") {
@@ -247,21 +247,21 @@ function getFilteredDevices() {
         // Search Query
         if (appState.searchQuery.trim() !== "") {
             const q = appState.searchQuery.toLowerCase().trim();
-            const user = appState.users.find(u => u.id === dev.assignedUserId);
-            const userName = user ? user.fullName.toLowerCase() : "";
-            const empId = user ? user.empId.toLowerCase() : "";
+            const user = (appState.users || []).find(u => (u.id && u.id === dev.assignedUserId) || (u.empId && (u.empId === dev.empId || u.empId === dev.assignedEmpId)));
+            const userName = (user ? (user.fullName || user.name || "") : (dev.assignedUserName || dev.assigned_user_name || "")).toLowerCase();
+            const empId = (user ? (user.empId || "") : (dev.empId || dev.assignedEmpId || "")).toLowerCase();
             const room = appState.rooms.find(r => r.id === dev.roomId);
-            const roomName = room ? room.name.toLowerCase() : "";
+            const roomName = room ? (room.name || "").toLowerCase() : "";
 
-            const matches = 
-                dev.assetId.toLowerCase().includes(q) ||
-                
-                dev.serialNumber.toLowerCase().includes(q) ||
-                dev.ipAddress.toLowerCase().includes(q) ||
-                dev.cpuProcessor.toLowerCase().includes(q) ||
-                dev.storageRam.toLowerCase().includes(q) ||
-                dev.monitorSpec.toLowerCase().includes(q) ||
-                dev.operatingSystem.toLowerCase().includes(q) ||
+            const matches =
+                (dev.assetId || "").toLowerCase().includes(q) ||
+                (dev.deviceType || "").toLowerCase().includes(q) ||
+                (dev.serialNumber || "").toLowerCase().includes(q) ||
+                (dev.ipAddress || "").toLowerCase().includes(q) ||
+                (dev.cpuProcessor || "").toLowerCase().includes(q) ||
+                (dev.storageRam || "").toLowerCase().includes(q) ||
+                (dev.monitorSpec || "").toLowerCase().includes(q) ||
+                (dev.operatingSystem || "").toLowerCase().includes(q) ||
                 userName.includes(q) ||
                 empId.includes(q) ||
                 roomName.includes(q);
@@ -365,27 +365,45 @@ function renderInventoryTable() {
         const room = appState.rooms.find(r => r.id === dev.roomId);
         const floor = room ? appState.floors.find(f => f.id === room.floorId) : null;
         const bldg = floor ? appState.buildings.find(b => b.id === floor.buildingId) : null;
-        const user = appState.users.find(u => u.id === dev.assignedUserId);
-
         const isHosp = dev.orgId === 'HOSP';
-        const assetBadgeClass = isHosp 
-            ? 'bg-violet-50 text-violet-700 border-violet-200' 
+        const assetBadgeClass = isHosp
+            ? 'bg-violet-50 text-violet-700 border-violet-200'
             : 'bg-indigo-50 text-indigo-700 border-indigo-200';
         const roomBadgeClass = isHosp
             ? 'bg-violet-50 text-violet-800 border-violet-200'
             : 'bg-indigo-50 text-indigo-800 border-indigo-200';
 
-        // 1. Custodian / User Layout
+        // 1. Custodian / User Layout (Support both appState.users and direct PostgreSQL assignedUserName/empId)
+        let user = (appState.users || []).find(u => (u.id && u.id === dev.assignedUserId) || (u.empId && (u.empId === dev.empId || u.empId === dev.assignedEmpId)));
+        if (!user && (dev.assignedUserName || dev.assigned_user_name)) {
+            const targetName = (dev.assignedUserName || dev.assigned_user_name || '').toLowerCase().trim();
+            if (targetName && targetName !== 'unassigned') {
+                user = (appState.users || []).find(u => u.fullName && u.fullName.toLowerCase().trim() === targetName);
+            }
+        }
+
+        const assignedName = (dev.assignedUserName || dev.assigned_user_name || (user ? user.fullName : '') || '').trim();
+        const assignedEmp = (dev.empId || dev.assigned_emp_id || (user ? user.empId : '') || '').trim();
+        const isUnassigned = !assignedName || assignedName.toLowerCase() === 'unassigned' || assignedName.toLowerCase().includes('unassigned / spare') || assignedName.toLowerCase().startsWith('unassigned');
+
         let userDisplay = '';
-        if (user) {
+        if (!isUnassigned) {
+            const displayName = user ? user.fullName : assignedName;
+            const displayEmp = assignedEmp || (user ? user.empId : '');
+            const displayDept = user
+                ? (user.designation || user.department || 'Hospital Staff')
+                : (displayEmp ? 'Clinical Staff' : 'Assigned Custodian');
+            const deptSnippet = (user && user.department) ? ` &bull; ${user.department}` : (displayDept ? ` &bull; ${displayDept}` : '');
+
             userDisplay = `
-                <div class="cursor-pointer group" onclick="openSearchUserModal('${user.empId}')" title="Click to inspect profile and assignment history">
+                <div class="cursor-pointer group" onclick="${displayEmp ? `openSearchUserModal('${displayEmp}')` : ''}" title="Click to inspect profile and assignment history">
                     <div class="min-w-0">
                         <div class="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm truncate flex items-center gap-1">
-                            <span class="truncate">${user.fullName}</span>
+                            <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
+                            <span class="truncate">${displayName}</span>
                         </div>
-                        <div class="text-xs text-slate-500 font-medium truncate">${user.designation || user.department}</div>
-                        <div class="text-[11px] text-slate-400 font-mono truncate">${user.empId} &bull; ${user.department}</div>
+                        <div class="text-xs text-slate-500 font-medium truncate">${displayDept}</div>
+                        <div class="text-[11px] text-slate-400 font-mono truncate">${displayEmp ? `${displayEmp}${deptSnippet}` : 'Verified Custodian'}</div>
                     </div>
                 </div>
             `;
@@ -400,20 +418,24 @@ function renderInventoryTable() {
             `;
         }
 
-        // 2. Campus Location Layout
+        // 2. Campus Location Layout (Graceful fallback to direct device location names)
+        const bldgName = dev.buildingName || (bldg ? bldg.name : 'PSM Hospital Main Medical Complex');
+        const floorName = dev.floorName || (floor ? floor.name : 'Ground Floor');
+        const roomName = dev.roomName || (room ? room.name : '');
+
         let locationDisplay = '';
-        if (bldg && floor && room) {
+        if (roomName) {
             locationDisplay = `
                 <div class="space-y-0.5">
-                    <div class="font-bold text-slate-900 text-sm flex items-center gap-1.5 truncate" title="${bldg.name}">
+                    <div class="font-bold text-slate-900 text-sm flex items-center gap-1.5 truncate" title="${bldgName}">
                         <i data-lucide="building-2" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                        <span class="truncate">${bldg.name}</span>
+                        <span class="truncate">${bldgName}</span>
                     </div>
                     <div class="flex items-center gap-1 text-xs whitespace-nowrap">
-                        <span class="text-slate-500 font-medium">${floor.name}</span>
+                        <span class="text-slate-500 font-medium">${floorName}</span>
                         <span class="text-slate-300">&bull;</span>
                         <span class="font-bold px-1.5 py-0.2 rounded border text-xs ${roomBadgeClass}">
-                            ${room.name}
+                            ${roomName}
                         </span>
                     </div>
                 </div>
@@ -637,8 +659,8 @@ function renderStats() {
     const warranty = document.getElementById("stat-warranty-devices");
     const breakdown = document.getElementById("stat-org-breakdown");
 
-    const currentDevices = appState.selectedOrg === "ALL" 
-        ? all 
+    const currentDevices = appState.selectedOrg === "ALL"
+        ? all
         : all.filter(d => d.orgId === appState.selectedOrg);
 
     if (total) total.textContent = currentDevices.length;
@@ -668,8 +690,8 @@ function populateFilterDropdowns() {
     const osSelect = document.getElementById("filter-os");
 
     if (bldgSelect) {
-        const availableBldgs = appState.selectedOrg === "ALL" 
-            ? appState.buildings 
+        const availableBldgs = appState.selectedOrg === "ALL"
+            ? appState.buildings
             : appState.buildings.filter(b => b.orgId === appState.selectedOrg);
 
         bldgSelect.innerHTML = `<option value="ALL">All Buildings / Wings</option>` + availableBldgs.map(b => `
@@ -1005,10 +1027,10 @@ function handleUserPopupSearchKey(e) {
 
 function executeUserPopupSearch() {
     const q = document.getElementById("user-popup-search-input").value.trim().toLowerCase();
-    
+
     // Find User matching Query or fallback to Sahil Rathod
-    let user = appState.users.find(u => 
-        u.empId.toLowerCase().includes(q) || 
+    let user = appState.users.find(u =>
+        u.empId.toLowerCase().includes(q) ||
         u.fullName.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q)
     );
@@ -1111,9 +1133,9 @@ function populateUserPopupWithDevice(user, assignedDev) {
     // Populate Assignment History Table (Section 9)
     const tbody = document.getElementById("user-popup-assignment-tbody");
     if (tbody) {
-        const assignments = appState.assignmentHistories.filter(ah => 
-            ah.deviceId === assignedDev.id || 
-            
+        const assignments = appState.assignmentHistories.filter(ah =>
+            ah.deviceId === assignedDev.id ||
+
             (!isUnassigned && user.id && ah.userId === user.id)
         );
 
@@ -1256,12 +1278,12 @@ function calculateNextAssetTag(typeCode, floorId) {
 function updateAutoAssetTag() {
     const editIdInput = document.getElementById("edit-device-id");
     if (editIdInput && editIdInput.value) return;
-    
+
     const typeSelect = document.getElementById("dev-select-type");
     const typeCode = typeSelect ? typeSelect.value : 'C';
     const floorSelect = document.getElementById("dev-select-floor");
     const floorId = floorSelect ? floorSelect.value : 'fl-gf';
-    
+
     const assetInput = document.getElementById("dev-input-assetid");
     if (assetInput) {
         assetInput.value = calculateNextAssetTag(typeCode, floorId);
@@ -1360,6 +1382,17 @@ function openAddDeviceModal(editId = null) {
             setVal("dev-input-ip", dev.ipAddress);
             setVal("dev-input-mac", dev.macAddress);
             setVal("dev-select-user", dev.assignedUserId || '');
+            // If the saved custodian isn't in the known-staff dropdown, preserve
+            // their typed name in the free-text fallback field instead of losing it.
+            const knownUserMatch = (appState.users || []).find(u => u.id === dev.assignedUserId);
+            const savedName = dev.assignedUserName || dev.assigned_user_name || '';
+            if (!dev.assignedUserId && savedName && savedName.toLowerCase() !== 'unassigned') {
+                setVal("dev-input-user-name", savedName);
+            } else if (dev.assignedUserId && !knownUserMatch && savedName) {
+                setVal("dev-input-user-name", savedName);
+            } else {
+                setVal("dev-input-user-name", "");
+            }
             setVal("dev-select-status", dev.status);
             setVal("dev-input-warranty", dev.warrantyExpiryDate);
         }
@@ -1384,7 +1417,7 @@ function openAddDeviceModal(editId = null) {
         setVal("dev-input-ram", "512GB NVMe SSD / 16GB RAM");
         setVal("dev-input-monitor", 'Dell 24" UltraSharp FHD');
         setVal("dev-input-ip", `10.20.10.${Math.floor(10 + Math.random() * 200)}`);
-        setVal("dev-input-mac", `B4-2E-99-${randomNum.slice(0,2)}-${randomNum.slice(1,3)}-FA`);
+        setVal("dev-input-mac", `B4-2E-99-${randomNum.slice(0, 2)}-${randomNum.slice(1, 3)}-FA`);
         setVal("dev-input-warranty", "14-Jan-2028");
     }
 
@@ -1464,36 +1497,42 @@ async function handleSaveDevice(e) {
     const assignedUserId = getVal("dev-select-user") || null;
     const status = getVal("dev-select-status", "Active");
     const warrantyExpiryDate = getVal("dev-input-warranty") || "14-Jan-2028";
-    
+
     const typeSelect = document.getElementById("dev-select-type");
     const typeCode = typeSelect ? typeSelect.value : 'C';
     const typeFullNames = { 'C': 'CPU', 'D': 'Display', 'M': 'Mouse', 'K': 'Keyboard', 'P': 'Printer', 'L': 'Laptop' };
     const deviceType = typeFullNames[typeCode] || 'CPU';
-    
+
     // Resolve clean human text for location and user
     const bldgEl = document.getElementById("dev-select-bldg");
-    const buildingName = (bldgEl && bldgEl.selectedIndex >= 0 && bldgEl.options[bldgEl.selectedIndex].text !== 'Select') 
-        ? bldgEl.options[bldgEl.selectedIndex].text 
+    const buildingName = (bldgEl && bldgEl.selectedIndex >= 0 && bldgEl.options[bldgEl.selectedIndex].text !== 'Select')
+        ? bldgEl.options[bldgEl.selectedIndex].text
         : "PSM Hospital Main Medical Complex";
 
     const floorEl = document.getElementById("dev-select-floor");
-    const floorName = (floorEl && floorEl.selectedIndex >= 0 && floorEl.options[floorEl.selectedIndex].text !== 'Select') 
-        ? floorEl.options[floorEl.selectedIndex].text 
+    const floorName = (floorEl && floorEl.selectedIndex >= 0 && floorEl.options[floorEl.selectedIndex].text !== 'Select')
+        ? floorEl.options[floorEl.selectedIndex].text
         : "Ground Floor";
 
     const roomEl = document.getElementById("dev-select-room");
-    const roomName = (roomEl && roomEl.selectedIndex >= 0 && roomEl.options[roomEl.selectedIndex].text !== 'Select') 
-        ? roomEl.options[roomEl.selectedIndex].text 
+    const roomName = (roomEl && roomEl.selectedIndex >= 0 && roomEl.options[roomEl.selectedIndex].text !== 'Select')
+        ? roomEl.options[roomEl.selectedIndex].text
         : "General Facility";
 
     const userEl = document.getElementById("dev-select-user");
+    const typedUserNameEl = document.getElementById("dev-input-user-name");
+    const typedUserName = typedUserNameEl ? typedUserNameEl.value.trim() : "";
     let assignedUserName = "Unassigned";
     let assignedEmpId = "";
     if (userEl && userEl.value) {
+        // A known staff member was picked from the dropdown — this takes priority.
         const rawText = userEl.options[userEl.selectedIndex].text;
         assignedUserName = rawText.split('(')[0].replace(/--.*--/, '').trim() || "Assigned Staff";
         const empMatch = rawText.match(/\(([^)]+)\)/);
         assignedEmpId = empMatch ? empMatch[1] : "";
+    } else if (typedUserName) {
+        // No dropdown selection — fall back to the free-text name field.
+        assignedUserName = typedUserName;
     }
 
     const today = new Date();
@@ -1700,7 +1739,7 @@ function submitReassignUser(e) {
             userId: null,
             fromDate: handoverDate,
             toDate: "-",
-                        location: locName,
+            location: locName,
             assignedBy: "IT Admin Desk",
             remarks: remarks || `Returned to IT Spares from ${prevUser ? prevUser.fullName : 'Staff'}`
         });
@@ -1745,7 +1784,7 @@ function submitReassignUser(e) {
         userId: newUser.id,
         fromDate: handoverDate,
         toDate: "-",
-                location: locName,
+        location: locName,
         assignedBy: "IT Admin Desk",
         remarks: remarks || `Custody handover to ${newUser.fullName}`
     });
@@ -1958,8 +1997,8 @@ function handleLocationDeviceStatusFilter(status) {
         const btn = document.getElementById(`loc-status-btn-${st}`);
         if (btn) {
             const isMatch = (st === "all" && status === "ALL") ||
-                            (st === "active" && status === "Active") ||
-                            (st === "in-maintenance" && status === "In Maintenance");
+                (st === "active" && status === "Active") ||
+                (st === "in-maintenance" && status === "In Maintenance");
             if (isMatch) {
                 btn.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 text-white shadow-2xs cursor-pointer";
             } else {
@@ -2004,11 +2043,10 @@ function renderFloorSwitcherPills() {
 
     let html = `
         <button onclick="selectFloorFilter('ALL')" 
-                class="px-3.5 py-2 rounded-xl text-xs shrink-0 transition-all cursor-pointer flex items-center gap-2 border ${
-                    isAllActive 
-                        ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs' 
-                        : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 font-semibold'
-                }">
+                class="px-3.5 py-2 rounded-xl text-xs shrink-0 transition-all cursor-pointer flex items-center gap-2 border ${isAllActive
+            ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs'
+            : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 font-semibold'
+        }">
             <i data-lucide="layers" class="w-3.5 h-3.5 ${isAllActive ? 'text-blue-200' : 'text-slate-500'}"></i>
             <span>All Floors (Bird's Eye)</span>
             <span class="px-1.5 py-0.5 rounded-md text-[10px] font-mono ${isAllActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}">
@@ -2020,18 +2058,17 @@ function renderFloorSwitcherPills() {
     floorsSorted.forEach(floor => {
         const isFloorActive = locationActiveFloor === floor.id;
         const theme = FLOOR_THEMES[floor.id] || { badge: floor.code || "FL", icon: "door-open" };
-        
+
         // Count devices on this floor
         const floorRooms = appState.rooms.filter(r => r.floorId === floor.id);
         const floorDevCount = hospDevices.filter(d => floorRooms.some(r => r.id === d.roomId)).length;
 
         html += `
             <button onclick="selectFloorFilter('${floor.id}')" 
-                    class="px-3.5 py-2 rounded-xl text-xs shrink-0 transition-all cursor-pointer flex items-center gap-2 border ${
-                        isFloorActive 
-                            ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs' 
-                            : 'bg-white hover:bg-blue-50/70 text-slate-700 border-slate-200 hover:border-blue-300 font-semibold'
-                    }">
+                    class="px-3.5 py-2 rounded-xl text-xs shrink-0 transition-all cursor-pointer flex items-center gap-2 border ${isFloorActive
+                ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs'
+                : 'bg-white hover:bg-blue-50/70 text-slate-700 border-slate-200 hover:border-blue-300 font-semibold'
+            }">
                 <span class="px-1.5 py-0.5 rounded text-[10px] font-black font-mono ${isFloorActive ? 'bg-white text-blue-800' : 'bg-blue-100 text-blue-800'}">
                     ${theme.badge}
                 </span>
@@ -2066,9 +2103,9 @@ function renderLocationBirdEyeView() {
             const room = appState.rooms.find(r => r.id === dev.roomId);
             const roomName = room ? room.name.toLowerCase() : "";
             const roomNum = room && room.roomNumber ? room.roomNumber.toLowerCase() : "";
-            const matches = 
+            const matches =
                 dev.assetId.toLowerCase().includes(q) ||
-                
+
                 dev.serialNumber.toLowerCase().includes(q) ||
                 (dev.ipAddress && dev.ipAddress.toLowerCase().includes(q)) ||
                 (dev.macAddress && dev.macAddress.toLowerCase().includes(q)) ||
@@ -2159,13 +2196,13 @@ function renderLocationBirdEyeView() {
 
     // Render Dedicated Portrait Floor Cards with Room Headings and Clean Device Lines
     container.innerHTML = floorsToRender.map(floor => {
-        const theme = FLOOR_THEMES[floor.id] || { 
-            badge: floor.code || "FL", 
+        const theme = FLOOR_THEMES[floor.id] || {
+            badge: floor.code || "FL",
             icon: "door-open"
         };
 
         const floorRooms = appState.rooms.filter(r => r.floorId === floor.id);
-        
+
         // Devices on this floor
         let floorDevices = hospDevices.filter(d => floorRooms.some(r => r.id === d.roomId));
         // Filtered devices on this floor
@@ -2205,8 +2242,8 @@ function renderLocationBirdEyeView() {
                 devicesListHtml = roomFilteredDevs.map(dev => renderDeviceLineRow(dev, room, floor)).join('');
             }
 
-            const roomNum = room.roomNumber || 
-                (typeof INITIAL_SAMPLE_DATA !== 'undefined' && INITIAL_SAMPLE_DATA.rooms ? INITIAL_SAMPLE_DATA.rooms.find(sr => sr.id === room.id)?.roomNumber : null) || 
+            const roomNum = room.roomNumber ||
+                (typeof INITIAL_SAMPLE_DATA !== 'undefined' && INITIAL_SAMPLE_DATA.rooms ? INITIAL_SAMPLE_DATA.rooms.find(sr => sr.id === room.id)?.roomNumber : null) ||
                 (room.code || (room.id ? room.id.replace('rm-', '').toUpperCase() : '01'));
 
             return `
@@ -2389,7 +2426,7 @@ function openUserDetailModal(userId) {
             `;
         }
         if (reassignBtn) {
-            reassignBtn.onclick = function() {
+            reassignBtn.onclick = function () {
                 closeUserDetailModal();
                 openReassignModal(assignedDev.id);
             };
@@ -2518,7 +2555,7 @@ window.closeDeviceDetailPopup = closeDeviceDetailPopup;
 window.openUserDetailModal = openUserDetailModal;
 window.closeUserDetailModal = closeUserDetailModal;
 
-window.addEventListener("keydown", function(e) {
+window.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
         closeUserDetailModal();
         closeDeviceDetailPopup();
@@ -2555,9 +2592,9 @@ function setLocationTreeCampusFilter(filter) {
     switchCampusView(filter);
 }
 
-function toggleAllTreeNodes() {}
-function toggleBuildingAccordion() {}
-function handleLocationTreeFilter() {}
+function toggleAllTreeNodes() { }
+function toggleBuildingAccordion() { }
+function handleLocationTreeFilter() { }
 
 function openAddDeviceModalForLocation(targetRoomId = null) {
     openAddDeviceModal();
@@ -2643,7 +2680,7 @@ function copyToClipboard(text) {
     if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
             showToast(`Asset tag ${text} copied to clipboard!`, "info");
-        }).catch(() => {});
+        }).catch(() => { });
     }
 }
 
@@ -2733,7 +2770,7 @@ function getUnifiedAuditEvents() {
             date: h.changedDate,
             timestamp: "09:15 AM",
             assetId: dev ? dev.assetId : (h.deviceId || "ASSET-LOG"),
-            
+
             device: dev,
             fromLocation: h.fromLocation || "Previous Facility Room",
             toLocation: h.toLocation || "Target Ward",
@@ -2762,7 +2799,7 @@ function getUnifiedAuditEvents() {
             toDate: ah.toDate,
             timestamp: "10:30 AM",
             assetId: dev ? dev.assetId : (ah.assetId || ah.deviceId || "ASSET-LOG"),
-            
+
             device: dev,
             user: user,
             fromUserName: ah.fromUserName || "Unassigned / IT Spares",
@@ -2877,7 +2914,7 @@ function renderAuditLogs() {
         filteredEvents = filteredEvents.filter(e => {
             return (
                 (e.assetId && e.assetId.toLowerCase().includes(q)) ||
-                
+
                 (e.userName && e.userName.toLowerCase().includes(q)) ||
                 (e.userRole && e.userRole.toLowerCase().includes(q)) ||
                 (e.fromLocation && e.fromLocation.toLowerCase().includes(q)) ||
@@ -3294,10 +3331,10 @@ function showToast(message, type = "info") {
     if (!container) return;
 
     const toast = document.createElement("div");
-    const bgClass = 
+    const bgClass =
         type === "success" ? "bg-emerald-600 text-white" :
-        type === "error" ? "bg-rose-600 text-white" :
-        "bg-slate-900 text-white";
+            type === "error" ? "bg-rose-600 text-white" :
+                "bg-slate-900 text-white";
 
     toast.className = `p-3.5 rounded-xl shadow-xl flex items-center justify-between gap-3 text-xs font-semibold ${bgClass} pointer-events-auto animate-scale-up`;
     toast.innerHTML = `
@@ -3374,8 +3411,8 @@ async function syncDevicesFromDatabase() {
         if (data.success && Array.isArray(data.devices)) {
             data.devices.forEach(dbDev => {
                 if (!dbDev.roomId && dbDev.roomName) {
-                    const matchRoom = (appState.rooms || []).find(r => 
-                        r.name.toLowerCase().includes(dbDev.roomName.toLowerCase()) || 
+                    const matchRoom = (appState.rooms || []).find(r =>
+                        r.name.toLowerCase().includes(dbDev.roomName.toLowerCase()) ||
                         dbDev.roomName.toLowerCase().includes(r.name.toLowerCase())
                     );
                     if (matchRoom) {
@@ -3412,7 +3449,7 @@ async function syncAuditLogsFromDatabase() {
                     appState.assignmentHistories.unshift({
                         id: `db-${log.id}`,
                         deviceId: log.deviceAssetId,
-                                                userId: null,
+                        userId: null,
                         fromUserName: log.fromUserName,
                         toUserName: log.toUserName,
                         fromDate: log.handoverDate,
@@ -3441,14 +3478,14 @@ function initCampusTrackerApp() {
     syncDevicesFromDatabase();
     syncAuditLogsFromDatabase();
     if (window.initTableDragScroll) window.initTableDragScroll();
-    
+
     // Auto-open Add Device Modal if requested via URL param (from other admin pages)
     try {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get("openAddModal") === "true") {
             setTimeout(() => openAddDeviceModal(), 180);
         }
-    } catch (e) {}
+    } catch (e) { }
 }
 
 if (document.readyState === "loading") {
