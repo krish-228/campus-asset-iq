@@ -316,6 +316,21 @@
                     {% endif %}
                 </a>
 
+                <!-- Mobile Device Provisioning -->
+                <a href="{% url 'mobile_add_device' %}" 
+                   title="Mobile Device Provisioning"
+                   class="sidebar-nav-link group/item {% if '/inventory/add' in request.path %}is-active bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold shadow-md shadow-cyan-950/50 border border-cyan-400/30{% else %}text-slate-300 hover:text-white hover:bg-white/10 border border-transparent{% endif %}">
+                    <span class="sidebar-icon-wrapper">
+                        <i data-lucide="smartphone" class="w-5 h-5 shrink-0 {% if '/inventory/add' in request.path %}text-white{% else %}text-cyan-300 group-hover/item:text-white{% endif %}"></i>
+                    </span>
+                    <span class="sidebar-expand-target flex items-center justify-between flex-1 min-w-0 pr-3.5">
+                        <span class="truncate font-semibold text-xs">+ Add Hardware (Mobile)</span>
+                        <span class="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase shrink-0 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                            MOBILE
+                        </span>
+                    </span>
+                </a>
+
                 <!-- 2. Location Explorer -->
                 <a href="{% url 'location' %}?org=HOSP" 
                    title="2. Location Explorer"

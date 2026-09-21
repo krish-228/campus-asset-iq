@@ -1,0 +1,879 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <title>Enroll Device — CampusAssetIQ Mobile Provisioning</title>
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        clinical: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985'
+                        },
+                        brand: {
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+                    },
+                    boxShadow: {
+                        'glow': '0 0 25px -5px rgba(59, 130, 246, 0.4)',
+                        'emerald-glow': '0 0 25px -5px rgba(16, 185, 129, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Vector Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
+        *, html, body, input, select, textarea, button {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* iOS fluid momentum */
+        .ios-momentum {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Hide scrollbars but keep touch scrolling */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Glassmorphism surfaces */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card-elevated {
+            background: rgba(30, 41, 59, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        /* Custom inputs */
+        .mobile-input {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #f8fafc;
+            border-radius: 0.875rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.9375rem;
+            width: 100%;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .mobile-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(15, 23, 42, 0.95);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+        .mobile-input::placeholder {
+            color: rgba(148, 163, 184, 0.55);
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-blue-600 selection:text-white">
+
+    <!-- Top App Header -->
+    <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-2.5">
+            <a href="{% url 'inventory' %}" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 flex items-center justify-center transition-all shadow-sm active:scale-95" title="Back to Inventory">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            </a>
+            <div>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-blue-400">Mobile Provisioning</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                </div>
+                <h1 class="text-base font-extrabold text-white leading-tight">Add New Hardware</h1>
+            </div>
+        </div>
+
+        <!-- Organization Badge / Switcher -->
+        <div class="flex items-center gap-1.5 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 text-xs font-bold">
+            <button type="button" onclick="setOrganization('HOSP')" id="btn-org-hosp" class="px-2.5 py-1 rounded-lg text-xs transition-all bg-blue-600 text-white shadow-sm">
+                PSM Hospital
+            </button>
+            <button type="button" onclick="setOrganization('UNI')" id="btn-org-uni" class="px-2.5 py-1 rounded-lg text-xs transition-all text-slate-400 hover:text-slate-200">
+                University
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Mobile Form Body -->
+    <main class="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-32 max-w-xl mx-auto w-full">
+
+        <!-- Draft Restored Banner (Hidden by default) -->
+        <div id="draft-banner" class="hidden p-3 bg-blue-950/70 border border-blue-800/60 rounded-2xl flex items-center justify-between text-xs text-blue-300">
+            <div class="flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4 text-blue-400 shrink-0"></i>
+                <span>Restored unsaved draft from phone storage.</span>
+            </div>
+            <button type="button" onclick="discardDraft()" class="text-xs font-bold underline text-blue-200 hover:text-white shrink-0 ml-2">
+                Discard
+            </button>
+        </div>
+
+        <form id="add-device-form" onsubmit="handleFormSubmit(event)" novalidate class="space-y-4">
+
+            <!-- SECTION 1: Hardware Category (Single-Tap Cards) -->
+            <div class="glass-card rounded-2xl p-4 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="layers" class="w-3.5 h-3.5 text-blue-400"></i>
+                        1. Hardware Category <span class="text-rose-400">*</span>
+                    </label>
+                    <span id="category-pill-label" class="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30">CPU (Computer)</span>
+                </div>
+
+                <!-- 5 Hardware Category Cards -->
+                <div class="grid grid-cols-5 gap-2" id="category-selector-grid">
+                    <!-- CPU -->
+                    <button type="button" onclick="selectCategory('CPU')" data-category="CPU" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-blue-600/20 border-blue-500 text-blue-400 shadow-glow">
+                        <i data-lucide="cpu" class="w-5 h-5"></i>
+                        <span class="text-[11px] font-bold">CPU</span>
+                    </button>
+                    <!-- Display -->
+                    <button type="button" onclick="selectCategory('Display')" data-category="Display" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="monitor" class="w-5 h-5"></i>
+                        <span class="text-[11px] font-bold">Display</span>
+                    </button>
+                    <!-- Keyboard -->
+                    <button type="button" onclick="selectCategory('Keyboard')" data-category="Keyboard" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="keyboard" class="w-5 h-5"></i>
+                        <span class="text-[11px] font-bold">Keyboard</span>
+                    </button>
+                    <!-- Mouse -->
+                    <button type="button" onclick="selectCategory('Mouse')" data-category="Mouse" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="mouse" class="w-5 h-5"></i>
+                        <span class="text-[11px] font-bold">Mouse</span>
+                    </button>
+                    <!-- Printer -->
+                    <button type="button" onclick="selectCategory('Printer')" data-category="Printer" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="printer" class="w-5 h-5"></i>
+                        <span class="text-[11px] font-bold">Printer</span>
+                    </button>
+                </div>
+                <input type="hidden" name="device_type" id="input-device-type" value="CPU">
+            </div>
+
+            <!-- SECTION 2: Single Identifier (Asset Tag & Serial Number) -->
+            <div class="glass-card rounded-2xl p-4 shadow-sm space-y-3.5">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="hash" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        2. Unique Asset Identifier <span class="text-rose-400">*</span>
+                    </label>
+                    <button type="button" onclick="autoGenerateTag()" id="btn-auto-tag" class="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-800/60 transition-all active:scale-95 shadow-sm">
+                        <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                        <span>Auto Generate</span>
+                    </button>
+                </div>
+
+                <!-- Asset Tag Input -->
+                <div>
+                    <div class="relative">
+                        <input type="text" id="input-asset-id" name="asset_id" required
+                            placeholder="e.g. PSM/IT/2F/C-201"
+                            class="mobile-input uppercase font-mono font-bold tracking-wide pr-10 text-base"
+                            oninput="validateAssetId(this.value)">
+                        <span id="asset-id-status" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+                        <i data-lucide="info" class="w-3 h-3 text-slate-500"></i>
+                        Single Source of Truth: This tag directly maps to physical QR stickers.
+                    </p>
+                </div>
+
+                <!-- Serial Number & Status -->
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">
+                            Serial Number
+                        </label>
+                        <input type="text" id="input-serial-number" name="serial_number"
+                            placeholder="e.g. SN-DELL-88412"
+                            class="mobile-input uppercase font-mono text-xs">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">
+                            Operational Status
+                        </label>
+                        <select id="input-status" name="status" class="mobile-input text-xs font-semibold">
+                            <option value="Active" selected>Active / In Use</option>
+                            <option value="In Maintenance">In Maintenance</option>
+                            <option value="In Stock">In Stock / Backup</option>
+                            <option value="Decommissioned">Decommissioned</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: Physical Location (Building, Floor, Room) -->
+            <div class="glass-card rounded-2xl p-4 shadow-sm space-y-3.5">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400"></i>
+                        3. Campus Placement <span class="text-rose-400">*</span>
+                    </label>
+                    <span class="text-[11px] text-slate-400 font-medium">Auto-Tag Sync</span>
+                </div>
+
+                <!-- Building -->
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 block mb-1">Building / Wing</label>
+                    <input type="text" id="input-building" name="building_name" required
+                        list="building-datalist"
+                        value="PSM Hospital Main Medical Complex"
+                        class="mobile-input text-sm">
+                    <datalist id="building-datalist">
+                        {% for b in buildings %}
+                        <option value="{{ b }}"></option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+
+                <!-- Floor Pills -->
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 block mb-1.5">Floor Level</label>
+                    <div class="flex flex-wrap gap-1.5" id="floor-pills-container">
+                        {% for f in floors %}
+                        <button type="button" onclick="selectFloor('{{ f }}')" data-floor="{{ f }}"
+                            class="floor-pill px-3 py-1.5 rounded-xl border text-xs font-bold transition-all {% if forloop.counter == 3 %}bg-emerald-600/25 border-emerald-500 text-emerald-300 shadow-sm{% else %}bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200{% endif %}">
+                            {{ f }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="floor_name" id="input-floor" value="2nd Floor">
+                </div>
+
+                <!-- Room / Ward / Department -->
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 block mb-1">Room / Ward / Clinic <span class="text-rose-400">*</span></label>
+                    <input type="text" id="input-room" name="room_name" required
+                        placeholder="e.g. ICU Room 102, Lab 3, Radiology"
+                        class="mobile-input text-sm font-medium">
+                    
+                    <!-- Quick Room Pills -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2">
+                        <span class="text-[10px] text-slate-500 font-bold shrink-0">Suggestions:</span>
+                        {% for r in rooms %}
+                        <button type="button" onclick="setRoomQuick('{{ r }}')"
+                            class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-700/60 shrink-0 transition-colors">
+                            {{ r }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: Custodian / User Assignment -->
+            <div class="glass-card rounded-2xl p-4 shadow-sm space-y-3">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="user-check" class="w-3.5 h-3.5 text-violet-400"></i>
+                        4. Custodian Assignment
+                    </label>
+                    <button type="button" onclick="setUnassigned()" class="text-xs font-bold text-slate-400 hover:text-slate-200 underline">
+                        Pool / Unassigned
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Staff / Doctor Name</label>
+                        <input type="text" id="input-user-name" name="assigned_user_name"
+                            list="staff-datalist"
+                            placeholder="e.g. Dr. Vikram Sharma"
+                            class="mobile-input text-sm">
+                        <datalist id="staff-datalist">
+                            {% for s in staff_list %}
+                            <option value="{{ s.full_name }} ({{ s.emp_id }})"></option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Employee ID</label>
+                        <input type="text" id="input-emp-id" name="assigned_emp_id"
+                            placeholder="e.g. MED-00042"
+                            class="mobile-input uppercase font-mono text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 5: Dynamic Hardware Specifications (Adapts to Type) -->
+            <div class="glass-card rounded-2xl p-4 shadow-sm space-y-3" id="specs-section">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="sliders" class="w-3.5 h-3.5 text-amber-400"></i>
+                        5. Hardware Specifications
+                    </label>
+                    <span id="specs-subtitle" class="text-[11px] text-amber-300 font-semibold">CPU Profile</span>
+                </div>
+
+                <!-- Dynamic Sub-panel for CPU -->
+                <div id="specs-cpu-panel" class="space-y-3">
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Processor / CPU</label>
+                        <input type="text" id="input-cpu" name="cpu_processor"
+                            value="Intel Core i5 (Standard Workstation)"
+                            class="mobile-input text-xs">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">RAM & Storage</label>
+                            <input type="text" id="input-ram" name="storage_ram"
+                                value="16GB RAM / 512GB SSD"
+                                class="mobile-input text-xs">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Operating System</label>
+                            <select id="input-os" name="operating_system" class="mobile-input text-xs font-semibold">
+                                <option value="Windows 11 Pro" selected>Windows 11 Pro</option>
+                                <option value="Windows 10 Pro">Windows 10 Pro</option>
+                                <option value="Linux Ubuntu 24.04">Linux Ubuntu LTS</option>
+                                <option value="Link-OS / Medical">Link-OS / Embedded</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">IP Address</label>
+                            <input type="text" id="input-ip" name="ip_address"
+                                placeholder="192.168.9.xxx"
+                                class="mobile-input font-mono text-xs">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">MAC Address</label>
+                            <input type="text" id="input-mac" name="mac_address"
+                                placeholder="AA:BB:CC:DD:EE:FF"
+                                class="mobile-input font-mono text-xs uppercase">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Sub-panel for Display -->
+                <div id="specs-display-panel" class="space-y-3 hidden">
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Monitor Specs & Resolution</label>
+                        <input type="text" id="input-monitor" name="monitor_spec"
+                            value='24" FHD IPS Medical / Office Grade (1920x1080)'
+                            class="mobile-input text-xs">
+                    </div>
+                </div>
+
+                <!-- Dynamic Sub-panel for Printer / Peripherals -->
+                <div id="specs-peripheral-panel" class="space-y-3 hidden">
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Device Model & Details</label>
+                        <input type="text" id="input-peripheral-desc"
+                            placeholder="e.g. Zebra ZD420 Thermal Barcode or Logitech USB Keyboard"
+                            class="mobile-input text-xs">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 6: Procurement & Warranty Dates -->
+            <div class="glass-card rounded-2xl p-4 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-blue-400"></i>
+                        6. Procurement & Dates
+                    </label>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Purchase Date</label>
+                        <input type="text" id="input-purchase-date" name="purchase_date"
+                            value="{{ today_str }}"
+                            class="mobile-input text-xs font-medium">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Warranty Expiry</label>
+                        <input type="text" id="input-warranty-date" name="warranty_expiry_date"
+                            value="{{ warranty_str }}"
+                            class="mobile-input text-xs font-medium">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batch Mode: Keep Location Switch -->
+            <div class="p-3.5 rounded-2xl bg-slate-800/50 border border-slate-700/60 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-white">Batch Provisioning Mode</div>
+                        <div class="text-[11px] text-slate-400">Keep Building, Floor & Room for the next device</div>
+                    </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-keep-location" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="form-error-banner" class="hidden p-3 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-200 text-xs font-semibold flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4 text-rose-400 shrink-0"></i>
+                <span id="form-error-text">Please fill in required fields.</span>
+            </div>
+
+            <!-- Submit Button (Sticky container at bottom) -->
+            <div class="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-20">
+                <div class="max-w-xl mx-auto flex items-center gap-2.5">
+                    <a href="{% url 'inventory' %}" class="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 border border-slate-700 transition-all active:scale-95" title="Cancel & Return">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </a>
+                    <button type="submit" id="btn-submit" class="flex-1 h-12 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-sm font-extrabold shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                        <i data-lucide="check" class="w-5 h-5" id="btn-submit-icon"></i>
+                        <span id="btn-submit-text">Save Device to Inventory</span>
+                    </button>
+                </div>
+            </div>
+
+        </form>
+    </main>
+
+    <!-- SUCCESS CONFIRMATION MODAL -->
+    <div id="modal-success" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-3xl p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <!-- Checkmark header -->
+            <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-emerald-glow">
+                    <i data-lucide="check" class="w-6 h-6 stroke-[3]"></i>
+                </div>
+                <div>
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">Successfully Enrolled</span>
+                    <h3 class="text-lg font-black text-white">Hardware Saved!</h3>
+                </div>
+            </div>
+
+            <!-- Device Summary Pill Box -->
+            <div class="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-2 text-xs">
+                <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
+                    <span class="text-slate-400 font-semibold">Asset Tag:</span>
+                    <span id="modal-saved-tag" class="font-mono font-black text-sm text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">
+                        PSM/IT/2F/C-205
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400 font-semibold">Type & Category:</span>
+                    <span id="modal-saved-type" class="font-bold text-slate-200">CPU Workstation</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400 font-semibold">Placement:</span>
+                    <span id="modal-saved-room" class="font-bold text-slate-200">ICU Room 102</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400 font-semibold">Assigned To:</span>
+                    <span id="modal-saved-custodian" class="font-bold text-slate-200">Unassigned</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-2.5 pt-2">
+                <a id="btn-modal-print-tag" href="{% url 'tag' %}" target="_blank"
+                    class="w-full h-11 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95">
+                    <i data-lucide="qr-code" class="w-4 h-4"></i>
+                    <span>Generate & Print QR Sticker Tag</span>
+                </a>
+
+                <button type="button" onclick="continueEnrollNext()"
+                    class="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Enroll Next Device Now</span>
+                </button>
+
+                <a href="{% url 'inventory' %}"
+                    class="w-full h-10 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                    <span>Back to Inventory Table</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client-Side JavaScript Application Logic -->
+    <script>
+        let currentOrg = '{{ selected_org }}' || 'HOSP';
+        let currentCategory = 'CPU';
+        let currentFloor = '2nd Floor';
+        let lastRegisteredAssetId = '';
+        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v2';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadDraftFromStorage();
+            setupAutoSaveListeners();
+        });
+
+        // Switch between PSM Hospital and Swaminarayan University
+        function setOrganization(org) {
+            currentOrg = org;
+            const btnHosp = document.getElementById('btn-org-hosp');
+            const btnUni = document.getElementById('btn-org-uni');
+            const inputBuilding = document.getElementById('input-building');
+
+            if (org === 'HOSP') {
+                btnHosp.className = "px-2.5 py-1 rounded-lg text-xs transition-all bg-blue-600 text-white shadow-sm";
+                btnUni.className = "px-2.5 py-1 rounded-lg text-xs transition-all text-slate-400 hover:text-slate-200";
+                if (!inputBuilding.value || inputBuilding.value.includes('University')) {
+                    inputBuilding.value = "PSM Hospital Main Medical Complex";
+                }
+            } else {
+                btnUni.className = "px-2.5 py-1 rounded-lg text-xs transition-all bg-blue-600 text-white shadow-sm";
+                btnHosp.className = "px-2.5 py-1 rounded-lg text-xs transition-all text-slate-400 hover:text-slate-200";
+                if (!inputBuilding.value || inputBuilding.value.includes('Hospital')) {
+                    inputBuilding.value = "Swaminarayan University Academic Block A";
+                }
+            }
+            saveDraft();
+        }
+
+        // Category selection
+        function selectCategory(cat) {
+            currentCategory = cat;
+            document.getElementById('input-device-type').value = cat;
+            document.getElementById('category-pill-label').textContent = cat;
+
+            // Update button styles
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if (btn.dataset.category === cat) {
+                    btn.className = "category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-blue-600/20 border-blue-500 text-blue-400 shadow-glow";
+                } else {
+                    btn.className = "category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200";
+                }
+            });
+
+            // Adjust dynamic hardware spec sub-panels
+            const cpuPanel = document.getElementById('specs-cpu-panel');
+            const dispPanel = document.getElementById('specs-display-panel');
+            const periPanel = document.getElementById('specs-peripheral-panel');
+            const subTitle = document.getElementById('specs-subtitle');
+
+            cpuPanel.classList.add('hidden');
+            dispPanel.classList.add('hidden');
+            periPanel.classList.add('hidden');
+
+            if (cat === 'CPU') {
+                cpuPanel.classList.remove('hidden');
+                subTitle.textContent = "CPU & Workstation Profile";
+            } else if (cat === 'Display') {
+                dispPanel.classList.remove('hidden');
+                subTitle.textContent = "Monitor & Screen Profile";
+            } else {
+                periPanel.classList.remove('hidden');
+                subTitle.textContent = `${cat} Profile`;
+            }
+
+            // Haptic vibration
+            if (navigator.vibrate) navigator.vibrate(20);
+            saveDraft();
+        }
+
+        // Floor selection
+        function selectFloor(floor) {
+            currentFloor = floor;
+            document.getElementById('input-floor').value = floor;
+            document.querySelectorAll('.floor-pill').forEach(btn => {
+                if (btn.dataset.floor === floor) {
+                    btn.className = "floor-pill px-3 py-1.5 rounded-xl border text-xs font-bold transition-all bg-emerald-600/25 border-emerald-500 text-emerald-300 shadow-sm";
+                } else {
+                    btn.className = "floor-pill px-3 py-1.5 rounded-xl border text-xs font-bold transition-all bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200";
+                }
+            });
+            saveDraft();
+        }
+
+        // Quick Room Set
+        function setRoomQuick(room) {
+            const input = document.getElementById('input-room');
+            input.value = room;
+            input.focus();
+            if (navigator.vibrate) navigator.vibrate(15);
+            saveDraft();
+        }
+
+        // Set Unassigned Custodian
+        function setUnassigned() {
+            document.getElementById('input-user-name').value = "Unassigned";
+            document.getElementById('input-emp-id').value = "";
+            saveDraft();
+        }
+
+        // Auto Generate Asset Tag
+        async function autoGenerateTag() {
+            const btn = document.getElementById('btn-auto-tag');
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+
+            try {
+                const url = `/api/devices/quick-generate-id/?type=${encodeURIComponent(currentCategory)}&org=${encodeURIComponent(currentOrg)}&floor=${encodeURIComponent(currentFloor)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.success && data.asset_id) {
+                    const tagInput = document.getElementById('input-asset-id');
+                    tagInput.value = data.asset_id;
+                    validateAssetId(data.asset_id);
+                    if (navigator.vibrate) navigator.vibrate([30, 30]);
+                    saveDraft();
+                }
+            } catch (err) {
+                console.error("Failed to generate tag", err);
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            }
+        }
+
+        function validateAssetId(val) {
+            const clean = val.trim();
+            const statusIcon = document.getElementById('asset-id-status');
+            if (clean.length >= 3) {
+                statusIcon.classList.remove('hidden');
+            } else {
+                statusIcon.classList.add('hidden');
+            }
+        }
+
+        // Local Storage Draft Recovery
+        function saveDraft() {
+            const draft = {
+                org: currentOrg,
+                category: currentCategory,
+                asset_id: document.getElementById('input-asset-id').value,
+                serial: document.getElementById('input-serial-number').value,
+                status: document.getElementById('input-status').value,
+                building: document.getElementById('input-building').value,
+                floor: currentFloor,
+                room: document.getElementById('input-room').value,
+                user_name: document.getElementById('input-user-name').value,
+                emp_id: document.getElementById('input-emp-id').value,
+                cpu: document.getElementById('input-cpu').value,
+                ram: document.getElementById('input-ram').value,
+                os: document.getElementById('input-os').value,
+                ip: document.getElementById('input-ip').value,
+                mac: document.getElementById('input-mac').value,
+                monitor: document.getElementById('input-monitor').value,
+                purchase: document.getElementById('input-purchase-date').value,
+                warranty: document.getElementById('input-warranty-date').value,
+            };
+            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        }
+
+        function loadDraftFromStorage() {
+            try {
+                const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+                if (!saved) return;
+                const draft = JSON.parse(saved);
+                if (draft.asset_id || draft.room) {
+                    document.getElementById('draft-banner').classList.remove('hidden');
+                    if (draft.org) setOrganization(draft.org);
+                    if (draft.category) selectCategory(draft.category);
+                    if (draft.floor) selectFloor(draft.floor);
+                    if (draft.asset_id) document.getElementById('input-asset-id').value = draft.asset_id;
+                    if (draft.serial) document.getElementById('input-serial-number').value = draft.serial;
+                    if (draft.status) document.getElementById('input-status').value = draft.status;
+                    if (draft.building) document.getElementById('input-building').value = draft.building;
+                    if (draft.room) document.getElementById('input-room').value = draft.room;
+                    if (draft.user_name) document.getElementById('input-user-name').value = draft.user_name;
+                    if (draft.emp_id) document.getElementById('input-emp-id').value = draft.emp_id;
+                    if (draft.cpu) document.getElementById('input-cpu').value = draft.cpu;
+                    if (draft.ram) document.getElementById('input-ram').value = draft.ram;
+                    if (draft.os) document.getElementById('input-os').value = draft.os;
+                    if (draft.ip) document.getElementById('input-ip').value = draft.ip;
+                    if (draft.mac) document.getElementById('input-mac').value = draft.mac;
+                    if (draft.monitor) document.getElementById('input-monitor').value = draft.monitor;
+                    if (draft.purchase) document.getElementById('input-purchase-date').value = draft.purchase;
+                    if (draft.warranty) document.getElementById('input-warranty-date').value = draft.warranty;
+                    lucide.createIcons();
+                }
+            } catch (e) {
+                console.warn("Draft restore failed", e);
+            }
+        }
+
+        function discardDraft() {
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            document.getElementById('draft-banner').classList.add('hidden');
+            document.getElementById('add-device-form').reset();
+            selectCategory('CPU');
+            selectFloor('2nd Floor');
+            setOrganization('HOSP');
+        }
+
+        function setupAutoSaveListeners() {
+            const inputs = document.querySelectorAll('input, select');
+            inputs.forEach(el => {
+                el.addEventListener('input', () => saveDraft());
+                el.addEventListener('change', () => saveDraft());
+            });
+        }
+
+        // Form Submission via AJAX to /api/devices/save/
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const errorBanner = document.getElementById('form-error-banner');
+            const errorText = document.getElementById('form-error-text');
+            errorBanner.classList.add('hidden');
+
+            const assetId = document.getElementById('input-asset-id').value.trim();
+            const roomName = document.getElementById('input-room').value.trim();
+
+            if (!assetId) {
+                errorText.textContent = "Please provide or auto-generate an Asset Tag / ID.";
+                errorBanner.classList.remove('hidden');
+                document.getElementById('input-asset-id').focus();
+                return;
+            }
+
+            if (!roomName) {
+                errorText.textContent = "Please specify a Room, Ward, or Clinic location.";
+                errorBanner.classList.remove('hidden');
+                document.getElementById('input-room').focus();
+                return;
+            }
+
+            const submitBtn = document.getElementById('btn-submit');
+            const submitText = document.getElementById('btn-submit-text');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75');
+            submitText.textContent = "Saving to PostgreSQL Database...";
+
+            // Assemble payload
+            const payload = {
+                asset_id: assetId,
+                device_type: currentCategory,
+                serial_number: document.getElementById('input-serial-number').value.trim(),
+                org_id: currentOrg,
+                building_name: document.getElementById('input-building').value.trim(),
+                floor_name: currentFloor,
+                room_name: roomName,
+                assigned_user_name: document.getElementById('input-user-name').value.trim() || 'Unassigned',
+                assigned_emp_id: document.getElementById('input-emp-id').value.trim(),
+                status: document.getElementById('input-status').value,
+                cpu_processor: document.getElementById('input-cpu').value.trim(),
+                storage_ram: document.getElementById('input-ram').value.trim(),
+                monitor_spec: document.getElementById('input-monitor').value.trim(),
+                operating_system: document.getElementById('input-os').value,
+                ip_address: document.getElementById('input-ip').value.trim(),
+                mac_address: document.getElementById('input-mac').value.trim(),
+                purchase_date: document.getElementById('input-purchase-date').value.trim(),
+                warranty_expiry_date: document.getElementById('input-warranty-date').value.trim(),
+            };
+
+            try {
+                const res = await fetch('/api/devices/save/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    lastRegisteredAssetId = assetId;
+
+                    // Populate success modal
+                    document.getElementById('modal-saved-tag').textContent = assetId;
+                    document.getElementById('modal-saved-type').textContent = `${currentCategory} (${payload.status})`;
+                    document.getElementById('modal-saved-room').textContent = `${roomName} • ${currentFloor}`;
+                    document.getElementById('modal-saved-custodian').textContent = payload.assigned_user_name || 'Unassigned';
+                    
+                    const printTagBtn = document.getElementById('btn-modal-print-tag');
+                    if (data.tag_url) {
+                        printTagBtn.href = data.tag_url;
+                    } else {
+                        printTagBtn.href = `/tag/?asset_id=${encodeURIComponent(assetId)}`;
+                    }
+
+                    // Show success modal
+                    document.getElementById('modal-success').classList.remove('hidden');
+                    if (navigator.vibrate) navigator.vibrate([40, 60, 50]);
+
+                    // Clear draft storage
+                    localStorage.removeItem(DRAFT_STORAGE_KEY);
+                } else {
+                    errorText.textContent = data.message || "Failed to save device. Please verify inputs.";
+                    errorBanner.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("Submission failed", err);
+                errorText.textContent = "Network error. Please check your connection and try again.";
+                errorBanner.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-75');
+                submitText.textContent = "Save Device to Inventory";
+            }
+        }
+
+        // Continue to enroll next device
+        function continueEnrollNext() {
+            document.getElementById('modal-success').classList.add('hidden');
+            const keepLocation = document.getElementById('toggle-keep-location').checked;
+
+            // Reset asset ID and serial number
+            document.getElementById('input-asset-id').value = "";
+            document.getElementById('input-serial-number').value = "";
+            document.getElementById('asset-id-status').classList.add('hidden');
+
+            if (!keepLocation) {
+                document.getElementById('input-room').value = "";
+                document.getElementById('input-user-name').value = "Unassigned";
+                document.getElementById('input-emp-id').value = "";
+                selectFloor('2nd Floor');
+            }
+
+            // Auto-generate next tag for convenience
+            autoGenerateTag();
+
+            // Focus on Serial Number or Asset Tag
+            document.getElementById('input-asset-id').focus();
+        }
+    </script>
+</body>
+</html>

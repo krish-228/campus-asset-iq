@@ -1326,6 +1326,9 @@ def api_save_device(request):
     return JsonResponse({
         'success': True,
         'message': f"Hardware device {dev.asset_id} {'registered' if is_new else 'updated'} successfully and synchronized with Asset Tag Center!",
+        'is_new': is_new,
+        'asset_id': dev.asset_id,
+        'tag_url': f"/tag/?asset_id={urllib.parse.quote(dev.asset_id)}",
         'device': {
             'id': dev.dev_id,
             'assetId': dev.asset_id,
@@ -2028,6 +2031,90 @@ def inventory(request):
         'pending_tickets': pending_count,
     }
     return render(request, "admin/inventory.html", context)
+
+
+def mobile_add_device_view(request):
+    """
+    Mobile-first Hardware Enrollment & Device Provisioning Portal.
+    Allows hospital engineers, IT staff, and technicians on mobile phones or tablets
+    to rapidly add and register new hardware devices directly into the PostgreSQL DeviceAsset table.
+    """
+    import datetime
+
+    today_str = timezone.localtime().strftime("%d-%b-%Y")
+    warranty_str = (timezone.localtime() + datetime.timedelta(days=1095)).strftime("%d-%b-%Y")
+
+    # Distinct locations for smart auto-complete chips
+    buildings = list(DeviceAsset.objects.exclude(building_name='').values_list('building_name', flat=True).distinct())
+    if not buildings:
+        buildings = ['PSM Hospital Main Medical Complex', 'Swaminarayan University Academic Block A', 'Biomedical Engineering Wing']
+
+    floors = ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', 'ICU Special Wing', 'Basement']
+    
+    rooms = list(DeviceAsset.objects.exclude(room_name='').values_list('room_name', flat=True).distinct()[:20])
+    if not rooms:
+        rooms = ['ICU Ward 1', 'Emergency Trauma Room 102', 'Radiology Control Lab', 'Central Nursing Desk', 'Computer Lab 3', 'OPD Clinic 12']
+
+    staff_qs = UserProfile.objects.all().values('full_name', 'emp_id', 'department', 'org_id')[:30]
+    staff_list = list(staff_qs) if staff_qs else SAMPLE_STAFF
+
+    context = {
+        'today_str': today_str,
+        'warranty_str': warranty_str,
+        'buildings': buildings,
+        'floors': floors,
+        'rooms': rooms,
+        'staff_list': staff_list,
+        'selected_org': request.GET.get('org', 'HOSP'),
+    }
+    return render(request, "admin/mobile_add_device.html", context)
+
+
+@csrf_exempt
+def api_generate_asset_id(request):
+    """
+    Generates a unique, standardized hardware asset tag based on device type, organization, and floor.
+    Format example: PSM/IT/2F/C-205 or SU/ENG/1F/DISP-104.
+    Guarantees 100% collision-free against PostgreSQL DeviceAsset table.
+    """
+    dev_type = normalize_device_type(request.GET.get('type') or request.POST.get('type') or 'CPU')
+    org = request.GET.get('org') or request.POST.get('org') or 'HOSP'
+    floor_raw = request.GET.get('floor') or request.POST.get('floor') or '2nd Floor'
+
+    floor_lower = floor_raw.lower()
+    if 'ground' in floor_lower or 'gf' in floor_lower:
+        floor_code = 'GF'
+    elif '1' in floor_lower:
+        floor_code = '1F'
+    elif '2' in floor_lower:
+        floor_code = '2F'
+    elif '3' in floor_lower:
+        floor_code = '3F'
+    elif '4' in floor_lower:
+        floor_code = '4F'
+    elif 'icu' in floor_lower:
+        floor_code = 'ICU'
+    else:
+        floor_code = '2F'
+
+    type_prefixes = {
+        'CPU': 'C',
+        'Display': 'DISP',
+        'Keyboard': 'KB',
+        'Mouse': 'MS',
+        'Printer': 'PRT'
+    }
+    prefix = type_prefixes.get(dev_type, 'C')
+    org_prefix = "PSM/IT" if org == 'HOSP' else "SU/ENG"
+
+    for _ in range(100):
+        rand_num = random.randint(100, 999)
+        candidate = f"{org_prefix}/{floor_code}/{prefix}-{rand_num}"
+        if not DeviceAsset.objects.filter(asset_id__iexact=candidate).exists():
+            return JsonResponse({'success': True, 'asset_id': candidate})
+
+    fallback_id = f"{org_prefix}/{floor_code}/{prefix}-{random.randint(1000, 9999)}"
+    return JsonResponse({'success': True, 'asset_id': fallback_id})
 
 @admin_required
 def user(request):

@@ -48,7 +48,12 @@
             </div>
 
             <!-- Right: Action Buttons & Telemetry Switch -->
-            <div class="flex items-center gap-3 self-start lg:self-center shrink-0">
+            <div class="flex items-center gap-2.5 flex-wrap self-start lg:self-center shrink-0">
+                <a href="{% url 'mobile_add_device' %}"
+                    class="flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 active:from-cyan-700 active:to-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-md transition-all active:scale-95 cursor-pointer border border-cyan-400/30">
+                    <i data-lucide="smartphone" class="w-4 h-4 text-cyan-200"></i>
+                    <span>Mobile Quick Add</span>
+                </a>
                 <button onclick="openExcelImportModal()"
                     class="flex items-center gap-2 bg-emerald-600/90 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2.5 rounded-xl border border-emerald-400/40 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer">
                     <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-200"></i>
