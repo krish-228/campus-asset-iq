@@ -2165,7 +2165,7 @@ def mobile_add_device_view(request):
         'Biomedical Engineering Unit',
     ]
 
-    floors = ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', 'ICU Special Wing', 'Basement']
+    floors = ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor', 'Basement']
     
     # Hospital clinical rooms and wards
     rooms = list(DeviceAsset.objects.filter(org_id='HOSP').exclude(room_name='').values_list('room_name', flat=True).distinct()[:20])
