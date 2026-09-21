@@ -707,6 +707,64 @@ window.addEventListener("scroll", (e) => {
 }, true);
 
 
+// High-performance Fluid Momentum Number Counter Animation (Apple ease-out curve)
+function animateNumberCounter(el, targetValue, duration = 1100, delay = 0) {
+    if (!el) return;
+    targetValue = parseInt(targetValue, 10) || 0;
+
+    // Cancel any active animation or pending timeout on this element
+    if (el._animFrameId) {
+        cancelAnimationFrame(el._animFrameId);
+        el._animFrameId = null;
+    }
+    if (el._animTimeoutId) {
+        clearTimeout(el._animTimeoutId);
+        el._animTimeoutId = null;
+    }
+
+    const run = () => {
+        const rawText = (el.textContent || '').trim().replace(/[^0-9]/g, '');
+        const startValue = rawText ? parseInt(rawText, 10) : 0;
+
+        if (startValue === targetValue) {
+            el.textContent = targetValue.toLocaleString();
+            return;
+        }
+
+        const startTime = performance.now();
+        // Quartic deceleration curve: cubic-bezier-like fluid momentum
+        const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
+
+        function step(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = easeOutQuart(progress);
+            const current = Math.round(startValue + (targetValue - startValue) * eased);
+
+            el.textContent = current.toLocaleString();
+
+            if (progress < 1) {
+                el._animFrameId = requestAnimationFrame(step);
+            } else {
+                el.textContent = targetValue.toLocaleString();
+                el._animFrameId = null;
+                // Add finishing micro-pop animation
+                el.classList.remove('kpi-count-finished');
+                void el.offsetWidth; // Force reflow
+                el.classList.add('kpi-count-finished');
+            }
+        }
+
+        el._animFrameId = requestAnimationFrame(step);
+    };
+
+    if (delay > 0) {
+        el._animTimeoutId = setTimeout(run, delay);
+    } else {
+        run();
+    }
+}
+
 function renderStats() {
     const all = appState.devices;
     const total = document.getElementById("stat-total-devices");
@@ -720,10 +778,26 @@ function renderStats() {
         ? all
         : all.filter(d => d.orgId === appState.selectedOrg);
 
-    if (total) total.textContent = currentDevices.length;
-    if (active) active.textContent = currentDevices.filter(d => d.status === "Active").length;
-    if (maint) maint.textContent = currentDevices.filter(d => d.status === "In Maintenance").length;
-    if (spare) spare.textContent = currentDevices.filter(d => !d.assignedUserId).length;
+    const totalVal = currentDevices.length;
+    const activeVal = currentDevices.filter(d => d.status === "Active").length;
+    const maintVal = currentDevices.filter(d => d.status === "In Maintenance").length;
+    const spareVal = currentDevices.filter(d => !d.assignedUserId).length;
+
+    // Trigger staggered rolling count animation when opening the page
+    if (!window._kpiStatsInitialAnimated) {
+        window._kpiStatsInitialAnimated = true;
+        animateNumberCounter(total, totalVal, 1100, 0);
+        animateNumberCounter(active, activeVal, 1100, 70);
+        animateNumberCounter(maint, maintVal, 1100, 140);
+        animateNumberCounter(spare, spareVal, 1100, 210);
+    } else {
+        // Subsequent updates (e.g. after adding/saving a device) transition smoothly
+        animateNumberCounter(total, totalVal, 400, 0);
+        animateNumberCounter(active, activeVal, 400, 0);
+        animateNumberCounter(maint, maintVal, 400, 0);
+        animateNumberCounter(spare, spareVal, 400, 0);
+    }
+
     if (warranty) warranty.textContent = currentDevices.filter(d => d.warrantyExpiryDate.includes("2026") || d.warrantyExpiryDate.includes("2024")).length;
 
     const hospCount = all.filter(d => d.orgId === "HOSP").length;

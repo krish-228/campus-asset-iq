@@ -10,6 +10,36 @@
         #admin-sidebar, header, .no-print, footer, #modal-add-device, #modal-change-location, #modal-reassign-user, #modal-inspect-device, #modal-import-excel { display: none !important; }
         main { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
     }
+
+    /* KPI Metric Card Fluid Cascade Entrance */
+    @keyframes kpiCardCascade {
+        0% {
+            opacity: 0;
+            transform: translateY(14px) scale(0.97);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    .kpi-stat-card {
+        animation: kpiCardCascade 540ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    }
+    .kpi-stat-card:nth-child(1) { animation-delay: 50ms; }
+    .kpi-stat-card:nth-child(2) { animation-delay: 120ms; }
+    .kpi-stat-card:nth-child(3) { animation-delay: 190ms; }
+    .kpi-stat-card:nth-child(4) { animation-delay: 260ms; }
+
+    /* Number Counting Completion Micro-Pop */
+    @keyframes kpiNumberPop {
+        0% { transform: scale(1); }
+        45% { transform: scale(1.09); }
+        100% { transform: scale(1); }
+    }
+    .kpi-count-finished {
+        display: inline-block;
+        animation: kpiNumberPop 340ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
 </style>
 {% endblock %}
 
@@ -83,7 +113,7 @@
             </div>
             <div>
                 <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Registered</div>
-                <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight" id="stat-total-devices">0
+                <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight tabular-nums" id="stat-total-devices">0
                 </div>
                 <div class="text-[10px] text-slate-500 font-medium">Cataloged units</div>
             </div>
@@ -97,7 +127,7 @@
             </div>
             <div>
                 <div class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">Active In-Service</div>
-                <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight" id="stat-active-devices">0
+                <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight tabular-nums" id="stat-active-devices">0
                 </div>
                 <div class="text-[10px] text-emerald-600/90 font-medium">100% Operational</div>
             </div>
@@ -111,7 +141,7 @@
             </div>
             <div>
                 <div class="text-[10px] text-amber-700 font-bold uppercase tracking-wider">In Maintenance</div>
-                <div class="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight" id="stat-maint-devices">0
+                <div class="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight tabular-nums" id="stat-maint-devices">0
                 </div>
                 <div class="text-[10px] text-amber-600/90 font-medium">Under triage</div>
             </div>
@@ -125,7 +155,7 @@
             </div>
             <div>
                 <div class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">Available Spares</div>
-                <div class="text-2xl sm:text-3xl font-black text-blue-600 tracking-tight" id="stat-storage-devices">0
+                <div class="text-2xl sm:text-3xl font-black text-blue-600 tracking-tight tabular-nums" id="stat-storage-devices">0
                 </div>
                 <div class="text-[10px] text-blue-600/90 font-medium">Ready to deploy</div>
             </div>
