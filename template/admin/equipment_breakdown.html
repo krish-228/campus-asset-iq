@@ -63,7 +63,7 @@
             </div>
             <div>
                 <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Recorded</div>
-                <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ total_count }}</div>
+                <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight tabular-nums" data-target="{{ total_count }}">0</div>
                 <div class="text-[10px] text-slate-500 font-medium">All Equipment Incidents</div>
             </div>
         </div>
@@ -75,7 +75,7 @@
             </div>
             <div>
                 <div class="text-[10px] text-rose-700 font-bold uppercase tracking-wider">Critical Equipment</div>
-                <div class="text-2xl sm:text-3xl font-black text-rose-600 tracking-tight">{{ critical_count }}</div>
+                <div class="text-2xl sm:text-3xl font-black text-rose-600 tracking-tight tabular-nums" data-target="{{ critical_count }}">0</div>
                 <div class="text-[10px] text-rose-600/90 font-medium">High Priority Assets</div>
             </div>
         </div>
@@ -90,7 +90,7 @@
                     <span>Under Active Repair</span>
                     {% if under_repair_count > 0 %}<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>{% endif %}
                 </div>
-                <div class="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight">{{ under_repair_count }}</div>
+                <div class="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight tabular-nums" data-target="{{ under_repair_count }}">0</div>
                 <div class="text-[10px] text-amber-600/90 font-medium">Engineer Working Now</div>
             </div>
         </div>
@@ -102,7 +102,7 @@
             </div>
             <div>
                 <div class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">Successfully Repaired</div>
-                <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight">{{ resolved_count }}</div>
+                <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight tabular-nums" data-target="{{ resolved_count }}">0</div>
                 <div class="text-[10px] text-emerald-600/90 font-medium">Restored to Normal Service</div>
             </div>
         </div>

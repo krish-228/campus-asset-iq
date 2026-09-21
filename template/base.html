@@ -554,13 +554,108 @@
             }
         });
 
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initialize on DOM Ready
+        function onAdminPageReady() {
             initSidebarState();
             if (window.lucide && typeof window.lucide.createIcons === 'function') {
                 window.lucide.createIcons();
             }
-        });
+
+            // Universal auto-animation for KPI stat cards on all admin pages
+            // (For inventory & audit, app.js handles live animation from loaded database state)
+            if (!document.getElementById("inventory-table-tbody") && !document.getElementById("audit-table-tbody")) {
+                setTimeout(function() {
+                    if (typeof window.initAllKpiCounters === 'function') {
+                        window.initAllKpiCounters();
+                    }
+                }, 60);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', onAdminPageReady);
+        } else {
+            onAdminPageReady();
+        }
+
+        // Global High-Performance Number Counter Animation (Apple fluid momentum ease-out)
+        window.animateNumberCounter = function(el, targetValue, duration = 1100, delay = 0) {
+            if (!el) return;
+            targetValue = parseInt(targetValue, 10) || 0;
+
+            if (el._animFrameId) {
+                cancelAnimationFrame(el._animFrameId);
+                el._animFrameId = null;
+            }
+            if (el._animTimeoutId) {
+                clearTimeout(el._animTimeoutId);
+                el._animTimeoutId = null;
+            }
+
+            const run = () => {
+                const rawText = (el.textContent || '').trim().replace(/[^0-9]/g, '');
+                const startValue = rawText ? parseInt(rawText, 10) : 0;
+
+                if (startValue === targetValue && el.classList.contains('kpi-count-finished')) {
+                    el.textContent = targetValue.toLocaleString();
+                    return;
+                }
+
+                const startTime = performance.now();
+                const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
+
+                function step(now) {
+                    const elapsed = now - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = easeOutQuart(progress);
+                    const current = Math.round(startValue + (targetValue - startValue) * eased);
+
+                    el.textContent = current.toLocaleString();
+
+                    if (progress < 1) {
+                        el._animFrameId = requestAnimationFrame(step);
+                    } else {
+                        el.textContent = targetValue.toLocaleString();
+                        el._animFrameId = null;
+                        el.classList.remove('kpi-count-finished');
+                        void el.offsetWidth;
+                        el.classList.add('kpi-count-finished');
+                    }
+                }
+
+                el._animFrameId = requestAnimationFrame(step);
+            };
+
+            if (delay > 0) {
+                el._animTimeoutId = setTimeout(run, delay);
+            } else {
+                run();
+            }
+        };
+
+        // Universal KPI Stat Card Rolling Counter Initializer
+        window.initAllKpiCounters = function() {
+            const kpiCards = document.querySelectorAll('.kpi-stat-card');
+            if (!kpiCards || kpiCards.length === 0) return;
+
+            let delay = 0;
+            kpiCards.forEach((card) => {
+                const numEl = card.querySelector('.text-2xl, .text-3xl, [id^="stat-"]');
+                if (numEl && !numEl.hasAttribute('data-no-auto-animate')) {
+                    numEl.classList.add('tabular-nums');
+                    const currentText = (numEl.getAttribute('data-target') || numEl.textContent || '0').trim().replace(/[^0-9]/g, '');
+                    const target = parseInt(currentText, 10) || 0;
+                    if (target > 0) {
+                        numEl.textContent = "0";
+                        window.animateNumberCounter(numEl, target, 1100, delay);
+                        delay += 70; // 70ms cascade across boxes
+                    } else {
+                        numEl.textContent = "0";
+                        numEl.classList.add('kpi-count-finished');
+                    }
+                }
+            });
+        };
     </script>
 
     <!-- Direct PostgreSQL Server-Side Data Ingestion Payloads (Instant Sub-Millisecond Render) -->

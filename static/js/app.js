@@ -3037,10 +3037,19 @@ function renderAuditLogs() {
     const statHandovers = document.getElementById("stat-audit-handovers");
     const statAssets = document.getElementById("stat-audit-assets");
 
-    if (statTotal) statTotal.textContent = totalCount;
-    if (statRelocs) statRelocs.textContent = relocCount;
-    if (statHandovers) statHandovers.textContent = handoverCount;
-    if (statAssets) statAssets.textContent = uniqueAssets;
+    // Staggered animated count on page open
+    if (!window._kpiAuditInitialAnimated) {
+        window._kpiAuditInitialAnimated = true;
+        animateNumberCounter(statTotal, totalCount, 1100, 0);
+        animateNumberCounter(statRelocs, relocCount, 1100, 70);
+        animateNumberCounter(statHandovers, handoverCount, 1100, 140);
+        animateNumberCounter(statAssets, uniqueAssets, 1100, 210);
+    } else {
+        animateNumberCounter(statTotal, totalCount, 400, 0);
+        animateNumberCounter(statRelocs, relocCount, 400, 0);
+        animateNumberCounter(statHandovers, handoverCount, 400, 0);
+        animateNumberCounter(statAssets, uniqueAssets, 400, 0);
+    }
 
     // 2. Update Category Filter Badges
     const countAll = document.getElementById("count-filter-all");

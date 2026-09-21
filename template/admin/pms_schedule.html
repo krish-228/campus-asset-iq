@@ -63,7 +63,7 @@
                 </div>
                 <div>
                     <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Equipment</div>
-                    <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ total_count }}</div>
+                    <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight tabular-nums" data-target="{{ total_count }}">0</div>
                     <div class="text-[10px] text-slate-500 font-medium">Active Campus Assets</div>
                 </div>
             </div>
@@ -75,7 +75,7 @@
                 </div>
                 <div>
                     <div class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">All 4 Cycles Done</div>
-                    <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight">{{ completed_count }}</div>
+                    <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight tabular-nums" data-target="{{ completed_count }}">0</div>
                     <div class="text-[10px] text-emerald-600/90 font-medium">100% Fully Serviced</div>
                 </div>
             </div>
@@ -87,7 +87,7 @@
                 </div>
                 <div>
                     <div class="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Pending 4th PMS</div>
-                    <div class="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight">{{ pending_count }}</div>
+                    <div class="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight tabular-nums" data-target="{{ pending_count }}">0</div>
                     <div class="text-[10px] text-amber-600/90 font-medium">Awaiting Final Cycle</div>
                 </div>
             </div>
@@ -99,7 +99,7 @@
                 </div>
                 <div>
                     <div class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">Due This Month</div>
-                    <div class="text-2xl sm:text-3xl font-black text-blue-600 tracking-tight">{{ due_soon_count }}</div>
+                    <div class="text-2xl sm:text-3xl font-black text-blue-600 tracking-tight tabular-nums" data-target="{{ due_soon_count }}">0</div>
                     <div class="text-[10px] text-blue-600/90 font-medium">Vendor Engineer Dispatched</div>
                 </div>
             </div>

@@ -64,7 +64,7 @@
             </div>
             <div>
                 <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Tickets</div>
-                <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ total_tickets }}</div>
+                <div class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight tabular-nums" data-target="{{ total_tickets }}">0</div>
                 <div class="text-[10px] text-slate-500 font-medium">Across all campus departments</div>
             </div>
         </div>
@@ -76,7 +76,7 @@
             </div>
             <div>
                 <div class="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Pending Review</div>
-                <div class="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight">{{ pending_tickets }}</div>
+                <div class="text-2xl sm:text-3xl font-black text-amber-600 tracking-tight tabular-nums" data-target="{{ pending_tickets }}">0</div>
                 <div class="text-[10px] text-amber-600/90 font-medium">Requires IT triage & technician</div>
             </div>
         </div>
@@ -88,7 +88,7 @@
             </div>
             <div>
                 <div class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">In Progress</div>
-                <div class="text-2xl sm:text-3xl font-black text-blue-600 tracking-tight">{{ progress_tickets }}</div>
+                <div class="text-2xl sm:text-3xl font-black text-blue-600 tracking-tight tabular-nums" data-target="{{ progress_tickets }}">0</div>
                 <div class="text-[10px] text-blue-600/90 font-medium">Under active hardware repair</div>
             </div>
         </div>
@@ -100,7 +100,7 @@
             </div>
             <div>
                 <div class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">Resolved</div>
-                <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight">{{ resolved_tickets }}</div>
+                <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight tabular-nums" data-target="{{ resolved_tickets }}">0</div>
                 <div class="text-[10px] text-emerald-600/90 font-medium">100% Successfully verified</div>
             </div>
         </div>
