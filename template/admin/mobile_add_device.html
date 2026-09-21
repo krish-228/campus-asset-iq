@@ -161,45 +161,45 @@
                         <i data-lucide="layers" class="w-3.5 h-3.5 text-blue-400"></i>
                         1. Hardware Category <span class="text-rose-400">*</span>
                     </label>
-                    <span id="category-pill-label" class="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30">CPU (Computer)</span>
+                    <span id="category-pill-label" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30">CPU</span>
                 </div>
 
                 <!-- 7 Hardware Category Cards -->
-                <div class="grid grid-cols-4 sm:grid-cols-7 gap-2" id="category-selector-grid">
+                <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-2.5" id="category-selector-grid">
                     <!-- CPU -->
-                    <button type="button" onclick="selectCategory('CPU')" data-category="CPU" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-blue-600/20 border-blue-500 text-blue-400 shadow-glow">
-                        <i data-lucide="cpu" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">CPU [C]</span>
+                    <button type="button" onclick="selectCategory('CPU')" data-category="CPU" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-blue-600/20 border-blue-500 text-blue-400 shadow-glow">
+                        <i data-lucide="cpu" class="w-5 h-5 shrink-0"></i>
+                        <span class="text-xs font-bold tracking-tight text-center">CPU</span>
                     </button>
                     <!-- Display -->
-                    <button type="button" onclick="selectCategory('Display')" data-category="Display" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="monitor" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">Display [D]</span>
+                    <button type="button" onclick="selectCategory('Display')" data-category="Display" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="monitor" class="w-5 h-5 shrink-0"></i>
+                        <span class="text-xs font-bold tracking-tight text-center">Display</span>
                     </button>
                     <!-- Mouse -->
-                    <button type="button" onclick="selectCategory('Mouse')" data-category="Mouse" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="mouse" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">Mouse [M]</span>
+                    <button type="button" onclick="selectCategory('Mouse')" data-category="Mouse" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="mouse" class="w-5 h-5 shrink-0"></i>
+                        <span class="text-xs font-bold tracking-tight text-center">Mouse</span>
                     </button>
                     <!-- Keyboard -->
-                    <button type="button" onclick="selectCategory('Keyboard')" data-category="Keyboard" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="keyboard" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">Keyboard [K]</span>
+                    <button type="button" onclick="selectCategory('Keyboard')" data-category="Keyboard" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="keyboard" class="w-5 h-5 shrink-0"></i>
+                        <span class="text-xs font-bold tracking-tight text-center">Keyboard</span>
                     </button>
                     <!-- Printer -->
-                    <button type="button" onclick="selectCategory('Printer')" data-category="Printer" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="printer" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">Printer [P]</span>
+                    <button type="button" onclick="selectCategory('Printer')" data-category="Printer" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="printer" class="w-5 h-5 shrink-0"></i>
+                        <span class="text-xs font-bold tracking-tight text-center">Printer</span>
                     </button>
                     <!-- Tablet -->
-                    <button type="button" onclick="selectCategory('Tablet')" data-category="Tablet" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="tablet" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">Tablet [T]</span>
+                    <button type="button" onclick="selectCategory('Tablet')" data-category="Tablet" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="tablet" class="w-5 h-5 shrink-0"></i>
+                        <span class="text-xs font-bold tracking-tight text-center">Tablet</span>
                     </button>
                     <!-- UPS -->
-                    <button type="button" onclick="selectCategory('UPS')" data-category="UPS" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="zap" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">UPS [U]</span>
+                    <button type="button" onclick="selectCategory('UPS')" data-category="UPS" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="zap" class="w-5 h-5 shrink-0"></i>
+                        <span class="text-xs font-bold tracking-tight text-center">UPS</span>
                     </button>
                 </div>
                 <input type="hidden" name="device_type" id="input-device-type" value="CPU">
@@ -581,9 +581,9 @@
             // Update button styles
             document.querySelectorAll('.category-btn').forEach(btn => {
                 if (btn.dataset.category === cat) {
-                    btn.className = "category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-blue-600/20 border-blue-500 text-blue-400 shadow-glow";
+                    btn.className = "category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-blue-600/20 border-blue-500 text-blue-400 shadow-glow";
                 } else {
-                    btn.className = "category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200";
+                    btn.className = "category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200";
                 }
             });
 
