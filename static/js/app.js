@@ -276,11 +276,14 @@ function getFilteredDevices() {
 function getDeviceTypeBadge(dev) {
     let rawType = (dev.deviceType || '').trim();
     if (!rawType && dev.assetId) {
-        if (dev.assetId.includes('/C-') || dev.assetId.includes('/C.')) rawType = 'CPU';
-        else if (dev.assetId.includes('/D-') || dev.assetId.includes('/D.')) rawType = 'Display';
-        else if (dev.assetId.includes('/K-') || dev.assetId.includes('/K.')) rawType = 'Keyboard';
-        else if (dev.assetId.includes('/M-') || dev.assetId.includes('/M.')) rawType = 'Mouse';
-        else if (dev.assetId.includes('/P-') || dev.assetId.includes('/P.')) rawType = 'Printer';
+        const aid = dev.assetId.toUpperCase();
+        if (aid.includes('/C/') || aid.includes('/C-') || aid.includes('/C.')) rawType = 'CPU';
+        else if (aid.includes('/D/') || aid.includes('/D-') || aid.includes('/D.')) rawType = 'Display';
+        else if (aid.includes('/K/') || aid.includes('/K-') || aid.includes('/K.')) rawType = 'Keyboard';
+        else if (aid.includes('/M/') || aid.includes('/M-') || aid.includes('/M.')) rawType = 'Mouse';
+        else if (aid.includes('/P/') || aid.includes('/P-') || aid.includes('/P.')) rawType = 'Printer';
+        else if (aid.includes('/T/') || aid.includes('/T-') || aid.includes('/T.')) rawType = 'Tablet';
+        else if (aid.includes('/U/') || aid.includes('/U-') || aid.includes('/U.')) rawType = 'UPS';
     }
     const t = (rawType || 'CPU').toUpperCase();
     if (t === 'C' || t === 'CPU' || t === 'DESKTOP' || t === 'WORKSTATION' || t === 'PC' || t === 'COMPUTER') {
@@ -311,6 +314,18 @@ function getDeviceTypeBadge(dev) {
         return `<span class="inline-flex items-center gap-2 text-base font-bold text-emerald-800">
             <i data-lucide="printer" class="w-5 h-5 text-emerald-600 shrink-0"></i>
             <span>Printer</span>
+        </span>`;
+    }
+    if (t === 'T' || t === 'TABLET' || t === 'TAB' || t === 'IPAD') {
+        return `<span class="inline-flex items-center gap-2 text-base font-bold text-teal-800">
+            <i data-lucide="tablet" class="w-5 h-5 text-teal-600 shrink-0"></i>
+            <span>Tablet</span>
+        </span>`;
+    }
+    if (t === 'U' || t === 'UPS' || t === 'POWER' || t === 'INVERTER') {
+        return `<span class="inline-flex items-center gap-2 text-base font-bold text-orange-800">
+            <i data-lucide="zap" class="w-5 h-5 text-orange-600 shrink-0"></i>
+            <span>UPS</span>
         </span>`;
     }
     const label = rawType || 'Device';
@@ -1193,32 +1208,49 @@ function getFloorTagInfo(floorId) {
 }
 
 function calculateNextAssetTag(typeCode, floorId) {
-    typeCode = typeCode || 'C';
-    const floorSelect = document.getElementById("dev-select-floor");
-    const activeFloorId = floorId || (floorSelect ? floorSelect.value : "fl-gf");
-    const { floorCode, numBase } = getFloorTagInfo(activeFloorId);
-    
-    const tagPrefix = `PSM/IT/${floorCode}/${typeCode}-`;
-    const existingTags = (appState.devices || [])
-        .map(d => d.assetId)
-        .filter(tag => tag && tag.startsWith(tagPrefix));
+    const typeMap = {
+        'C': 'C', 'CPU': 'C',
+        'D': 'D', 'DISPLAY': 'D',
+        'M': 'M', 'MOUSE': 'M',
+        'K': 'K', 'KEYBOARD': 'K',
+        'P': 'P', 'PRINTER': 'P',
+        'T': 'T', 'TABLET': 'T',
+        'U': 'U', 'UPS': 'U'
+    };
+    const raw = (typeCode || 'C').toUpperCase().trim();
+    const code = typeMap[raw] || raw[0] || 'C';
 
-    if (numBase === "0.01") {
-        let nextIndex = 1;
-        while (existingTags.includes(`PSM/IT/${floorCode}/${typeCode}-0.0${nextIndex}`) || 
-               existingTags.includes(`PSM/IT/${floorCode}/${typeCode}-0.${nextIndex < 10 ? '0' + nextIndex : nextIndex}`)) {
-            nextIndex++;
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yy = String(now.getFullYear()).slice(-2);
+    const mmyy = `${mm}${yy}`; // e.g. "0926"
+
+    const prefix = `PSM/IT/${code}/${mmyy}/`;
+    const monthPattern = `/${mmyy}/`;
+
+    // Ensure XXX is globally unique for every device registered in this month
+    const allMonthTags = (appState.devices || [])
+        .map(d => (d.assetId || '').trim())
+        .filter(tag => tag.toUpperCase().includes(monthPattern));
+
+    let maxNum = 0;
+    allMonthTags.forEach(tag => {
+        const parts = tag.split('/');
+        if (parts.length >= 5) {
+            const num = parseInt(parts[4], 10);
+            if (!isNaN(num) && num > maxNum) {
+                maxNum = num;
+            }
         }
-        const numStr = nextIndex < 10 ? `0.0${nextIndex}` : `0.${nextIndex}`;
-        return `PSM/IT/${floorCode}/${typeCode}-${numStr}`;
-    } else {
-        const baseNum = parseInt(numBase, 10);
-        let nextNum = baseNum;
-        while (existingTags.includes(`PSM/IT/${floorCode}/${typeCode}-${String(nextNum).padStart(3, '0')}`)) {
-            nextNum++;
-        }
-        return `PSM/IT/${floorCode}/${typeCode}-${String(nextNum).padStart(3, '0')}`;
+    });
+
+    let nextNum = maxNum + 1;
+    const allExisting = (appState.devices || []).map(d => (d.assetId || '').trim().toUpperCase());
+    while (allExisting.includes(`${prefix}${String(nextNum).padStart(3, '0')}`.toUpperCase())) {
+        nextNum++;
     }
+
+    return `${prefix}${String(nextNum).padStart(3, '0')}`;
 }
 
 function updateAutoAssetTag() {
@@ -1270,6 +1302,16 @@ function handleDevTypeChange() {
         if (ramInput) ramInput.value = "Direct Thermal 203 DPI Print Engine";
         if (monitorInput) monitorInput.value = "Status LED Indicator Panel";
         if (osSelect) osSelect.value = "Link-OS Enterprise";
+    } else if (type === 'T') {
+        if (cpuInput) cpuInput.value = "Octa-Core Medical Tablet Processor";
+        if (ramInput) ramInput.value = "128GB Storage / 6GB RAM";
+        if (monitorInput) monitorInput.value = '10.5" Retina IPS Multi-Touch Clinical Panel';
+        if (osSelect) osSelect.value = "Android 14 / iPadOS";
+    } else if (type === 'U') {
+        if (cpuInput) cpuInput.value = "Line-Interactive Sine Wave Pure Power System";
+        if (ramInput) ramInput.value = "1000VA / 600W Battery Backup Unit";
+        if (monitorInput) monitorInput.value = "N/A - Power Equipment";
+        if (osSelect) osSelect.value = "Embedded Microcontroller";
     }
 }
 

@@ -121,13 +121,15 @@ function renderStickerCards(devices) {
         return;
     }
 
-    const typeLabels = { 'C': 'CPU', 'D': 'Display', 'M': 'Mouse', 'K': 'Keyboard', 'P': 'Printer', 'L': 'Laptop' };
+    const typeLabels = { 'C': 'CPU', 'D': 'Display', 'M': 'Mouse', 'K': 'Keyboard', 'P': 'Printer', 'T': 'Tablet', 'U': 'UPS', 'L': 'Laptop' };
     const typeColors = {
         'C': 'bg-blue-50 text-blue-700 border-blue-200',
         'D': 'bg-sky-50 text-sky-700 border-sky-200',
-        'M': 'bg-amber-50 text-amber-700 border-amber-200',
-        'K': 'bg-purple-50 text-purple-700 border-purple-200',
+        'M': 'bg-purple-50 text-purple-700 border-purple-200',
+        'K': 'bg-amber-50 text-amber-700 border-amber-200',
         'P': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'T': 'bg-teal-50 text-teal-700 border-teal-200',
+        'U': 'bg-orange-50 text-orange-700 border-orange-200',
         'L': 'bg-indigo-50 text-indigo-700 border-indigo-200'
     };
 
@@ -142,7 +144,7 @@ function renderStickerCards(devices) {
         const roomText = dev.roomName || (room ? room.name : "Medical Complex");
         const orgName = dev.orgName || (org ? org.name : 'PSM HOSPITAL');
 
-        // 2. Resolve Device Type (CPU, Display, Mouse, Keyboard, Printer, Laptop)
+        // 2. Resolve Device Type (CPU, Display, Mouse, Keyboard, Printer, Tablet, UPS, Laptop)
         let typeCode = 'C';
         let typeLabel = 'CPU';
         if (dev.deviceType) {
@@ -151,10 +153,13 @@ function renderStickerCards(devices) {
             else if (dtUpper.includes('KEYB') || dtUpper === 'K') { typeCode = 'K'; typeLabel = 'Keyboard'; }
             else if (dtUpper.includes('MOUS') || dtUpper === 'M') { typeCode = 'M'; typeLabel = 'Mouse'; }
             else if (dtUpper.includes('PRINT') || dtUpper === 'P') { typeCode = 'P'; typeLabel = 'Printer'; }
+            else if (dtUpper.includes('TAB') || dtUpper === 'T') { typeCode = 'T'; typeLabel = 'Tablet'; }
+            else if (dtUpper.includes('UPS') || dtUpper === 'U') { typeCode = 'U'; typeLabel = 'UPS'; }
             else if (dtUpper.includes('LAP') || dtUpper === 'L') { typeCode = 'L'; typeLabel = 'Laptop'; }
             else { typeCode = 'C'; typeLabel = 'CPU'; }
         } else {
-            const typeMatch = dev.assetId ? dev.assetId.match(/\/([CDKMPL])-/i) : null;
+            const aid = (dev.assetId || '').toUpperCase();
+            const typeMatch = aid.match(/\/([CDKMPTU])(?:\/|-|\.)/);
             typeCode = (typeMatch ? typeMatch[1] : 'C').toUpperCase();
             typeLabel = typeLabels[typeCode] || 'CPU';
         }

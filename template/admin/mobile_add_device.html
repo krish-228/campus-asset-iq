@@ -164,32 +164,42 @@
                     <span id="category-pill-label" class="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30">CPU (Computer)</span>
                 </div>
 
-                <!-- 5 Hardware Category Cards -->
-                <div class="grid grid-cols-5 gap-2" id="category-selector-grid">
+                <!-- 7 Hardware Category Cards -->
+                <div class="grid grid-cols-4 sm:grid-cols-7 gap-2" id="category-selector-grid">
                     <!-- CPU -->
                     <button type="button" onclick="selectCategory('CPU')" data-category="CPU" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-blue-600/20 border-blue-500 text-blue-400 shadow-glow">
                         <i data-lucide="cpu" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">CPU</span>
+                        <span class="text-[11px] font-bold">CPU [C]</span>
                     </button>
                     <!-- Display -->
                     <button type="button" onclick="selectCategory('Display')" data-category="Display" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
                         <i data-lucide="monitor" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">Display</span>
-                    </button>
-                    <!-- Keyboard -->
-                    <button type="button" onclick="selectCategory('Keyboard')" data-category="Keyboard" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="keyboard" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">Keyboard</span>
+                        <span class="text-[11px] font-bold">Display [D]</span>
                     </button>
                     <!-- Mouse -->
                     <button type="button" onclick="selectCategory('Mouse')" data-category="Mouse" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
                         <i data-lucide="mouse" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">Mouse</span>
+                        <span class="text-[11px] font-bold">Mouse [M]</span>
+                    </button>
+                    <!-- Keyboard -->
+                    <button type="button" onclick="selectCategory('Keyboard')" data-category="Keyboard" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="keyboard" class="w-5 h-5"></i>
+                        <span class="text-[11px] font-bold">Keyboard [K]</span>
                     </button>
                     <!-- Printer -->
                     <button type="button" onclick="selectCategory('Printer')" data-category="Printer" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
                         <i data-lucide="printer" class="w-5 h-5"></i>
-                        <span class="text-[11px] font-bold">Printer</span>
+                        <span class="text-[11px] font-bold">Printer [P]</span>
+                    </button>
+                    <!-- Tablet -->
+                    <button type="button" onclick="selectCategory('Tablet')" data-category="Tablet" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="tablet" class="w-5 h-5"></i>
+                        <span class="text-[11px] font-bold">Tablet [T]</span>
+                    </button>
+                    <!-- UPS -->
+                    <button type="button" onclick="selectCategory('UPS')" data-category="UPS" class="category-btn p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
+                        <i data-lucide="zap" class="w-5 h-5"></i>
+                        <span class="text-[11px] font-bold">UPS [U]</span>
                     </button>
                 </div>
                 <input type="hidden" name="device_type" id="input-device-type" value="CPU">
@@ -212,7 +222,7 @@
                 <div>
                     <div class="relative">
                         <input type="text" id="input-asset-id" name="asset_id" required
-                            placeholder="e.g. PSM/IT/2F/C-201"
+                            placeholder="e.g. PSM/IT/M/0826/001 or PSM/IT/C/0926/001"
                             class="mobile-input uppercase font-mono font-bold tracking-wide pr-10 text-base"
                             oninput="validateAssetId(this.value)">
                         <span id="asset-id-status" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
@@ -221,7 +231,7 @@
                     </div>
                     <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
                         <i data-lucide="info" class="w-3 h-3 text-slate-500"></i>
-                        Single Source of Truth: This tag directly maps to physical QR stickers.
+                        Format: <span class="text-cyan-400 font-mono font-bold">PSM/IT/&lt;TYPE&gt;/&lt;MMYY&gt;/&lt;XXX&gt;</span> (e.g. PSM/IT/M/0926/001, PSM/IT/C/0926/002).
                     </p>
                 </div>
 
@@ -495,7 +505,7 @@
                 <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
                     <span class="text-slate-400 font-semibold">Asset Tag:</span>
                     <span id="modal-saved-tag" class="font-mono font-black text-sm text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">
-                        PSM/IT/2F/C-205
+                        PSM/IT/C/0926/001
                     </span>
                 </div>
                 <div class="flex items-center justify-between">
@@ -541,16 +551,29 @@
         let currentCategory = 'CPU';
         let currentFloor = '2nd Floor';
         let lastRegisteredAssetId = '';
-        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v2';
+        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v5';
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Clean up obsolete legacy drafts
+            try {
+                localStorage.removeItem('campus_asset_draft');
+                localStorage.removeItem('campus_asset_draft_v2');
+                localStorage.removeItem('campus_asset_draft_v3');
+            } catch (e) {}
+
             lucide.createIcons();
             loadDraftFromStorage();
             setupAutoSaveListeners();
+
+            // Always ensure valid new format tag is present
+            const tagInput = document.getElementById('input-asset-id');
+            if (tagInput && (!tagInput.value || tagInput.value.includes('/2F/') || tagInput.value.includes('/1F/') || tagInput.value.includes('/GF/') || tagInput.value.includes('-'))) {
+                autoGenerateTag();
+            }
         });
 
         // Category selection
-        function selectCategory(cat) {
+        function selectCategory(cat, triggerAutoGenerate = true) {
             currentCategory = cat;
             document.getElementById('input-device-type').value = cat;
             document.getElementById('category-pill-label').textContent = cat;
@@ -580,9 +603,20 @@
             } else if (cat === 'Display') {
                 dispPanel.classList.remove('hidden');
                 subTitle.textContent = "Monitor & Screen Profile";
+            } else if (cat === 'Tablet') {
+                dispPanel.classList.remove('hidden');
+                subTitle.textContent = "Tablet & Mobile Clinical Device Profile";
+            } else if (cat === 'UPS') {
+                periPanel.classList.remove('hidden');
+                subTitle.textContent = "UPS & Power Backup Equipment Profile";
             } else {
                 periPanel.classList.remove('hidden');
                 subTitle.textContent = `${cat} Profile`;
+            }
+
+            // Immediately auto-generate and update asset tag for newly chosen category
+            if (triggerAutoGenerate) {
+                autoGenerateTag();
             }
 
             // Haptic vibration
@@ -620,28 +654,54 @@
             saveDraft();
         }
 
-        // Auto Generate Asset Tag
+        // Auto Generate Asset Tag (PSM/IT/<TYPE>/<MMYY>/<XXX>)
         async function autoGenerateTag() {
             const btn = document.getElementById('btn-auto-tag');
-            btn.disabled = true;
-            btn.classList.add('opacity-50');
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('opacity-50');
+            }
+
+            const catMap = {
+                'CPU': 'C', 'Display': 'D', 'Mouse': 'M', 'Keyboard': 'K',
+                'Printer': 'P', 'Tablet': 'T', 'UPS': 'U'
+            };
+            const typeLetter = catMap[currentCategory] || (currentCategory ? currentCategory.charAt(0).toUpperCase() : 'C');
+            const now = new Date();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const yy = String(now.getFullYear()).slice(-2);
+            const mmyy = `${mm}${yy}`;
+            const fallbackTag = `PSM/IT/${typeLetter}/${mmyy}/001`;
 
             try {
-                const url = `/api/devices/quick-generate-id/?type=${encodeURIComponent(currentCategory)}&org=${encodeURIComponent(currentOrg)}&floor=${encodeURIComponent(currentFloor)}`;
+                const url = `/api/devices/quick-generate-id/?type=${encodeURIComponent(currentCategory)}&org=${encodeURIComponent(currentOrg)}&floor=${encodeURIComponent(currentFloor)}&_t=${Date.now()}`;
                 const res = await fetch(url);
                 const data = await res.json();
                 if (data.success && data.asset_id) {
                     const tagInput = document.getElementById('input-asset-id');
-                    tagInput.value = data.asset_id;
-                    validateAssetId(data.asset_id);
+                    if (tagInput) {
+                        tagInput.value = data.asset_id;
+                        validateAssetId(data.asset_id);
+                    }
                     if (navigator.vibrate) navigator.vibrate([30, 30]);
                     saveDraft();
+                    return;
                 }
             } catch (err) {
-                console.error("Failed to generate tag", err);
+                console.warn("Using offline fallback tag generator", err);
             } finally {
-                btn.disabled = false;
-                btn.classList.remove('opacity-50');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+                }
+            }
+
+            // Fallback safety
+            const tagInput = document.getElementById('input-asset-id');
+            if (tagInput) {
+                tagInput.value = fallbackTag;
+                validateAssetId(fallbackTag);
+                saveDraft();
             }
         }
 
@@ -687,9 +747,14 @@
                 const draft = JSON.parse(saved);
                 if (draft.asset_id || draft.room) {
                     document.getElementById('draft-banner').classList.remove('hidden');
-                    if (draft.category) selectCategory(draft.category);
+                    if (draft.category) selectCategory(draft.category, false);
                     if (draft.floor) selectFloor(draft.floor);
-                    if (draft.asset_id) document.getElementById('input-asset-id').value = draft.asset_id;
+                    if (draft.asset_id && !draft.asset_id.includes('/2F/') && !draft.asset_id.includes('/1F/') && !draft.asset_id.includes('/GF/') && !draft.asset_id.includes('-')) {
+                        document.getElementById('input-asset-id').value = draft.asset_id;
+                        validateAssetId(draft.asset_id);
+                    } else {
+                        autoGenerateTag();
+                    }
                     if (draft.serial) document.getElementById('input-serial-number').value = draft.serial;
                     if (draft.status) document.getElementById('input-status').value = draft.status;
                     if (draft.building) document.getElementById('input-building').value = draft.building;

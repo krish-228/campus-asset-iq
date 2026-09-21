@@ -1036,11 +1036,20 @@ def normalize_device_type(code, asset_id=''):
         return 'Mouse'
     if c in ('P', 'PRT', 'PRINTER', 'BARCODE PRINTER', 'LASER PRINTER'):
         return 'Printer'
-    if '/C-' in asset_id or '/C.' in asset_id: return 'CPU'
-    if '/D-' in asset_id or '/D.' in asset_id: return 'Display'
-    if '/K-' in asset_id or '/K.' in asset_id: return 'Keyboard'
-    if '/M-' in asset_id or '/M.' in asset_id: return 'Mouse'
-    if '/P-' in asset_id or '/P.' in asset_id: return 'Printer'
+    if c in ('T', 'TAB', 'TABLET', 'IPAD'):
+        return 'Tablet'
+    if c in ('U', 'UPS', 'INVERTER', 'POWER'):
+        return 'UPS'
+    
+    # Check asset_id format: PSM/IT/<TYPE>/<MMYY>/<NUM> or legacy PSM/IT/<FLOOR>/<TYPE>-<NUM>
+    aid = asset_id.upper()
+    if '/C/' in aid or '/C-' in aid or '/C.' in aid: return 'CPU'
+    if '/D/' in aid or '/D-' in aid or '/D.' in aid or '/DISP-' in aid: return 'Display'
+    if '/K/' in aid or '/K-' in aid or '/K.' in aid or '/KB-' in aid: return 'Keyboard'
+    if '/M/' in aid or '/M-' in aid or '/M.' in aid: return 'Mouse'
+    if '/P/' in aid or '/P-' in aid or '/P.' in aid or '/PRT-' in aid: return 'Printer'
+    if '/T/' in aid or '/T-' in aid: return 'Tablet'
+    if '/U/' in aid or '/U-' in aid: return 'UPS'
     return code or 'CPU'
 
 def ensure_sample_devices():
@@ -2081,53 +2090,69 @@ def mobile_add_device_view(request):
         'staff_list': staff_list,
         'selected_org': 'HOSP',
     }
-    return render(request, "admin/mobile_add_device.html", context)
+    response = render(request, "admin/mobile_add_device.html", context)
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
 
 
 @csrf_exempt
 def api_generate_asset_id(request):
     """
     Generates a unique, standardized hardware asset tag strictly for PSM Hospital.
-    Format example: PSM/IT/2F/C-205 or PSM/IT/1F/DISP-104.
+    Format: PSM/IT/<TYPE>/<MMYY>/<XXX>
+    Example:
+      - Mouse:    PSM/IT/M/0826/001 or PSM/IT/M/0926/001
+      - CPU:      PSM/IT/C/0926/001
+      - Display:  PSM/IT/D/0926/001
+      - Printer:  PSM/IT/P/0926/001
+      - Keyboard: PSM/IT/K/0926/001
+      - Tablet:   PSM/IT/T/0926/001
+      - UPS:      PSM/IT/U/0926/001
     Guarantees 100% collision-free against PostgreSQL DeviceAsset table.
     """
-    dev_type = normalize_device_type(request.GET.get('type') or request.POST.get('type') or 'CPU')
-    floor_raw = request.GET.get('floor') or request.POST.get('floor') or '2nd Floor'
-
-    floor_lower = floor_raw.lower()
-    if 'ground' in floor_lower or 'gf' in floor_lower:
-        floor_code = 'GF'
-    elif '1' in floor_lower:
-        floor_code = '1F'
-    elif '2' in floor_lower:
-        floor_code = '2F'
-    elif '3' in floor_lower:
-        floor_code = '3F'
-    elif '4' in floor_lower:
-        floor_code = '4F'
-    elif 'icu' in floor_lower:
-        floor_code = 'ICU'
-    else:
-        floor_code = '2F'
-
-    type_prefixes = {
-        'CPU': 'C',
-        'Display': 'DISP',
-        'Keyboard': 'KB',
-        'Mouse': 'MS',
-        'Printer': 'PRT'
+    raw_type = (request.GET.get('type') or request.POST.get('type') or 'CPU').strip().upper()
+    
+    type_letter_map = {
+        'M': 'M', 'MOUSE': 'M',
+        'C': 'C', 'CPU': 'C', 'WORKSTATION': 'C', 'DESKTOP': 'C', 'COMPUTER': 'C',
+        'D': 'D', 'DISPLAY': 'D', 'MONITOR': 'D', 'SCREEN': 'D',
+        'P': 'P', 'PRINTER': 'P', 'PRT': 'P',
+        'K': 'K', 'KEYBOARD': 'K', 'KB': 'K',
+        'T': 'T', 'TABLET': 'T', 'TAB': 'T', 'IPAD': 'T',
+        'U': 'U', 'UPS': 'U', 'INVERTER': 'U', 'POWER': 'U',
     }
-    prefix = type_prefixes.get(dev_type, 'C')
-    org_prefix = "PSM/IT"
+    type_letter = type_letter_map.get(raw_type, raw_type[0] if raw_type else 'C')
 
-    for _ in range(100):
-        rand_num = random.randint(100, 999)
-        candidate = f"{org_prefix}/{floor_code}/{prefix}-{rand_num}"
-        if not DeviceAsset.objects.filter(asset_id__iexact=candidate).exists():
-            return JsonResponse({'success': True, 'asset_id': candidate})
+    now = timezone.localtime()
+    mmyy = now.strftime("%m%y")  # e.g. "0926"
 
-    fallback_id = f"{org_prefix}/{floor_code}/{prefix}-{random.randint(1000, 9999)}"
-    return JsonResponse({'success': True, 'asset_id': fallback_id})
+    prefix = f"PSM/IT/{type_letter}/{mmyy}/"
+
+    # Ensure XXX is globally unique for every device registered in this month
+    month_pattern = f"/{mmyy}/"
+    existing_month_tags = set(DeviceAsset.objects.filter(asset_id__contains=month_pattern).values_list('asset_id', flat=True))
+
+    max_num = 0
+    for tag in existing_month_tags:
+        parts = tag.strip().split('/')
+        if len(parts) >= 5:
+            try:
+                num = int(parts[4])
+                if num > max_num:
+                    max_num = num
+            except (ValueError, TypeError):
+                pass
+
+    next_num = max_num + 1
+    candidate = f"{prefix}{next_num:03d}"
+
+    while DeviceAsset.objects.filter(asset_id__iexact=candidate).exists():
+        next_num += 1
+        candidate = f"{prefix}{next_num:03d}"
+
+    return JsonResponse({'success': True, 'asset_id': candidate})
 
 @admin_required
 def user(request):
@@ -3137,9 +3162,23 @@ def api_import_devices_excel(request):
             continue
 
         if not asset_id:
-            random_num = random.randint(100, 999)
-            prefix = 'DEV'
-            asset_id = f"PSM/IT/2F/C-{prefix}-{random_num}"
+            raw_t = find_val(r, ['device type', 'device_type', 'type', 'device category', 'category', 'device', 'equipment type'], 'CPU')
+            t_map = {'CPU': 'C', 'Display': 'D', 'Mouse': 'M', 'Keyboard': 'K', 'Printer': 'P', 'Tablet': 'T', 'UPS': 'U'}
+            t_code = t_map.get(raw_t, 'C')
+            now_str = timezone.localtime().strftime("%m%y")
+            all_m_tags = set(DeviceAsset.objects.filter(asset_id__contains=f"/{now_str}/").values_list('asset_id', flat=True))
+            max_n = 0
+            for t_tag in all_m_tags:
+                p_parts = t_tag.strip().split('/')
+                if len(p_parts) >= 5:
+                    try:
+                        n_val = int(p_parts[4])
+                        if n_val > max_n: max_n = n_val
+                    except (ValueError, TypeError): pass
+            next_n = max_n + 1
+            while f"PSM/IT/{t_code}/{now_str}/{next_n:03d}" in all_m_tags:
+                next_n += 1
+            asset_id = f"PSM/IT/{t_code}/{now_str}/{next_n:03d}"
 
 
         device_type_raw = find_val(r, [
