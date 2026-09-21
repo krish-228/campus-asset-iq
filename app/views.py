@@ -2202,6 +2202,7 @@ def mobile_add_device_view(request):
         'floors': floors,
         'rooms': rooms,
         'staff_list': staff_list,
+        'staff_list_json': json.dumps(staff_list, default=str),
         'selected_org': 'HOSP',
     }
     response = render(request, "admin/mobile_add_device.html", context)

@@ -570,6 +570,9 @@
         </div>
     </div>
 
+    <!-- Staff Lookup Data Payload (Clean JSON Ingestion, Zero Script Syntax Errors) -->
+    <script type="application/json" id="staff-lookup-payload">{{ staff_list_json|safe }}</script>
+
     <!-- Client-Side JavaScript Application Logic -->
     <script>
         const currentOrg = 'HOSP';
@@ -672,12 +675,22 @@
             saveDraft();
         }
 
-        const staffLookup = {
-            {% for s in staff_list %}
-            "{{ s.full_name|escapejs }}": { empId: "{{ s.emp_id|escapejs }}", desig: "{{ s.designation|escapejs }}" },
-            "{{ s.full_name|escapejs }} ({{ s.emp_id|escapejs }})": { empId: "{{ s.emp_id|escapejs }}", desig: "{{ s.designation|escapejs }}" },
-            {% endfor %}
-        };
+        const staffLookup = {};
+        try {
+            const staffPayloadEl = document.getElementById('staff-lookup-payload');
+            if (staffPayloadEl && staffPayloadEl.textContent.trim()) {
+                const staffArray = JSON.parse(staffPayloadEl.textContent);
+                staffArray.forEach(s => {
+                    const item = { empId: s.emp_id || '', desig: s.designation || '' };
+                    if (s.full_name) {
+                        staffLookup[s.full_name] = item;
+                        staffLookup[`${s.full_name} (${s.emp_id})`] = item;
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Could not parse staff lookup payload:', e);
+        }
 
         function handleStaffInput(val) {
             const clean = (val || '').trim();
