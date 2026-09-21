@@ -224,7 +224,8 @@
                         <input type="text" id="input-asset-id" name="asset_id" required
                             placeholder="e.g. PSM/IT/M/0826/001 or PSM/IT/C/0926/001"
                             class="mobile-input uppercase font-mono font-bold tracking-wide pr-10 text-base"
-                            oninput="validateAssetId(this.value)">
+                            oninput="handleAssetIdInput(this)"
+                            autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
                         <span id="asset-id-status" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
                             <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
                         </span>
@@ -586,6 +587,7 @@
             lucide.createIcons();
             loadDraftFromStorage();
             setupAutoSaveListeners();
+            setupAssetIdValidationListeners();
 
             // Always ensure valid new format tag is present
             const tagInput = document.getElementById('input-asset-id');
@@ -716,6 +718,95 @@
             saveDraft();
         }
 
+        // 3-Digit Unique Sequence Warning & Keystroke Guards
+        let seqWarningTimeout = null;
+        function showSequenceDigitWarning(msg) {
+            const warningEl = document.getElementById('asset-id-warning');
+            if (warningEl) {
+                warningEl.classList.remove('hidden');
+                warningEl.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-amber-400"></i> <span>${msg}</span>`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                clearTimeout(seqWarningTimeout);
+                seqWarningTimeout = setTimeout(() => {
+                    if (warningEl && warningEl.textContent.includes('3 digits')) {
+                        warningEl.classList.add('hidden');
+                    }
+                }, 3500);
+            }
+        }
+
+        function handleAssetIdInput(input) {
+            let val = (input.value || '').toUpperCase();
+            const parts = val.split('/');
+            let exceeded = false;
+
+            if (parts.length >= 5) {
+                const rawSeq = parts[4];
+                // Allow only numeric digits in the sequence part
+                const cleanSeq = rawSeq.replace(/[^0-9]/g, '');
+                if (cleanSeq.length > 3) {
+                    parts[4] = cleanSeq.slice(0, 3);
+                    exceeded = true;
+                } else {
+                    parts[4] = cleanSeq;
+                }
+                // Discard any 6th segment or trailing slashes
+                val = parts.slice(0, 5).join('/');
+                input.value = val;
+            }
+
+            if (exceeded) {
+                showSequenceDigitWarning("Only 3 digits allowed in unique sequence (e.g. 001–999). More than 3 digits not accepted.");
+            }
+
+            validateAssetId(val);
+        }
+
+        function setupAssetIdValidationListeners() {
+            const assetInput = document.getElementById('input-asset-id');
+            if (!assetInput) return;
+
+            // Restrict sequence segment to maximum 3 digits upon keystroke
+            assetInput.addEventListener('keydown', function(e) {
+                // Allow control & navigation keys
+                if (['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape', 'Home', 'End'].includes(e.key) || e.ctrlKey || e.metaKey || e.altKey) {
+                    return;
+                }
+
+                const val = this.value;
+                const parts = val.split('/');
+                if (parts.length >= 5) {
+                    const selStart = this.selectionStart;
+                    const selEnd = this.selectionEnd;
+                    const prefixLen = parts.slice(0, 4).join('/').length + 1; // index after the 4th slash
+
+                    // If typing inside or at the end of the 5th segment
+                    if (selStart >= prefixLen && selStart === selEnd) {
+                        const curSeq = parts[4] || '';
+                        // If already 3 digits and user is typing a character, reject keystroke!
+                        if (curSeq.length >= 3 && e.key.length === 1) {
+                            e.preventDefault();
+                            showSequenceDigitWarning("Only 3 digits allowed in unique sequence (e.g. 001–999). More than 3 digits not accepted.");
+                            return;
+                        }
+                    }
+                }
+            });
+
+            // On blur: auto-pad if 1 or 2 digits entered (e.g. 7 -> 007)
+            assetInput.addEventListener('blur', function() {
+                const parts = this.value.trim().split('/');
+                if (parts.length === 5 && parts[4] && /^\d+$/.test(parts[4])) {
+                    if (parts[4].length < 3) {
+                        parts[4] = parts[4].padStart(3, '0');
+                        this.value = parts.join('/');
+                        validateAssetId(this.value);
+                        saveDraft();
+                    }
+                }
+            });
+        }
+
         // Auto Generate Asset Tag (PSM/IT/<TYPE>/<MMYY>/<XXX>)
         // Guarantees 100% unique, never-repeating sequence
         async function autoGenerateTag(forceNext = false) {
@@ -785,6 +876,28 @@
                 return;
             }
 
+            // Check if sequence part exceeds 3 digits
+            const parts = clean.split('/');
+            if (parts.length >= 5) {
+                const seq = parts[4];
+                if (seq.length > 3) {
+                    if (statusIcon) {
+                        statusIcon.classList.remove('hidden');
+                        statusIcon.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400" title="Invalid Sequence Length"></i>`;
+                    }
+                    if (warningEl) {
+                        warningEl.classList.remove('hidden');
+                        warningEl.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-400"></i> <span>Sequence code cannot exceed 3 digits (e.g. 001 to 999). Only 3 digits are accepted.</span>`;
+                    }
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    return;
+                }
+            }
+
             // Show checking spinner
             if (statusIcon) {
                 statusIcon.classList.remove('hidden');
@@ -798,7 +911,20 @@
                     const res = await fetch(`/api/devices/check-asset-id/?asset_id=${encodeURIComponent(clean)}&_t=${Date.now()}`);
                     const data = await res.json();
 
-                    if (data.exists) {
+                    if (data.valid === false) {
+                        if (statusIcon) {
+                            statusIcon.classList.remove('hidden');
+                            statusIcon.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400" title="Invalid Format"></i>`;
+                        }
+                        if (warningEl) {
+                            warningEl.classList.remove('hidden');
+                            warningEl.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-400"></i> <span>${data.message || 'Invalid sequence format.'}</span>`;
+                        }
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        }
+                    } else if (data.exists) {
                         // Tag already registered to another device!
                         if (statusIcon) {
                             statusIcon.classList.remove('hidden');
@@ -935,6 +1061,17 @@
                 errorBanner.classList.remove('hidden');
                 document.getElementById('input-asset-id').focus();
                 return;
+            }
+
+            const tagParts = assetId.split('/');
+            if (tagParts.length >= 5) {
+                const seq = tagParts[4];
+                if (seq.length > 3 || (seq.length > 0 && !/^\d+$/.test(seq))) {
+                    errorText.textContent = "Invalid Asset Tag: The unique sequence number allows only 3 digits (e.g. 001 to 999).";
+                    errorBanner.classList.remove('hidden');
+                    document.getElementById('input-asset-id').focus();
+                    return;
+                }
             }
 
             if (!roomName) {

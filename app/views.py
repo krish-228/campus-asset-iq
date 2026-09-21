@@ -1255,6 +1255,14 @@ def api_save_device(request):
     if not asset_id:
         return JsonResponse({'success': False, 'message': 'Asset Tag / ID is required.'}, status=400)
 
+    # 3-digit sequence constraint validation
+    parts = asset_id.split('/')
+    if len(parts) >= 5 and (len(parts[4]) > 3 or (parts[4] and not parts[4].isdigit())):
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid Asset Tag: Sequence code cannot exceed 3 digits (e.g. 001 to 999).'
+        }, status=400)
+
     serial_number = (data.get('serialNumber') or data.get('serial_number') or '').strip().upper()
     device_type = normalize_device_type(data.get('deviceType') or data.get('device_type'), asset_id)
     org_id = (data.get('orgId') or data.get('org_id') or 'HOSP').strip()
@@ -2287,10 +2295,20 @@ def api_generate_asset_id(request):
         start_num = max_used + 1
 
     next_num = start_num
+    if next_num > 999:
+        # Wrap or find lowest available slot within 001-999
+        found_slot = None
+        for n in range(1, 1000):
+            cand = f"{prefix}{n:03d}"
+            if (n not in used_numbers) and not DeviceAsset.objects.filter(asset_id__iexact=cand).exists():
+                found_slot = n
+                break
+        next_num = found_slot if found_slot is not None else 999
+
     candidate = f"{prefix}{next_num:03d}"
 
-    # Strict PostgreSQL collision verification loop
-    while (next_num in used_numbers) or DeviceAsset.objects.filter(asset_id__iexact=candidate).exists():
+    # Strict PostgreSQL collision verification loop (strictly within 3 digits)
+    while ((next_num in used_numbers) or DeviceAsset.objects.filter(asset_id__iexact=candidate).exists()) and next_num < 999:
         next_num += 1
         candidate = f"{prefix}{next_num:03d}"
 
@@ -2303,6 +2321,16 @@ def api_check_asset_id(request):
     asset_id = (request.GET.get('asset_id') or request.POST.get('asset_id') or '').strip().upper()
     if not asset_id:
         return JsonResponse({'exists': False, 'valid': False, 'message': 'Empty ID'})
+
+    # 3-digit sequence constraint validation
+    parts = asset_id.split('/')
+    if len(parts) >= 5 and (len(parts[4]) > 3 or (parts[4] and not parts[4].isdigit())):
+        return JsonResponse({
+            'exists': False,
+            'valid': False,
+            'asset_id': asset_id,
+            'message': 'Sequence number cannot exceed 3 digits (e.g. 001 to 999).'
+        })
 
     dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
     if dev:
