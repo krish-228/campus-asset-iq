@@ -8,7 +8,7 @@ const INITIAL_SAMPLE_DATA = {
 
     buildings: [
         // PSM Hospital Single Facility Complex
-        { id: "bldg-hosp-main", orgId: "HOSP", name: "PSM Hospital Main Medical Complex", code: "PSM-MAIN" }
+        { id: "bldg-hosp-main", orgId: "HOSP", name: "PSM Hospital", code: "PSM-MAIN" }
     ],
 
     floors: [

@@ -476,7 +476,11 @@ function renderInventoryTable() {
         }
 
         // 2. Campus Location Layout (Graceful fallback to direct device location names)
-        const bldgName = dev.buildingName || (bldg ? bldg.name : 'PSM Hospital Main Medical Complex');
+        let bldgName = dev.buildingName || (bldg ? bldg.name : 'PSM Hospital');
+        if (bldgName) {
+            bldgName = bldgName.replace(/\s*Main Medical Complex/gi, '').replace(/\s*Main Complex/gi, '').trim();
+            if (!bldgName || bldgName === 'PSM') bldgName = 'PSM Hospital';
+        }
         const floorName = dev.floorName || (floor ? floor.name : 'Ground Floor');
         const roomName = dev.roomName || (room ? room.name : '');
 
@@ -1645,8 +1649,8 @@ async function handleSaveDevice(e) {
     // Resolve clean human text for location and user
     const bldgEl = document.getElementById("dev-select-bldg");
     const buildingName = (bldgEl && bldgEl.selectedIndex >= 0 && bldgEl.options[bldgEl.selectedIndex].text !== 'Select')
-        ? bldgEl.options[bldgEl.selectedIndex].text
-        : "PSM Hospital Main Medical Complex";
+        ? bldgEl.options[bldgEl.selectedIndex].text.replace(/\s*Main Medical Complex/gi, '').replace(/\s*Main Complex/gi, '').trim()
+        : "PSM Hospital";
 
     const floorEl = document.getElementById("dev-select-floor");
     const floorName = (floorEl && floorEl.selectedIndex >= 0 && floorEl.options[floorEl.selectedIndex].text !== 'Select')
