@@ -2044,19 +2044,33 @@ def mobile_add_device_view(request):
     today_str = timezone.localtime().strftime("%d-%b-%Y")
     warranty_str = (timezone.localtime() + datetime.timedelta(days=1095)).strftime("%d-%b-%Y")
 
-    # Distinct locations for smart auto-complete chips
-    buildings = list(DeviceAsset.objects.exclude(building_name='').values_list('building_name', flat=True).distinct())
-    if not buildings:
-        buildings = ['PSM Hospital Main Medical Complex', 'Swaminarayan University Academic Block A', 'Biomedical Engineering Wing']
+    # Dedicated PSM Hospital clinical buildings and wings
+    buildings = [
+        'PSM Hospital Main Medical Complex',
+        'ICU & Critical Care Wing',
+        'Emergency & Trauma Center',
+        'Radiology & Diagnostics Wing',
+        'OPD & Surgical Block',
+        'Biomedical Engineering Unit',
+    ]
 
     floors = ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', 'ICU Special Wing', 'Basement']
     
-    rooms = list(DeviceAsset.objects.exclude(room_name='').values_list('room_name', flat=True).distinct()[:20])
+    # Hospital clinical rooms and wards
+    rooms = list(DeviceAsset.objects.filter(org_id='HOSP').exclude(room_name='').values_list('room_name', flat=True).distinct()[:20])
     if not rooms:
-        rooms = ['ICU Ward 1', 'Emergency Trauma Room 102', 'Radiology Control Lab', 'Central Nursing Desk', 'Computer Lab 3', 'OPD Clinic 12']
+        rooms = [
+            'ICU Bed Ward 1 (Room 101)',
+            'ICU Central Nursing Desk',
+            'Emergency Trauma Room 102',
+            'Radiology Diagnostic Desk',
+            'Pathology Lab Terminal',
+            'OPD Clinic 04'
+        ]
 
-    staff_qs = UserProfile.objects.all().values('full_name', 'emp_id', 'department', 'org_id')[:30]
-    staff_list = list(staff_qs) if staff_qs else SAMPLE_STAFF
+    # PSM Hospital clinical and administrative staff
+    staff_qs = UserProfile.objects.filter(org_id='HOSP').values('full_name', 'emp_id', 'department', 'org_id')[:30]
+    staff_list = list(staff_qs) if staff_qs else [s for s in SAMPLE_STAFF if s.get('orgId') == 'HOSP']
 
     context = {
         'today_str': today_str,
@@ -2065,7 +2079,7 @@ def mobile_add_device_view(request):
         'floors': floors,
         'rooms': rooms,
         'staff_list': staff_list,
-        'selected_org': request.GET.get('org', 'HOSP'),
+        'selected_org': 'HOSP',
     }
     return render(request, "admin/mobile_add_device.html", context)
 
@@ -2073,12 +2087,11 @@ def mobile_add_device_view(request):
 @csrf_exempt
 def api_generate_asset_id(request):
     """
-    Generates a unique, standardized hardware asset tag based on device type, organization, and floor.
-    Format example: PSM/IT/2F/C-205 or SU/ENG/1F/DISP-104.
+    Generates a unique, standardized hardware asset tag strictly for PSM Hospital.
+    Format example: PSM/IT/2F/C-205 or PSM/IT/1F/DISP-104.
     Guarantees 100% collision-free against PostgreSQL DeviceAsset table.
     """
     dev_type = normalize_device_type(request.GET.get('type') or request.POST.get('type') or 'CPU')
-    org = request.GET.get('org') or request.POST.get('org') or 'HOSP'
     floor_raw = request.GET.get('floor') or request.POST.get('floor') or '2nd Floor'
 
     floor_lower = floor_raw.lower()
@@ -2105,7 +2118,7 @@ def api_generate_asset_id(request):
         'Printer': 'PRT'
     }
     prefix = type_prefixes.get(dev_type, 'C')
-    org_prefix = "PSM/IT" if org == 'HOSP' else "SU/ENG"
+    org_prefix = "PSM/IT"
 
     for _ in range(100):
         rand_num = random.randint(100, 999)
