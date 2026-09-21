@@ -549,12 +549,6 @@
 
             <!-- Action Buttons -->
             <div class="space-y-2.5 pt-2">
-                <a id="btn-modal-print-tag" href="{% url 'tag' %}" target="_blank"
-                    class="w-full h-11 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95">
-                    <i data-lucide="qr-code" class="w-4 h-4"></i>
-                    <span>Generate & Print QR Sticker Tag</span>
-                </a>
-
                 <button type="button" onclick="continueEnrollNext()"
                     class="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>
@@ -1002,13 +996,6 @@
                         ? `${assignedUserName} • ${assignedDesig}`
                         : assignedUserName;
                     document.getElementById('modal-saved-custodian').textContent = custodianSummary;
-                    
-                    const printTagBtn = document.getElementById('btn-modal-print-tag');
-                    if (data.tag_url) {
-                        printTagBtn.href = data.tag_url;
-                    } else {
-                        printTagBtn.href = `/tag/?asset_id=${encodeURIComponent(assetId)}`;
-                    }
 
                     // Show success modal
                     document.getElementById('modal-success').classList.remove('hidden');

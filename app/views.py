@@ -2068,7 +2068,7 @@ def get_serialized_devices_and_logs():
     Bypasses secondary client-side fetch('/api/devices/') and fetch('/api/audit-logs/') calls.
     """
     ensure_sample_devices()
-    devices_qs = DeviceAsset.objects.filter(org_id='HOSP')
+    devices_qs = DeviceAsset.objects.filter(org_id='HOSP').order_by('-id')
     devices_data = []
     for d in devices_qs:
         devices_data.append({
