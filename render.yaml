@@ -9,7 +9,7 @@ services:
     name: campus-asset-iq
     runtime: python
     plan: free
-    buildCommand: "./build.sh"
+    buildCommand: "bash build.sh"
     startCommand: "gunicorn tracker.wsgi:application"
     envVars:
       - key: DATABASE_URL
