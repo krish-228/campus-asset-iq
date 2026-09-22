@@ -170,33 +170,7 @@
                         <h2 id="section-custodian-heading" class="text-xs font-extrabold uppercase tracking-wider text-slate-300">
                             1. Custodian & Holder Assignment <span class="text-rose-400">*</span>
                         </h2>
-                        <span id="custodian-status-pill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
-                            Assigned Holder
-                        </span>
                     </div>
-                    <button type="button" onclick="setUnassigned()" id="btn-unassigned-pool"
-                        class="text-xs font-bold text-violet-400 hover:text-violet-300 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-950/60 border border-violet-800/60 transition-all active:scale-95 shadow-sm">
-                        <i data-lucide="users" class="w-3.5 h-3.5"></i>
-                        <span>Pool / Unassigned</span>
-                    </button>
-                </div>
-
-                <!-- Fast Custodian Suggestion Pills (Quick 1-Tap Mobile Selection) -->
-                <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 pt-0.5" id="staff-quick-chips-container">
-                    <span class="text-[10px] text-slate-500 font-bold shrink-0 flex items-center gap-1">
-                        <i data-lucide="sparkles" class="w-3 h-3 text-violet-400"></i>
-                        Quick Pick:
-                    </span>
-                    <button type="button" onclick="setUnassigned()" data-staff-name="Unassigned"
-                        class="staff-quick-chip px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-700/60 shrink-0 transition-colors">
-                        🏢 General Pool / Shared
-                    </button>
-                    {% for s in staff_list|slice:":5" %}
-                    <button type="button" onclick="setStaffQuick('{{ s.full_name }}')" data-staff-name="{{ s.full_name }}"
-                        class="staff-quick-chip px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-700/60 shrink-0 transition-colors">
-                        👨‍⚕️ {{ s.full_name }}
-                    </button>
-                    {% endfor %}
                 </div>
 
                 <!-- Symmetrical 2x3 Grid (Balanced 2-Column Pairs) -->
