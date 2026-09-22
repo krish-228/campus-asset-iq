@@ -388,11 +388,363 @@ function getDeviceTypeBadge(dev) {
     </span>`;
 }
 
+// ============================================================================
+// Inventory View Mode (Workstation Sets / Grouped vs All Devices / Flat)
+// ============================================================================
+let inventoryViewMode = localStorage.getItem('campus_inventory_view_mode') || 'grouped';
+const collapsedWorkstations = new Set();
+
+function setInventoryViewMode(mode) {
+    inventoryViewMode = mode;
+    localStorage.setItem('campus_inventory_view_mode', mode);
+
+    const btnGrouped = document.getElementById('btn-view-grouped');
+    const btnFlat = document.getElementById('btn-view-flat');
+
+    if (btnGrouped && btnFlat) {
+        if (mode === 'grouped') {
+            btnGrouped.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer";
+            btnFlat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
+        } else {
+            btnFlat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer";
+            btnGrouped.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
+        }
+    }
+
+    renderInventoryTable();
+}
+
+function toggleWorkstationCollapse(groupKey) {
+    if (collapsedWorkstations.has(groupKey)) {
+        collapsedWorkstations.delete(groupKey);
+    } else {
+        collapsedWorkstations.add(groupKey);
+    }
+    renderInventoryTable();
+}
+
+// Device sorting hierarchy inside a workstation bundle:
+// 1. CPU / Workstation -> 2. Display / Monitor -> 3. Keyboard -> 4. Mouse -> 5. Printer -> 6. UPS -> 7. Others
+const WORKSTATION_DEVICE_PRIORITY = {
+    'CPU': 1, 'WORKSTATION': 1, 'DESKTOP': 1, 'COMPUTER': 1,
+    'DISPLAY': 2, 'MONITOR': 2, 'SCREEN': 2,
+    'KEYBOARD': 3, 'KB': 3,
+    'MOUSE': 4,
+    'PRINTER': 5, 'PRT': 5,
+    'UPS': 6, 'INVERTER': 6, 'POWER': 6,
+    'TABLET': 7, 'TAB': 7, 'IPAD': 7
+};
+
+function getWorkstationDevicePriority(dev) {
+    const raw = (dev.deviceType || dev.device_type || '').toUpperCase();
+    for (const [key, prio] of Object.entries(WORKSTATION_DEVICE_PRIORITY)) {
+        if (raw.includes(key)) return prio;
+    }
+    return 99;
+}
+
+function getWorkstationRoleBadge(dev, displayName) {
+    const raw = (dev.deviceType || dev.device_type || '').toUpperCase();
+    if (raw.includes('CPU') || raw.includes('DESKTOP') || raw.includes('WORKSTATION')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-black bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="cpu" class="w-3.5 h-3.5 text-indigo-600"></i> Primary Compute
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('DISPLAY') || raw.includes('MONITOR') || raw.includes('SCREEN')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="tv" class="w-3.5 h-3.5 text-blue-600"></i> Desk Monitor
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('KEYBOARD') || raw.includes('KB')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="keyboard" class="w-3.5 h-3.5 text-amber-600"></i> Input Keyboard
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('MOUSE')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="mouse" class="w-3.5 h-3.5 text-purple-600"></i> Pointing Device
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('PRINTER') || raw.includes('PRT')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="printer" class="w-3.5 h-3.5 text-emerald-600"></i> Desk Printer
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('UPS') || raw.includes('POWER') || raw.includes('INVERTER')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-orange-50 text-orange-800 border border-orange-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="zap" class="w-3.5 h-3.5 text-orange-600"></i> Power Backup
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    return `
+        <div class="space-y-0.5">
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 shadow-3xs whitespace-nowrap">
+                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-500"></i> Desk Peripheral
+            </span>
+            <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+            </div>
+        </div>
+    `;
+}
+
+function getOsDisplayHtml(dev) {
+    let osBadge = '';
+    const osLower = (dev.operatingSystem || '').toLowerCase();
+    if (osLower.includes('windows')) {
+        osBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-bold text-sm whitespace-nowrap shadow-2xs">
+            <i data-lucide="app-window" class="w-4 h-4 text-blue-600 shrink-0"></i> ${dev.operatingSystem}
+        </span>`;
+    } else if (osLower.includes('ubuntu') || osLower.includes('linux')) {
+        osBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-orange-50 text-orange-700 border border-orange-200 font-bold text-sm whitespace-nowrap shadow-2xs">
+            <i data-lucide="terminal" class="w-4 h-4 text-orange-600 shrink-0"></i> ${dev.operatingSystem}
+        </span>`;
+    } else {
+        osBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-bold text-sm whitespace-nowrap shadow-2xs">
+            <i data-lucide="disc" class="w-4 h-4 text-slate-500 shrink-0"></i> ${dev.operatingSystem}
+        </span>`;
+    }
+    return `
+        <div class="space-y-1">
+            <div>${osBadge}</div>
+            <div class="text-sm text-slate-600 font-medium flex items-center gap-1.5" title="${dev.monitorSpec}">
+                <i data-lucide="tv" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                <span class="truncate max-w-[170px]">${dev.monitorSpec}</span>
+            </div>
+        </div>
+    `;
+}
+
+function getStatusDisplayHtml(dev) {
+    let statusBadge = '';
+    if (dev.status === 'Active') {
+        statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs whitespace-nowrap">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active
+        </span>`;
+    } else if (dev.status === 'In Maintenance') {
+        statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs whitespace-nowrap">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span> Maintenance
+        </span>`;
+    } else {
+        statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs whitespace-nowrap">
+            <span class="w-2 h-2 rounded-full bg-slate-400"></span> ${dev.status}
+        </span>`;
+    }
+    return `
+        <div class="space-y-1">
+            <div>${statusBadge}</div>
+            <div class="flex items-center gap-1.5 text-xs text-slate-500 font-medium whitespace-nowrap" title="Warranty Expiry Date">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
+                <span>${dev.warrantyExpiryDate || '—'}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMultiDevice = false, multiCount = 0) {
+    const meta = dev._meta || {};
+    const custKey = meta.assignedName ? meta.assignedName.toLowerCase() : '';
+
+    let userDisplay = '';
+    if (!meta.isUnassigned) {
+        const displayName = meta.user ? meta.user.fullName : meta.assignedName;
+        const displayEmp = meta.assignedEmp || (meta.user ? meta.user.empId : '');
+        const desigText = meta.assignedDesig || (meta.user ? (meta.user.designation || meta.user.department) : '') || 'Assigned Custodian';
+        const deptText = (meta.user && meta.user.department && meta.user.department !== desigText) ? meta.user.department : '';
+
+        const wsBadge = isMultiDevice ? `
+            <div class="mt-1">
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-3xs" title="Linked to a ${multiCount}-device workstation setup">
+                    <i data-lucide="layers" class="w-3 h-3 text-indigo-600"></i>
+                    <span>Workstation Set (${multiCount})</span>
+                </span>
+            </div>
+        ` : '';
+
+        userDisplay = `
+            <div class="cursor-pointer group" onclick="${displayEmp ? `openSearchUserModal('${displayEmp}')` : ''}" title="Click to inspect profile and assignment history">
+                <div class="min-w-0">
+                    <div class="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm truncate flex items-center gap-1">
+                        <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
+                        <span class="truncate">${displayName}</span>
+                    </div>
+                    <div class="text-xs text-indigo-600 font-semibold truncate flex items-center gap-1 mt-0.5" title="${desigText}">
+                        <i data-lucide="briefcase" class="w-3 h-3 text-indigo-400 shrink-0"></i>
+                        <span class="truncate">${desigText}</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 font-mono truncate mt-0.5">
+                        ${displayEmp ? displayEmp : ''}${displayEmp && deptText ? ' &bull; ' : ''}${deptText}
+                    </div>
+                    ${wsBadge}
+                </div>
+            </div>
+        `;
+    } else {
+        userDisplay = `
+            <div>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">
+                    Unassigned / Spare
+                </span>
+                <div class="text-[11px] text-slate-400 mt-0.5 whitespace-nowrap">Ready for deployment</div>
+            </div>
+        `;
+    }
+
+    let locationDisplay = '';
+    if (meta.roomName) {
+        locationDisplay = `
+            <div class="space-y-0.5">
+                <div class="font-bold text-slate-900 text-sm flex items-center gap-1.5 truncate" title="${meta.bldgName}">
+                    <i data-lucide="building-2" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                    <span class="truncate">${meta.bldgName}</span>
+                </div>
+                <div class="flex items-center gap-1 text-xs whitespace-nowrap">
+                    <span class="text-slate-500 font-medium">${meta.floorName}</span>
+                    <span class="text-slate-300">&bull;</span>
+                    <span class="font-bold px-1.5 py-0.2 rounded border text-xs ${roomBadgeClass}">
+                        ${meta.roomName}
+                    </span>
+                </div>
+            </div>
+        `;
+    } else {
+        locationDisplay = `<span class="text-slate-400 italic text-xs">Unassigned Location</span>`;
+    }
+
+    const computeDisplay = `
+        <div class="space-y-1">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800" title="${dev.cpuProcessor}">
+                <i data-lucide="cpu" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
+                <span class="truncate max-w-[200px]">${dev.cpuProcessor}</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs font-mono text-slate-600 font-medium" title="${dev.storageRam}">
+                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                <span class="truncate max-w-[200px]">${dev.storageRam}</span>
+            </div>
+        </div>
+    `;
+
+    return `
+        <tr class="hover:bg-indigo-50/40 transition-colors divide-x divide-slate-100 text-slate-800" ${custKey ? `data-custodian-key="${custKey}"` : ''}>
+            <td class="py-3.5 pl-5 pr-3">
+                <div class="space-y-1">
+                    <div>
+                        <span class="font-mono font-black text-sm px-2.5 py-1 rounded-md border ${assetBadgeClass} shadow-3xs whitespace-nowrap inline-block">
+                            ${dev.assetId}
+                        </span>
+                    </div>
+                    <div class="text-xs text-slate-500 font-mono font-medium whitespace-nowrap flex items-center gap-1.5">
+                        <span><span class="text-slate-400 font-semibold">SN:</span> ${dev.serialNumber}</span>
+                    </div>
+                </div>
+            </td>
+            <td class="py-3.5 px-3.5 whitespace-nowrap">${getDeviceTypeBadge(dev)}</td>
+            <td class="py-3 px-3.5">${userDisplay}</td>
+            <td class="py-3 px-3.5">${locationDisplay}</td>
+            <td class="py-3 px-3.5">${computeDisplay}</td>
+            <td class="py-3 px-3.5">${getOsDisplayHtml(dev)}</td>
+            <td class="py-3 px-3.5">
+                <div class="space-y-0.5">
+                    <div class="flex items-center gap-1.5 font-mono text-sm font-bold text-slate-900 whitespace-nowrap">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs"></span>
+                        <span>${dev.ipAddress || '—'}</span>
+                    </div>
+                    <div class="text-xs font-mono text-slate-500 whitespace-nowrap">
+                        <span class="text-slate-400 font-semibold">MAC:</span> ${dev.macAddress || '—'}
+                    </div>
+                </div>
+            </td>
+            <td class="py-3 px-3.5">${getStatusDisplayHtml(dev)}</td>
+            <td class="py-3 pr-4 pl-2 text-center w-16 min-w-[60px]">
+                <button onclick="toggleDeviceActionMenu('${dev.id}', event)" class="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-indigo-50 hover:border-indigo-400 text-slate-700 hover:text-indigo-700 inline-flex items-center justify-center transition-all shadow-2xs group cursor-pointer" title="Device Actions Menu">
+                    <i data-lucide="more-vertical" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+}
+
+function setupWorkstationHoverListeners() {
+    const tbody = document.getElementById("inventory-table-tbody") || document.getElementById("devices-table-body");
+    if (!tbody) return;
+
+    tbody.querySelectorAll('tr[data-custodian-key]').forEach(row => {
+        row.addEventListener('mouseenter', () => {
+            const key = row.dataset.custodianKey;
+            if (!key) return;
+            tbody.querySelectorAll(`tr[data-custodian-key="${key}"]`).forEach(linked => {
+                linked.classList.add('bg-indigo-50/70', 'ring-1', 'ring-indigo-300');
+            });
+        });
+        row.addEventListener('mouseleave', () => {
+            const key = row.dataset.custodianKey;
+            if (!key) return;
+            tbody.querySelectorAll(`tr[data-custodian-key="${key}"]`).forEach(linked => {
+                linked.classList.remove('bg-indigo-50/70', 'ring-1', 'ring-indigo-300');
+            });
+        });
+    });
+}
+
 function renderInventoryTable() {
     const tbody = document.getElementById("inventory-table-tbody") || document.getElementById("devices-table-body");
     const countSpan = document.getElementById("table-showing-count");
     const badgeSpan = document.getElementById("tab-badge-inventory");
     if (!tbody) return;
+
+    // Sync toggle button active visual state
+    const btnGrouped = document.getElementById('btn-view-grouped');
+    const btnFlat = document.getElementById('btn-view-flat');
+    if (btnGrouped && btnFlat) {
+        if (inventoryViewMode === 'grouped') {
+            btnGrouped.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer";
+            btnFlat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
+        } else {
+            btnFlat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer";
+            btnGrouped.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
+        }
+    }
 
     const devices = getFilteredDevices();
     if (countSpan) countSpan.textContent = devices.length;
@@ -405,28 +757,23 @@ function renderInventoryTable() {
                     <div class="flex flex-col items-center justify-center gap-2">
                         <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                         <span class="font-semibold text-xs">No matching devices found in inventory.</span>
-                        <button onclick="clearAllFilters()" class="text-indigo-600 text-xs font-bold hover:underline">Clear Filters</button>
+                        <button onclick="clearAllFilters()" class="text-indigo-600 text-xs font-bold hover:underline cursor-pointer">Clear Filters</button>
                     </div>
                 </td>
             </tr>
         `;
+        const wsBadge = document.getElementById('badge-workstation-count');
+        if (wsBadge) wsBadge.textContent = "0";
         lucide.createIcons();
         return;
     }
 
-    tbody.innerHTML = devices.map(dev => {
-        const room = appState.rooms.find(r => r.id === dev.roomId);
-        const floor = room ? appState.floors.find(f => f.id === room.floorId) : null;
-        const bldg = floor ? appState.buildings.find(b => b.id === floor.buildingId) : null;
-        const isHosp = dev.orgId === 'HOSP';
-        const assetBadgeClass = isHosp
-            ? 'bg-violet-50 text-violet-700 border-violet-200'
-            : 'bg-indigo-50 text-indigo-700 border-indigo-200';
-        const roomBadgeClass = isHosp
-            ? 'bg-violet-50 text-violet-800 border-violet-200'
-            : 'bg-indigo-50 text-indigo-800 border-indigo-200';
+    // 1. Parse metadata for all devices
+    const groupsMap = {};
+    const unassignedDevices = [];
 
-        // 1. Custodian / User Layout (Support both appState.users and direct PostgreSQL assignedUserName/empId)
+    devices.forEach(dev => {
+        // Resolve Custodian User
         let user = (appState.users || []).find(u => (u.id && u.id === dev.assignedUserId) || (u.empId && (u.empId === dev.empId || u.empId === dev.assignedEmpId)));
         if (!user && (dev.assignedUserName || dev.assigned_user_name)) {
             const targetName = (dev.assignedUserName || dev.assigned_user_name || '').toLowerCase().trim();
@@ -434,48 +781,16 @@ function renderInventoryTable() {
                 user = (appState.users || []).find(u => u.fullName && u.fullName.toLowerCase().trim() === targetName);
             }
         }
-
         const assignedName = (dev.assignedUserName || dev.assigned_user_name || (user ? user.fullName : '') || '').trim();
         const assignedEmp = (dev.empId || dev.assigned_emp_id || (user ? user.empId : '') || '').trim();
-        const assignedDesig = (dev.designation || dev.assignedDesignation || dev.assigned_designation || (user ? user.designation : '') || '').trim();
+        const assignedDesig = (dev.designation || dev.assignedDesignation || dev.assigned_designation || (user ? (user.designation || user.department) : '') || '').trim();
         const isUnassigned = !assignedName || assignedName.toLowerCase() === 'unassigned' || assignedName.toLowerCase().includes('unassigned / spare') || assignedName.toLowerCase().startsWith('unassigned');
 
-        let userDisplay = '';
-        if (!isUnassigned) {
-            const displayName = user ? user.fullName : assignedName;
-            const displayEmp = assignedEmp || (user ? user.empId : '');
-            const desigText = assignedDesig || (user ? (user.designation || user.department) : '') || 'Assigned Custodian';
-            const deptText = (user && user.department && user.department !== desigText) ? user.department : '';
+        // Resolve Location
+        const room = appState.rooms.find(r => r.id === dev.roomId);
+        const floor = room ? appState.floors.find(f => f.id === room.floorId) : null;
+        const bldg = floor ? appState.buildings.find(b => b.id === floor.buildingId) : null;
 
-            userDisplay = `
-                <div class="cursor-pointer group" onclick="${displayEmp ? `openSearchUserModal('${displayEmp}')` : ''}" title="Click to inspect profile and assignment history">
-                    <div class="min-w-0">
-                        <div class="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm truncate flex items-center gap-1">
-                            <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
-                            <span class="truncate">${displayName}</span>
-                        </div>
-                        <div class="text-xs text-indigo-600 font-semibold truncate flex items-center gap-1 mt-0.5" title="${desigText}">
-                            <i data-lucide="briefcase" class="w-3 h-3 text-indigo-400 shrink-0"></i>
-                            <span class="truncate">${desigText}</span>
-                        </div>
-                        <div class="text-[11px] text-slate-400 font-mono truncate mt-0.5">
-                            ${displayEmp ? displayEmp : ''}${displayEmp && deptText ? ' &bull; ' : ''}${deptText}
-                        </div>
-                    </div>
-                </div>
-            `;
-        } else {
-            userDisplay = `
-                <div>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">
-                        Unassigned / Spare
-                    </span>
-                    <div class="text-[11px] text-slate-400 mt-0.5 whitespace-nowrap">Ready for deployment</div>
-                </div>
-            `;
-        }
-
-        // 2. Campus Location Layout (Graceful fallback to direct device location names)
         let bldgName = dev.buildingName || (bldg ? bldg.name : 'PSM Hospital');
         if (bldgName) {
             bldgName = bldgName.replace(/\s*Main Medical Complex/gi, '').replace(/\s*Main Complex/gi, '').trim();
@@ -484,138 +799,267 @@ function renderInventoryTable() {
         const floorName = dev.floorName || (floor ? floor.name : 'Ground Floor');
         const roomName = dev.roomName || (room ? room.name : '');
 
-        let locationDisplay = '';
-        if (roomName) {
-            locationDisplay = `
-                <div class="space-y-0.5">
-                    <div class="font-bold text-slate-900 text-sm flex items-center gap-1.5 truncate" title="${bldgName}">
-                        <i data-lucide="building-2" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                        <span class="truncate">${bldgName}</span>
-                    </div>
-                    <div class="flex items-center gap-1 text-xs whitespace-nowrap">
-                        <span class="text-slate-500 font-medium">${floorName}</span>
-                        <span class="text-slate-300">&bull;</span>
-                        <span class="font-bold px-1.5 py-0.2 rounded border text-xs ${roomBadgeClass}">
-                            ${roomName}
-                        </span>
-                    </div>
-                </div>
+        dev._meta = {
+            user,
+            assignedName,
+            assignedEmp,
+            assignedDesig,
+            isUnassigned,
+            bldgName,
+            floorName,
+            roomName
+        };
+
+        if (isUnassigned) {
+            unassignedDevices.push(dev);
+        } else {
+            const key = assignedName.toLowerCase();
+            if (!groupsMap[key]) {
+                groupsMap[key] = {
+                    key,
+                    displayName: user ? user.fullName : assignedName,
+                    displayEmp: assignedEmp || (user ? user.empId : ''),
+                    desigText: assignedDesig || (user ? (user.designation || user.department) : '') || 'Assigned Custodian',
+                    bldgName,
+                    floorName,
+                    roomName,
+                    devices: []
+                };
+            }
+            groupsMap[key].devices.push(dev);
+            if (roomName && !groupsMap[key].roomName) {
+                groupsMap[key].roomName = roomName;
+                groupsMap[key].floorName = floorName;
+                groupsMap[key].bldgName = bldgName;
+            }
+        }
+    });
+
+    const multiDeviceWorkstations = Object.values(groupsMap).filter(g => g.devices.length > 1);
+    const singleDeviceWorkstations = Object.values(groupsMap).filter(g => g.devices.length === 1);
+    const totalWorkstations = Object.values(groupsMap).length;
+
+    const wsBadge = document.getElementById('badge-workstation-count');
+    if (wsBadge) {
+        wsBadge.textContent = totalWorkstations;
+    }
+
+    let html = '';
+
+    // ========================================================================
+    // MODE A: WORKSTATION SETS (GROUPED VIEW)
+    // ========================================================================
+    if (inventoryViewMode === 'grouped') {
+        // 1. Multi-Device Workstations (e.g. Khushali with CPU, Display, Keyboard, Mouse, Printer, UPS)
+        multiDeviceWorkstations.forEach(group => {
+            // Sort devices inside workstation logically: CPU -> Display -> Keyboard -> Mouse -> Printer -> UPS
+            group.devices.sort((a, b) => getWorkstationDevicePriority(a) - getWorkstationDevicePriority(b));
+
+            const isCollapsed = collapsedWorkstations.has(group.key);
+
+            // Workstation Header Row
+            const typeCounts = {};
+            group.devices.forEach(d => {
+                const t = (d.deviceType || d.device_type || 'Device').trim();
+                typeCounts[t] = (typeCounts[t] || 0) + 1;
+            });
+            const typeChips = Object.entries(typeCounts).map(([type, count]) => {
+                return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-white text-slate-700 border border-slate-200/90 shadow-3xs">
+                    <span class="font-extrabold text-indigo-600">${count > 1 ? `${count}x ` : ''}</span>${type}
+                </span>`;
+            }).join(' ');
+
+            html += `
+                <tr class="bg-gradient-to-r from-indigo-50/95 via-slate-50 to-indigo-50/50 border-t-2 border-indigo-500/80 shadow-2xs group-header-row cursor-pointer select-none" onclick="toggleWorkstationCollapse('${group.key}')">
+                    <td colspan="9" class="py-3 px-5">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <!-- Left: Workstation Title, Custodian Details & Location -->
+                            <div class="flex items-center gap-3.5 min-w-0">
+                                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-xs shadow-sm shrink-0">
+                                    <i data-lucide="monitor" class="w-4 h-4"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-[11px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-100/90 border border-indigo-200/80 px-2 py-0.5 rounded-md shadow-3xs">
+                                            Workstation Set
+                                        </span>
+                                        <span class="font-extrabold text-slate-900 text-sm truncate hover:text-indigo-600 transition-colors" title="Click to collapse/expand">${group.displayName}</span>
+                                        ${group.displayEmp ? `<span class="text-xs font-mono text-slate-500 font-semibold">(${group.displayEmp})</span>` : ''}
+                                        <span class="text-xs font-bold text-indigo-600 px-2 py-0.5 rounded-md bg-white border border-indigo-200/60 shadow-3xs">${group.desigText}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-xs text-slate-600 font-medium mt-1 flex-wrap">
+                                        <span class="flex items-center gap-1">
+                                            <i data-lucide="building-2" class="w-3.5 h-3.5 text-slate-400"></i>
+                                            ${group.bldgName}
+                                        </span>
+                                        <span class="text-slate-300">&bull;</span>
+                                        <span class="text-slate-500">${group.floorName}</span>
+                                        <span class="text-slate-300">&bull;</span>
+                                        <span class="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                                            ${group.roomName || 'Assigned Desk'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Hardware Chips Summary & Total Badge & Collapse Chevron -->
+                            <div class="flex items-center gap-2 self-start md:self-center shrink-0">
+                                <div class="hidden lg:flex items-center gap-1.5">
+                                    ${typeChips}
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-black bg-indigo-600 text-white shadow-2xs flex items-center gap-1.5">
+                                    <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                                    <span>${group.devices.length} Devices Linked</span>
+                                </span>
+                                <button type="button" onclick="event.stopPropagation(); toggleWorkstationCollapse('${group.key}')" 
+                                    class="w-7 h-7 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition-all shadow-3xs cursor-pointer" 
+                                    title="${isCollapsed ? 'Expand Workstation Devices' : 'Collapse Workstation Devices'}">
+                                    <i data-lucide="${isCollapsed ? 'chevron-right' : 'chevron-down'}" class="w-4 h-4 text-indigo-600"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
             `;
-        } else {
-            locationDisplay = `<span class="text-slate-400 italic text-xs">Unassigned Location</span>`;
-        }
 
-        // 3. Compute Hardware Layout (CPU & RAM & Storage)
-        const computeDisplay = `
-            <div class="space-y-1">
-                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800" title="${dev.cpuProcessor}">
-                    <i data-lucide="cpu" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
-                    <span class="truncate max-w-[200px]">${dev.cpuProcessor}</span>
-                </div>
-                <div class="flex items-center gap-1.5 text-xs font-mono text-slate-600 font-medium" title="${dev.storageRam}">
-                    <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                    <span class="truncate max-w-[200px]">${dev.storageRam}</span>
-                </div>
-            </div>
-        `;
+            // If not collapsed, render child rows with connected left accent border
+            if (!isCollapsed) {
+                group.devices.forEach((dev) => {
+                    const isHosp = dev.orgId === 'HOSP';
+                    const assetBadgeClass = isHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                    const roleBadge = getWorkstationRoleBadge(dev, group.displayName);
 
-        // 4. Operating System & Monitor Layout
-        let osBadge = '';
-        const osLower = (dev.operatingSystem || '').toLowerCase();
-        if (osLower.includes('windows')) {
-            osBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-bold text-sm whitespace-nowrap shadow-2xs">
-                <i data-lucide="app-window" class="w-4 h-4 text-blue-600 shrink-0"></i> ${dev.operatingSystem}
-            </span>`;
-        } else if (osLower.includes('ubuntu') || osLower.includes('linux')) {
-            osBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-orange-50 text-orange-700 border border-orange-200 font-bold text-sm whitespace-nowrap shadow-2xs">
-                <i data-lucide="terminal" class="w-4 h-4 text-orange-600 shrink-0"></i> ${dev.operatingSystem}
-            </span>`;
-        } else {
-            osBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-bold text-sm whitespace-nowrap shadow-2xs">
-                <i data-lucide="disc" class="w-4 h-4 text-slate-500 shrink-0"></i> ${dev.operatingSystem}
-            </span>`;
-        }
-
-        const osDisplay = `
-            <div class="space-y-1">
-                <div>${osBadge}</div>
-                <div class="text-sm text-slate-600 font-medium flex items-center gap-1.5" title="${dev.monitorSpec}">
-                    <i data-lucide="tv" class="w-4 h-4 text-slate-400 shrink-0"></i>
-                    <span class="truncate max-w-[170px]">${dev.monitorSpec}</span>
-                </div>
-            </div>
-        `;
-
-        // 5. Network & IP Layout
-        const networkDisplay = `
-            <div class="space-y-0.5">
-                <div class="flex items-center gap-1.5 font-mono text-sm font-bold text-slate-900 whitespace-nowrap">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs"></span>
-                    <span>${dev.ipAddress || '—'}</span>
-                </div>
-                <div class="text-xs font-mono text-slate-500 whitespace-nowrap">
-                    <span class="text-slate-400 font-semibold">MAC:</span> ${dev.macAddress || '—'}
-                </div>
-            </div>
-        `;
-
-        // 6. Status & Health Layout
-        let statusBadge = '';
-        if (dev.status === 'Active') {
-            statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs whitespace-nowrap">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active
-            </span>`;
-        } else if (dev.status === 'In Maintenance') {
-            statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs whitespace-nowrap">
-                <span class="w-2 h-2 rounded-full bg-amber-500"></span> Maintenance
-            </span>`;
-        } else {
-            statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs whitespace-nowrap">
-                <span class="w-2 h-2 rounded-full bg-slate-400"></span> ${dev.status}
-            </span>`;
-        }
-
-        const statusDisplay = `
-            <div class="space-y-1">
-                <div>${statusBadge}</div>
-                <div class="flex items-center gap-1.5 text-xs text-slate-500 font-medium whitespace-nowrap" title="Warranty Expiry Date">
-                    <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
-                    <span>${dev.warrantyExpiryDate || '—'}</span>
-                </div>
-            </div>
-        `;
-
-        return `
-            <tr class="hover:bg-indigo-50/40 transition-colors divide-x divide-slate-100 text-slate-800">
-                <td class="py-3.5 pl-5 pr-3">
-                    <div class="space-y-1">
-                        <div>
-                            <span class="font-mono font-black text-sm px-2.5 py-1 rounded-md border ${assetBadgeClass} shadow-3xs whitespace-nowrap inline-block">
-                                ${dev.assetId}
-                            </span>
+                    const devRoom = dev._meta.roomName || group.roomName;
+                    const devFloor = dev._meta.floorName || group.floorName;
+                    const locationDisplay = `
+                        <div class="space-y-0.5">
+                            <div class="font-bold text-slate-800 text-xs flex items-center gap-1 truncate">
+                                <i data-lucide="map-pin" class="w-3 h-3 text-indigo-500 shrink-0"></i>
+                                <span class="font-bold text-indigo-800 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 text-xs truncate">
+                                    ${devRoom}
+                                </span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 font-medium truncate">${devFloor} &bull; Workstation Desk</div>
                         </div>
-                        <div class="text-xs text-slate-500 font-mono font-medium whitespace-nowrap flex items-center gap-1.5">
-                            <span><span class="text-slate-400 font-semibold">SN:</span> ${dev.serialNumber}</span>
-                        </div>
-                    </div>
-                </td>
-                <td class="py-3.5 px-3.5 whitespace-nowrap">${getDeviceTypeBadge(dev)}</td>
-                <td class="py-3 px-3.5">${userDisplay}</td>
-                <td class="py-3 px-3.5">${locationDisplay}</td>
-                <td class="py-3 px-3.5">${computeDisplay}</td>
-                <td class="py-3 px-3.5">${osDisplay}</td>
-                <td class="py-3 px-3.5">${networkDisplay}</td>
-                <td class="py-3 px-3.5">${statusDisplay}</td>
-                <td class="py-3 pr-4 pl-2 text-center w-16 min-w-[60px]">
-                    <button onclick="toggleDeviceActionMenu('${dev.id}', event)" class="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-indigo-50 hover:border-indigo-400 text-slate-700 hover:text-indigo-700 inline-flex items-center justify-center transition-all shadow-2xs group" title="Device Actions Menu">
-                        <i data-lucide="more-vertical" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-    }).join('');
+                    `;
 
+                    const computeDisplay = `
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800" title="${dev.cpuProcessor}">
+                                <i data-lucide="cpu" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
+                                <span class="truncate max-w-[200px]">${dev.cpuProcessor}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-xs font-mono text-slate-600 font-medium" title="${dev.storageRam}">
+                                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                                <span class="truncate max-w-[200px]">${dev.storageRam}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    html += `
+                        <tr class="hover:bg-indigo-50/50 transition-colors divide-x divide-slate-100 text-slate-800 border-l-4 border-indigo-500/80 bg-slate-50/20" data-custodian-key="${group.key}">
+                            <td class="py-3.5 pl-5 pr-3">
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="font-mono font-black text-sm px-2.5 py-1 rounded-md border ${assetBadgeClass} shadow-3xs whitespace-nowrap inline-block">
+                                            ${dev.assetId}
+                                        </span>
+                                    </div>
+                                    <div class="text-xs text-slate-500 font-mono font-medium whitespace-nowrap flex items-center gap-1.5">
+                                        <span><span class="text-slate-400 font-semibold">SN:</span> ${dev.serialNumber}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-3.5 whitespace-nowrap">${getDeviceTypeBadge(dev)}</td>
+                            <td class="py-3 px-3.5">${roleBadge}</td>
+                            <td class="py-3 px-3.5">${locationDisplay}</td>
+                            <td class="py-3 px-3.5">${computeDisplay}</td>
+                            <td class="py-3 px-3.5">${getOsDisplayHtml(dev)}</td>
+                            <td class="py-3 px-3.5">
+                                <div class="space-y-0.5">
+                                    <div class="flex items-center gap-1.5 font-mono text-sm font-bold text-slate-900 whitespace-nowrap">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs"></span>
+                                        <span>${dev.ipAddress || '—'}</span>
+                                    </div>
+                                    <div class="text-xs font-mono text-slate-500 whitespace-nowrap">
+                                        <span class="text-slate-400 font-semibold">MAC:</span> ${dev.macAddress || '—'}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-3.5">${getStatusDisplayHtml(dev)}</td>
+                            <td class="py-3 pr-4 pl-2 text-center w-16 min-w-[60px]">
+                                <button onclick="toggleDeviceActionMenu('${dev.id}', event)" class="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-indigo-50 hover:border-indigo-400 text-slate-700 hover:text-indigo-700 inline-flex items-center justify-center transition-all shadow-2xs group cursor-pointer" title="Device Actions Menu">
+                                    <i data-lucide="more-vertical" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        });
+
+        // 2. Single-Device Assignments
+        if (singleDeviceWorkstations.length > 0) {
+            singleDeviceWorkstations.forEach(group => {
+                const dev = group.devices[0];
+                const isHosp = dev.orgId === 'HOSP';
+                const assetBadgeClass = isHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                const roomBadgeClass = isHosp ? 'bg-violet-50 text-violet-800 border-violet-200' : 'bg-indigo-50 text-indigo-800 border-indigo-200';
+
+                html += renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, false, 1);
+            });
+        }
+
+        // 3. Unassigned / Spares Section
+        if (unassignedDevices.length > 0) {
+            html += `
+                <tr class="bg-slate-100/90 border-t-2 border-slate-300/80 shadow-2xs">
+                    <td colspan="9" class="py-2.5 px-5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-7 h-7 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs shadow-2xs shrink-0">
+                                    <i data-lucide="archive" class="w-4 h-4"></i>
+                                </span>
+                                <span class="font-extrabold text-slate-700 text-xs uppercase tracking-wider">
+                                    Unassigned / Backup Spares
+                                </span>
+                                <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200/90 text-slate-700">
+                                    ${unassignedDevices.length} Available Devices
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            unassignedDevices.forEach(dev => {
+                const isHosp = dev.orgId === 'HOSP';
+                const assetBadgeClass = isHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                const roomBadgeClass = isHosp ? 'bg-violet-50 text-violet-800 border-violet-200' : 'bg-indigo-50 text-indigo-800 border-indigo-200';
+                html += renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, false, 0);
+            });
+        }
+    }
+
+    // ========================================================================
+    // MODE B: ALL DEVICES (FLAT VIEW)
+    // ========================================================================
+    else {
+        html = devices.map(dev => {
+            const isHosp = dev.orgId === 'HOSP';
+            const assetBadgeClass = isHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
+            const roomBadgeClass = isHosp ? 'bg-violet-50 text-violet-800 border-violet-200' : 'bg-indigo-50 text-indigo-800 border-indigo-200';
+
+            const custKey = dev._meta.assignedName ? dev._meta.assignedName.toLowerCase() : '';
+            const isMulti = custKey && groupsMap[custKey] && groupsMap[custKey].devices.length > 1;
+            const multiCount = isMulti ? groupsMap[custKey].devices.length : 0;
+
+            return renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMulti, multiCount);
+        }).join('');
+    }
+
+    tbody.innerHTML = html;
     lucide.createIcons();
+    setupWorkstationHoverListeners();
 }
 
 // ============================================================================

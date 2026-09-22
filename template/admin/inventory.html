@@ -212,7 +212,7 @@
     <!-- Inventory Data Table Container -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div
-            class="px-6 py-4 border-b border-slate-200 bg-slate-50/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            class="px-6 py-4 border-b border-slate-200 bg-slate-50/90 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <!-- Left: Table Title & Count Badge -->
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/70 flex items-center justify-center shrink-0 shadow-2xs">
@@ -228,8 +228,23 @@
                 </div>
             </div>
 
+            <!-- Center: View Mode Segmented Control (Workstation Sets vs Flat Table) -->
+            <div class="inline-flex items-center p-1 bg-slate-200/90 rounded-xl border border-slate-300/80 shadow-2xs self-start lg:self-center">
+                <button type="button" id="btn-view-grouped" onclick="setInventoryViewMode('grouped')"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer">
+                    <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-600"></i>
+                    <span>Workstation Sets</span>
+                    <span id="badge-workstation-count" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-100 text-indigo-700 font-mono font-black">0</span>
+                </button>
+                <button type="button" id="btn-view-flat" onclick="setInventoryViewMode('flat')"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+                    <i data-lucide="list" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>All Devices (Flat)</span>
+                </button>
+            </div>
+
             <!-- Right: Mouse Cursor Horizontal Scroll Buttons -->
-            <div class="flex items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200 shadow-2xs self-start sm:self-center">
+            <div class="flex items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200 shadow-2xs self-start lg:self-center">
                 <button type="button" onclick="scrollTableHorizontally('inventory-table-tbody', -380)"
                     title="Scroll Left with Mouse Cursor (or click & drag table)"
                     class="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-200 text-slate-700 transition-all shadow-2xs active:scale-95 flex items-center gap-1 text-xs font-bold cursor-pointer">
