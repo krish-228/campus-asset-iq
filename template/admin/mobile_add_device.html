@@ -154,55 +154,135 @@
 
         <form id="add-device-form" onsubmit="handleFormSubmit(event)" novalidate class="space-y-4">
 
-            <!-- SECTION 1: Hardware Category (Single-Tap Cards) -->
-            <div class="glass-card rounded-2xl p-4 shadow-sm">
-                <div class="flex items-center justify-between mb-3">
+            <!-- SECTION 1: Hardware Components (Multi-Select Checkboxes for Single Holder) -->
+            <div class="glass-card rounded-2xl p-4 shadow-sm space-y-3.5">
+                <div class="flex items-center justify-between">
                     <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <i data-lucide="layers" class="w-3.5 h-3.5 text-blue-400"></i>
-                        1. Hardware Category <span class="text-rose-400">*</span>
+                        <i data-lucide="check-square" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        1. System Components / Device Types <span class="text-rose-400">*</span>
                     </label>
-                    <span id="category-pill-label" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30">CPU</span>
+                    <span id="category-pill-label" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                        Full Workstation (4 Items)
+                    </span>
                 </div>
 
-                <!-- 7 Hardware Category Cards -->
-                <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-2.5" id="category-selector-grid">
-                    <!-- CPU -->
-                    <button type="button" onclick="selectCategory('CPU')" data-category="CPU" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-blue-600/20 border-blue-500 text-blue-400 shadow-glow">
-                        <i data-lucide="cpu" class="w-5 h-5 shrink-0"></i>
-                        <span class="text-xs font-bold tracking-tight text-center">CPU</span>
-                    </button>
-                    <!-- Display -->
-                    <button type="button" onclick="selectCategory('Display')" data-category="Display" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="monitor" class="w-5 h-5 shrink-0"></i>
-                        <span class="text-xs font-bold tracking-tight text-center">Display</span>
-                    </button>
-                    <!-- Mouse -->
-                    <button type="button" onclick="selectCategory('Mouse')" data-category="Mouse" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="mouse" class="w-5 h-5 shrink-0"></i>
-                        <span class="text-xs font-bold tracking-tight text-center">Mouse</span>
-                    </button>
-                    <!-- Keyboard -->
-                    <button type="button" onclick="selectCategory('Keyboard')" data-category="Keyboard" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="keyboard" class="w-5 h-5 shrink-0"></i>
-                        <span class="text-xs font-bold tracking-tight text-center">Keyboard</span>
-                    </button>
-                    <!-- Printer -->
-                    <button type="button" onclick="selectCategory('Printer')" data-category="Printer" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="printer" class="w-5 h-5 shrink-0"></i>
-                        <span class="text-xs font-bold tracking-tight text-center">Printer</span>
-                    </button>
-                    <!-- Tablet -->
-                    <button type="button" onclick="selectCategory('Tablet')" data-category="Tablet" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="tablet" class="w-5 h-5 shrink-0"></i>
-                        <span class="text-xs font-bold tracking-tight text-center">Tablet</span>
-                    </button>
-                    <!-- UPS -->
-                    <button type="button" onclick="selectCategory('UPS')" data-category="UPS" class="category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200">
-                        <i data-lucide="zap" class="w-5 h-5 shrink-0"></i>
-                        <span class="text-xs font-bold tracking-tight text-center">UPS</span>
-                    </button>
+                <!-- Fast Presets Toolbar for effortless 1-tap mobile operation -->
+                <div class="flex items-center justify-between gap-1.5 pt-0.5">
+                    <div class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                        <i data-lucide="sparkles" class="w-3 h-3 text-cyan-400"></i>
+                        <span>Quick Presets:</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="applyComponentPreset('workstation')" class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-cyan-950/70 text-cyan-300 border border-cyan-700/60 hover:bg-cyan-900/80 active:scale-95 transition-all flex items-center gap-1 shadow-sm">
+                            <i data-lucide="layout-grid" class="w-3 h-3 text-cyan-400"></i>
+                            <span>+ Full Workstation</span>
+                        </button>
+                        <button type="button" onclick="applyComponentPreset('all')" class="text-[11px] font-semibold px-2 py-1 rounded-lg bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700 active:scale-95 transition-all">
+                            All
+                        </button>
+                        <button type="button" onclick="applyComponentPreset('clear')" class="text-[11px] font-semibold px-2 py-1 rounded-lg bg-slate-800/80 text-rose-300 border border-slate-700 hover:bg-slate-700 active:scale-95 transition-all">
+                            Clear
+                        </button>
+                    </div>
                 </div>
-                <input type="hidden" name="device_type" id="input-device-type" value="CPU">
+
+                <!-- 7 Hardware Component Checkbox Cards -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5" id="component-checkbox-grid">
+                    <!-- CPU -->
+                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-cyan-500/80 bg-cyan-950/35 text-white shadow-glow" data-comp="CPU">
+                        <input type="checkbox" value="CPU" checked onchange="toggleComponent('CPU', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
+                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
+                            <i data-lucide="cpu" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-bold leading-tight truncate">CPU / System</div>
+                            <div class="text-[10px] text-slate-400 leading-tight">Tower / Desktop</div>
+                        </div>
+                    </label>
+
+                    <!-- Display / Monitor -->
+                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-cyan-500/80 bg-cyan-950/35 text-white shadow-glow" data-comp="Display">
+                        <input type="checkbox" value="Display" checked onchange="toggleComponent('Display', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
+                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
+                            <i data-lucide="monitor" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-bold leading-tight truncate">Monitor / Display</div>
+                            <div class="text-[10px] text-slate-400 leading-tight">Screen / Panel</div>
+                        </div>
+                    </label>
+
+                    <!-- Keyboard -->
+                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-cyan-500/80 bg-cyan-950/35 text-white shadow-glow" data-comp="Keyboard">
+                        <input type="checkbox" value="Keyboard" checked onchange="toggleComponent('Keyboard', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
+                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
+                            <i data-lucide="keyboard" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-bold leading-tight truncate">Keyboard</div>
+                            <div class="text-[10px] text-slate-400 leading-tight">USB / Wireless</div>
+                        </div>
+                    </label>
+
+                    <!-- Mouse -->
+                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-cyan-500/80 bg-cyan-950/35 text-white shadow-glow" data-comp="Mouse">
+                        <input type="checkbox" value="Mouse" checked onchange="toggleComponent('Mouse', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
+                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
+                            <i data-lucide="mouse" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-bold leading-tight truncate">Mouse</div>
+                            <div class="text-[10px] text-slate-400 leading-tight">Optical / USB</div>
+                        </div>
+                    </label>
+
+                    <!-- Printer -->
+                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-300" data-comp="Printer">
+                        <input type="checkbox" value="Printer" onchange="toggleComponent('Printer', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
+                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
+                            <i data-lucide="printer" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-bold leading-tight truncate">Printer</div>
+                            <div class="text-[10px] text-slate-400 leading-tight">Thermal / Laser</div>
+                        </div>
+                    </label>
+
+                    <!-- UPS -->
+                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-300" data-comp="UPS">
+                        <input type="checkbox" value="UPS" onchange="toggleComponent('UPS', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
+                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
+                            <i data-lucide="zap" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-bold leading-tight truncate">UPS</div>
+                            <div class="text-[10px] text-slate-400 leading-tight">Power Backup</div>
+                        </div>
+                    </label>
+
+                    <!-- Tablet -->
+                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-300" data-comp="Tablet">
+                        <input type="checkbox" value="Tablet" onchange="toggleComponent('Tablet', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
+                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
+                            <i data-lucide="tablet" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-bold leading-tight truncate">Tablet</div>
+                            <div class="text-[10px] text-slate-400 leading-tight">Clinical Mobile</div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Single Asset Tag Assurance Banner for Single Holder -->
+                <div class="flex items-start gap-2.5 p-3 rounded-xl bg-cyan-950/30 border border-cyan-800/40 text-xs text-cyan-300">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
+                    <div class="leading-relaxed">
+                        <span class="font-bold text-white">Single Holder / Single Asset Tag Rule:</span>
+                        All checked hardware components above are bundled under <span class="font-extrabold text-cyan-200">one single Asset Tag</span> for the single custodian holding this system.
+                    </div>
+                </div>
+
+                <input type="hidden" name="device_type" id="input-device-type" value="Workstation (CPU, Display, Keyboard, Mouse)">
             </div>
 
             <!-- SECTION 2: Single Identifier (Asset Tag & Serial Number) -->
@@ -567,10 +647,13 @@
     <!-- Client-Side JavaScript Application Logic -->
     <script>
         const currentOrg = 'HOSP';
-        let currentCategory = 'CPU';
+        let currentCategory = 'Workstation (CPU, Display, Keyboard, Mouse)';
         let currentFloor = '2nd Floor';
         let lastRegisteredAssetId = '';
-        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v5';
+        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v6';
+
+        // Multi-select components state (Default: Full Workstation package for single holder)
+        let selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse']);
 
         document.addEventListener('DOMContentLoaded', () => {
             // Clean up obsolete legacy drafts
@@ -578,8 +661,11 @@
                 localStorage.removeItem('campus_asset_draft');
                 localStorage.removeItem('campus_asset_draft_v2');
                 localStorage.removeItem('campus_asset_draft_v3');
+                localStorage.removeItem('campus_asset_draft_v4');
+                localStorage.removeItem('campus_asset_draft_v5');
             } catch (e) {}
 
+            updateSelectedComponentsUI();
             lucide.createIcons();
             loadDraftFromStorage();
             setupAutoSaveListeners();
@@ -592,18 +678,84 @@
             }
         });
 
-        // Category selection
-        function selectCategory(cat, triggerAutoGenerate = true) {
-            currentCategory = cat;
-            document.getElementById('input-device-type').value = cat;
-            document.getElementById('category-pill-label').textContent = cat;
+        // Component multi-selection handlers
+        function toggleComponent(comp, isChecked) {
+            if (isChecked) {
+                selectedComponents.add(comp);
+            } else {
+                selectedComponents.delete(comp);
+            }
+            updateSelectedComponentsUI();
+            saveDraft();
+            if (navigator.vibrate) navigator.vibrate(15);
+        }
 
-            // Update button styles
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                if (btn.dataset.category === cat) {
-                    btn.className = "category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-blue-600/20 border-blue-500 text-blue-400 shadow-glow";
+        function applyComponentPreset(preset) {
+            if (preset === 'workstation') {
+                selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse']);
+            } else if (preset === 'all') {
+                selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse', 'Printer', 'UPS', 'Tablet']);
+            } else if (preset === 'clear') {
+                selectedComponents = new Set();
+            }
+            updateSelectedComponentsUI();
+            saveDraft();
+            if (navigator.vibrate) navigator.vibrate(20);
+        }
+
+        function getCompositeDeviceTypeName() {
+            if (selectedComponents.size === 0) return '';
+            const standardWorkstation = ['CPU', 'Display', 'Keyboard', 'Mouse'];
+            const isStandard = standardWorkstation.every(c => selectedComponents.has(c)) && selectedComponents.size === 4;
+            if (isStandard) {
+                return 'Workstation (CPU, Display, Keyboard, Mouse)';
+            }
+            if (selectedComponents.size > 1) {
+                const order = ['CPU', 'Display', 'Keyboard', 'Mouse', 'Printer', 'UPS', 'Tablet'];
+                const sorted = Array.from(selectedComponents).sort((a, b) => order.indexOf(a) - order.indexOf(b));
+                return `Workstation (${sorted.join(', ')})`;
+            }
+            return Array.from(selectedComponents)[0] || 'CPU';
+        }
+
+        function updateSelectedComponentsUI() {
+            const compositeName = getCompositeDeviceTypeName();
+            currentCategory = compositeName || 'Workstation';
+            const hiddenInput = document.getElementById('input-device-type');
+            if (hiddenInput) hiddenInput.value = currentCategory;
+
+            // Update badge in Section 1
+            const pill = document.getElementById('category-pill-label');
+            if (pill) {
+                if (selectedComponents.size === 0) {
+                    pill.textContent = '0 Selected (Required)';
+                    pill.className = 'text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30';
+                } else if (selectedComponents.size === 4 && selectedComponents.has('CPU') && selectedComponents.has('Display') && selectedComponents.has('Keyboard') && selectedComponents.has('Mouse')) {
+                    pill.textContent = 'Full Workstation (4 Items)';
+                    pill.className = 'text-xs font-bold px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30';
+                } else if (selectedComponents.size === 1) {
+                    pill.textContent = `${compositeName} (1 Item)`;
+                    pill.className = 'text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30';
                 } else {
-                    btn.className = "category-btn min-h-[74px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200";
+                    pill.textContent = `${selectedComponents.size} Items Selected`;
+                    pill.className = 'text-xs font-bold px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30';
+                }
+            }
+
+            // Update checkbox card styles and checkbox checked states
+            document.querySelectorAll('.component-card').forEach(card => {
+                const comp = card.dataset.comp;
+                const chk = card.querySelector('.component-checkbox');
+                const iconBox = card.querySelector('.comp-icon-box');
+                const isChecked = selectedComponents.has(comp);
+                if (chk) chk.checked = isChecked;
+
+                if (isChecked) {
+                    card.className = "component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-cyan-500/80 bg-cyan-950/35 text-white shadow-glow";
+                    if (iconBox) iconBox.className = "comp-icon-box w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0";
+                } else {
+                    card.className = "component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-300";
+                    if (iconBox) iconBox.className = "comp-icon-box w-8 h-8 rounded-lg bg-slate-800 text-slate-500 flex items-center justify-center shrink-0";
                 }
             });
 
@@ -613,35 +765,35 @@
             const periPanel = document.getElementById('specs-peripheral-panel');
             const subTitle = document.getElementById('specs-subtitle');
 
-            cpuPanel.classList.add('hidden');
-            dispPanel.classList.add('hidden');
-            periPanel.classList.add('hidden');
+            const hasCpu = selectedComponents.has('CPU');
+            const hasDisplay = selectedComponents.has('Display') || selectedComponents.has('Tablet');
+            const hasPeripherals = selectedComponents.has('Printer') || selectedComponents.has('UPS');
 
-            if (cat === 'CPU') {
-                cpuPanel.classList.remove('hidden');
-                subTitle.textContent = "CPU & Workstation Profile";
-            } else if (cat === 'Display') {
-                dispPanel.classList.remove('hidden');
-                subTitle.textContent = "Monitor & Screen Profile";
-            } else if (cat === 'Tablet') {
-                dispPanel.classList.remove('hidden');
-                subTitle.textContent = "Tablet & Mobile Clinical Device Profile";
-            } else if (cat === 'UPS') {
-                periPanel.classList.remove('hidden');
-                subTitle.textContent = "UPS & Power Backup Equipment Profile";
-            } else {
-                periPanel.classList.remove('hidden');
-                subTitle.textContent = `${cat} Profile`;
+            if (cpuPanel) cpuPanel.classList.toggle('hidden', !hasCpu);
+            if (dispPanel) dispPanel.classList.toggle('hidden', !hasDisplay);
+            if (periPanel) periPanel.classList.toggle('hidden', !hasPeripherals && (hasCpu || hasDisplay));
+
+            if (subTitle) {
+                if (hasCpu && hasDisplay) {
+                    subTitle.textContent = "Workstation Profile (CPU & Display Specs)";
+                } else if (hasCpu) {
+                    subTitle.textContent = "CPU & Compute Profile";
+                } else if (hasDisplay) {
+                    subTitle.textContent = "Display / Screen Profile";
+                } else if (selectedComponents.size > 0) {
+                    subTitle.textContent = `${compositeName} Profile`;
+                } else {
+                    subTitle.textContent = "No Hardware Component Selected";
+                }
             }
 
-            // Immediately auto-generate and update asset tag for newly chosen category
-            if (triggerAutoGenerate) {
-                autoGenerateTag();
-            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
 
-            // Haptic vibration
-            if (navigator.vibrate) navigator.vibrate(20);
-            saveDraft();
+        // Backward compatibility
+        function selectCategory(cat) {
+            applyComponentPreset('clear');
+            toggleComponent(cat, true);
         }
 
         // Floor selection
@@ -962,6 +1114,7 @@
         function saveDraft() {
             const draft = {
                 org: currentOrg,
+                components: Array.from(selectedComponents),
                 category: currentCategory,
                 asset_id: document.getElementById('input-asset-id').value,
                 serial: document.getElementById('input-serial-number').value,
@@ -989,9 +1142,19 @@
                 const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
                 if (!saved) return;
                 const draft = JSON.parse(saved);
-                if (draft.asset_id || draft.room) {
+                if (draft.asset_id || draft.room || draft.components) {
                     document.getElementById('draft-banner').classList.remove('hidden');
-                    if (draft.category) selectCategory(draft.category, false);
+                    if (draft.components && Array.isArray(draft.components) && draft.components.length > 0) {
+                        selectedComponents = new Set(draft.components);
+                    } else if (draft.category) {
+                        if (draft.category.includes('(')) {
+                            const inner = draft.category.substring(draft.category.indexOf('(') + 1, draft.category.lastIndexOf(')'));
+                            selectedComponents = new Set(inner.split(',').map(s => s.trim()));
+                        } else {
+                            selectedComponents = new Set([draft.category]);
+                        }
+                    }
+                    updateSelectedComponentsUI();
                     if (draft.floor) selectFloor(draft.floor);
                     if (draft.asset_id && !draft.asset_id.includes('/2F/') && !draft.asset_id.includes('/1F/') && !draft.asset_id.includes('/GF/') && !draft.asset_id.includes('-')) {
                         document.getElementById('input-asset-id').value = draft.asset_id;
@@ -1027,8 +1190,10 @@
             localStorage.removeItem(DRAFT_STORAGE_KEY);
             document.getElementById('draft-banner').classList.add('hidden');
             document.getElementById('add-device-form').reset();
-            selectCategory('CPU');
+            selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse']);
+            updateSelectedComponentsUI();
             selectFloor('2nd Floor');
+            autoGenerateTag();
         }
 
         function setupAutoSaveListeners() {
@@ -1045,6 +1210,12 @@
             const errorBanner = document.getElementById('form-error-banner');
             const errorText = document.getElementById('form-error-text');
             errorBanner.classList.add('hidden');
+
+            if (selectedComponents.size === 0) {
+                errorText.textContent = "Please select at least one hardware component (e.g. CPU, Monitor, etc.) for this system.";
+                errorBanner.classList.remove('hidden');
+                return;
+            }
 
             const assetId = document.getElementById('input-asset-id').value.trim();
             const roomName = document.getElementById('input-room').value.trim();
@@ -1163,10 +1334,12 @@
                 document.getElementById('input-user-name').value = "Unassigned";
                 document.getElementById('input-emp-id').value = "";
                 selectFloor('2nd Floor');
+                selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse']);
+                updateSelectedComponentsUI();
             }
 
             // Auto-generate next tag for convenience
-            autoGenerateTag();
+            autoGenerateTag(true);
 
             // Focus on Serial Number or Asset Tag
             document.getElementById('input-asset-id').focus();

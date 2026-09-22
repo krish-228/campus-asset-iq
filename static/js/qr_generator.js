@@ -149,7 +149,8 @@ function renderStickerCards(devices) {
         let typeLabel = 'CPU';
         if (dev.deviceType) {
             const dtUpper = String(dev.deviceType).toUpperCase();
-            if (dtUpper.includes('DISP') || dtUpper.includes('MONITOR') || dtUpper === 'D') { typeCode = 'D'; typeLabel = 'Display'; }
+            if (dtUpper.includes('WORKSTATION')) { typeCode = 'C'; typeLabel = 'Workstation'; }
+            else if (dtUpper.includes('DISP') || dtUpper.includes('MONITOR') || dtUpper === 'D') { typeCode = 'D'; typeLabel = 'Display'; }
             else if (dtUpper.includes('KEYB') || dtUpper === 'K') { typeCode = 'K'; typeLabel = 'Keyboard'; }
             else if (dtUpper.includes('MOUS') || dtUpper === 'M') { typeCode = 'M'; typeLabel = 'Mouse'; }
             else if (dtUpper.includes('PRINT') || dtUpper === 'P') { typeCode = 'P'; typeLabel = 'Printer'; }

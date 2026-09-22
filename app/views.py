@@ -157,7 +157,11 @@ def ensure_sample_complaints():
 
 def normalize_device_type(code, asset_id=''):
     c = (code or '').upper().strip()
-    if c in ('C', 'CPU', 'WORKSTATION', 'DESKTOP', 'PC', 'TOWER', 'COMPUTER'):
+    if 'WORKSTATION' in c or ('CPU' in c and ('DISPLAY' in c or 'MONITOR' in c or 'KEYBOARD' in c or 'MOUSE' in c)):
+        return code or 'Workstation (CPU, Display, Keyboard, Mouse)'
+    if ',' in (code or ''):
+        return code.strip()
+    if c in ('C', 'CPU', 'DESKTOP', 'PC', 'TOWER', 'COMPUTER'):
         return 'CPU'
     if c in ('D', 'DISPLAY', 'MONITOR', 'SCREEN'):
         return 'Display'

@@ -345,7 +345,13 @@ function getDeviceTypeBadge(dev) {
         else if (aid.includes('/U/') || aid.includes('/U-') || aid.includes('/U.')) rawType = 'UPS';
     }
     const t = (rawType || 'CPU').toUpperCase();
-    if (t === 'C' || t === 'CPU' || t === 'DESKTOP' || t === 'WORKSTATION' || t === 'PC' || t === 'COMPUTER') {
+    if (t.includes('WORKSTATION') || t.includes(',')) {
+        return `<span class="inline-flex items-center gap-2 text-base font-bold text-sky-800" title="${rawType}">
+            <i data-lucide="layout-grid" class="w-5 h-5 text-sky-600 shrink-0"></i>
+            <span>${rawType}</span>
+        </span>`;
+    }
+    if (t === 'C' || t === 'CPU' || t === 'DESKTOP' || t === 'PC' || t === 'COMPUTER') {
         return `<span class="inline-flex items-center gap-2 text-base font-bold text-sky-800">
             <i data-lucide="cpu" class="w-5 h-5 text-sky-600 shrink-0"></i>
             <span>CPU</span>
