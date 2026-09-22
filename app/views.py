@@ -211,11 +211,22 @@ def api_get_devices(request):
             'assignedUserId': d.assigned_user_id,
             'assignedUserName': d.assigned_user_name,
             'empId': d.assigned_emp_id,
-            'designation': d.assigned_designation or '',
-            'assignedDesignation': d.assigned_designation or '',
+            'designation': getattr(d, 'assigned_designation', '') or '',
+            'assignedDesignation': getattr(d, 'assigned_designation', '') or '',
+            'department': getattr(d, 'assigned_department', '') or '',
+            'assignedDepartment': getattr(d, 'assigned_department', '') or '',
+            'email': getattr(d, 'assigned_email', '') or '',
+            'assignedEmail': getattr(d, 'assigned_email', '') or '',
+            'phone': getattr(d, 'assigned_phone', '') or '',
+            'assignedPhone': getattr(d, 'assigned_phone', '') or '',
             'monitorSpec': d.monitor_spec,
             'cpuProcessor': d.cpu_processor,
             'storageRam': d.storage_ram,
+            'keyboardSpec': getattr(d, 'keyboard_spec', '') or '',
+            'mouseSpec': getattr(d, 'mouse_spec', '') or '',
+            'printerSpec': getattr(d, 'printer_spec', '') or '',
+            'upsSpec': getattr(d, 'ups_spec', '') or '',
+            'tabletSpec': getattr(d, 'tablet_spec', '') or '',
             'ipAddress': d.ip_address,
             'macAddress': d.mac_address,
             'operatingSystem': d.operating_system,
@@ -375,29 +386,63 @@ def api_save_device(request):
     assigned_user_name = (data.get('assignedUserName') or data.get('assigned_user_name') or 'Unassigned').strip()
     assigned_emp_id = (data.get('assignedEmpId') or data.get('assigned_emp_id') or data.get('empId') or '').strip()
     assigned_designation = (data.get('assignedDesignation') or data.get('assigned_designation') or data.get('designation') or '').strip()
+    assigned_department = (data.get('assignedDepartment') or data.get('assigned_department') or data.get('department') or '').strip()
+    assigned_email = (data.get('assignedEmail') or data.get('assigned_email') or data.get('email') or '').strip()
+    assigned_phone = (data.get('assignedPhone') or data.get('assigned_phone') or data.get('phone') or data.get('contact') or '').strip()
 
-    # If designation is empty and a known staff is assigned, auto-fill from UserProfile or SAMPLE_STAFF
-    if not assigned_designation and assigned_user_name and assigned_user_name.lower() != 'unassigned':
-        prof = UserProfile.objects.filter(full_name__iexact=assigned_user_name).first()
+    # If designation, department, phone, or email is empty and a known staff is assigned, auto-fill from UserProfile or SAMPLE_STAFF
+    if assigned_user_name and assigned_user_name.lower() != 'unassigned':
+        prof = UserProfile.objects.filter(full_name__iexact=assigned_user_name).select_related('user').first()
         if not prof and assigned_emp_id:
-            prof = UserProfile.objects.filter(emp_id__iexact=assigned_emp_id).first()
-        if prof and prof.designation:
-            assigned_designation = prof.designation
+            prof = UserProfile.objects.filter(emp_id__iexact=assigned_emp_id).select_related('user').first()
+        if prof:
+            if not assigned_designation and prof.designation:
+                assigned_designation = prof.designation
+            if not assigned_department and prof.department:
+                assigned_department = prof.department
+            if not assigned_phone and prof.phone:
+                assigned_phone = prof.phone
+            if not assigned_email and prof.user and prof.user.email:
+                assigned_email = prof.user.email
         else:
             for s in SAMPLE_STAFF:
-                if s.get('fullName', '').lower() == assigned_user_name.lower():
-                    assigned_designation = s.get('designation', '')
+                if s.get('fullName', '').lower() == assigned_user_name.lower() or (assigned_emp_id and s.get('empId', '').lower() == assigned_emp_id.lower()):
+                    if not assigned_designation:
+                        assigned_designation = s.get('designation', '')
+                    if not assigned_department:
+                        assigned_department = s.get('department', '') or s.get('dept', '')
+                    if not assigned_phone:
+                        assigned_phone = s.get('phone', '')
+                    if not assigned_email:
+                        assigned_email = s.get('email', '')
                     break
 
     cpu_processor = (data.get('cpuProcessor') or data.get('cpu_processor') or 'Intel Core i5 (Standard)').strip()
     storage_ram = (data.get('storageRam') or data.get('storage_ram') or '16GB RAM / 512GB SSD').strip()
     monitor_spec = (data.get('monitorSpec') or data.get('monitor_spec') or '24" FHD IPS Display').strip()
+    keyboard_spec = (data.get('keyboardSpec') or data.get('keyboard_spec') or '').strip()
+    mouse_spec = (data.get('mouseSpec') or data.get('mouse_spec') or '').strip()
+    printer_spec = (data.get('printerSpec') or data.get('printer_spec') or '').strip()
+    ups_spec = (data.get('upsSpec') or data.get('ups_spec') or '').strip()
+    tablet_spec = (data.get('tabletSpec') or data.get('tablet_spec') or '').strip()
     operating_system = (data.get('operatingSystem') or data.get('operating_system') or 'Windows 11 Pro').strip()
     ip_address = (data.get('ipAddress') or data.get('ip_address') or '').strip()
     mac_address = (data.get('macAddress') or data.get('mac_address') or '').strip().upper()
     status = (data.get('status') or 'Active').strip()
     purchase_date = (data.get('purchaseDate') or data.get('purchase_date') or timezone.now().strftime('%d-%b-%Y')).strip()
     warranty_expiry_date = (data.get('warrantyExpiryDate') or data.get('warranty_expiry_date') or (datetime.date.today() + datetime.timedelta(days=1095)).strftime('%d-%b-%Y')).strip()
+
+    # For standalone single-device registrations, align cpu_processor if empty or default
+    if 'keyboard' in device_type.lower() and keyboard_spec:
+        cpu_processor = keyboard_spec
+    elif 'mouse' in device_type.lower() and mouse_spec:
+        cpu_processor = mouse_spec
+    elif 'printer' in device_type.lower() and printer_spec:
+        cpu_processor = printer_spec
+    elif 'ups' in device_type.lower() and ups_spec:
+        cpu_processor = ups_spec
+    elif 'tablet' in device_type.lower() and tablet_spec:
+        cpu_processor = tablet_spec
 
     is_edit_request = bool(data.get('is_edit') or data.get('editId') or data.get('edit_id') or data.get('allow_overwrite'))
     dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
@@ -422,9 +467,17 @@ def api_save_device(request):
         dev.assigned_user_name = assigned_user_name
         dev.assigned_emp_id = assigned_emp_id
         dev.assigned_designation = assigned_designation
+        dev.assigned_department = assigned_department
+        dev.assigned_email = assigned_email
+        dev.assigned_phone = assigned_phone
         dev.cpu_processor = cpu_processor
         dev.storage_ram = storage_ram
         dev.monitor_spec = monitor_spec
+        dev.keyboard_spec = keyboard_spec
+        dev.mouse_spec = mouse_spec
+        dev.printer_spec = printer_spec
+        dev.ups_spec = ups_spec
+        dev.tablet_spec = tablet_spec
         dev.operating_system = operating_system
         dev.ip_address = ip_address
         dev.mac_address = mac_address
@@ -449,9 +502,17 @@ def api_save_device(request):
             assigned_user_name=assigned_user_name,
             assigned_emp_id=assigned_emp_id,
             assigned_designation=assigned_designation,
+            assigned_department=assigned_department,
+            assigned_email=assigned_email,
+            assigned_phone=assigned_phone,
             cpu_processor=cpu_processor,
             storage_ram=storage_ram,
             monitor_spec=monitor_spec,
+            keyboard_spec=keyboard_spec,
+            mouse_spec=mouse_spec,
+            printer_spec=printer_spec,
+            ups_spec=ups_spec,
+            tablet_spec=tablet_spec,
             operating_system=operating_system,
             ip_address=ip_address,
             mac_address=mac_address,
@@ -495,9 +556,18 @@ def api_save_device(request):
             'empId': dev.assigned_emp_id,
             'designation': dev.assigned_designation or '',
             'assignedDesignation': dev.assigned_designation or '',
+            'email': getattr(dev, 'assigned_email', '') or '',
+            'assignedEmail': getattr(dev, 'assigned_email', '') or '',
+            'phone': getattr(dev, 'assigned_phone', '') or '',
+            'assignedPhone': getattr(dev, 'assigned_phone', '') or '',
             'cpuProcessor': dev.cpu_processor,
             'storageRam': dev.storage_ram,
             'monitorSpec': dev.monitor_spec,
+            'keyboardSpec': getattr(dev, 'keyboard_spec', '') or '',
+            'mouseSpec': getattr(dev, 'mouse_spec', '') or '',
+            'printerSpec': getattr(dev, 'printer_spec', '') or '',
+            'upsSpec': getattr(dev, 'ups_spec', '') or '',
+            'tabletSpec': getattr(dev, 'tablet_spec', '') or '',
             'operatingSystem': dev.operating_system,
             'ipAddress': dev.ip_address,
             'macAddress': dev.mac_address,
@@ -1191,8 +1261,14 @@ def get_serialized_devices_and_logs():
             'assignedUserId': d.assigned_user_id,
             'assignedUserName': d.assigned_user_name,
             'empId': d.assigned_emp_id,
-            'designation': d.assigned_designation or '',
-            'assignedDesignation': d.assigned_designation or '',
+            'designation': getattr(d, 'assigned_designation', '') or '',
+            'assignedDesignation': getattr(d, 'assigned_designation', '') or '',
+            'department': getattr(d, 'assigned_department', '') or '',
+            'assignedDepartment': getattr(d, 'assigned_department', '') or '',
+            'email': getattr(d, 'assigned_email', '') or '',
+            'assignedEmail': getattr(d, 'assigned_email', '') or '',
+            'phone': getattr(d, 'assigned_phone', '') or '',
+            'assignedPhone': getattr(d, 'assigned_phone', '') or '',
             'monitorSpec': d.monitor_spec,
             'cpuProcessor': d.cpu_processor,
             'storageRam': d.storage_ram,
@@ -1287,9 +1363,20 @@ def mobile_add_device_view(request):
         ]
 
     # PSM Hospital clinical and administrative staff
-    staff_qs = UserProfile.objects.filter(org_id='HOSP').values('full_name', 'emp_id', 'department', 'designation', 'org_id')[:30]
+    staff_qs = UserProfile.objects.filter(org_id='HOSP').select_related('user')[:50]
     if staff_qs.exists():
-        staff_list = list(staff_qs)
+        staff_list = [
+            {
+                'full_name': prof.full_name,
+                'emp_id': prof.emp_id,
+                'department': prof.department,
+                'designation': prof.designation or '',
+                'phone': prof.phone or '',
+                'email': (prof.user.email if prof.user else '') or '',
+                'org_id': prof.org_id
+            }
+            for prof in staff_qs
+        ]
     else:
         staff_list = [
             {
@@ -1297,6 +1384,8 @@ def mobile_add_device_view(request):
                 'emp_id': s.get('empId', ''),
                 'department': s.get('department', ''),
                 'designation': s.get('designation', ''),
+                'phone': s.get('phone', ''),
+                'email': s.get('email', ''),
                 'org_id': s.get('orgId', 'HOSP')
             }
             for s in SAMPLE_STAFF if s.get('orgId') == 'HOSP'

@@ -105,6 +105,12 @@
             background: rgba(15, 23, 42, 0.95);
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
         }
+        .mobile-input-violet:focus {
+            outline: none;
+            border-color: #8b5cf6 !important;
+            background: rgba(15, 23, 42, 0.95);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25) !important;
+        }
         .mobile-input::placeholder {
             color: rgba(148, 163, 184, 0.55);
         }
@@ -154,144 +160,232 @@
 
         <form id="add-device-form" onsubmit="handleFormSubmit(event)" novalidate class="space-y-4">
 
-            <!-- SECTION 1: Hardware Components (Multi-Select Checkboxes for Single Holder) -->
-            <div class="glass-card rounded-2xl p-4 shadow-sm space-y-3.5">
-                <div class="flex items-center justify-between">
-                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <i data-lucide="check-square" class="w-3.5 h-3.5 text-cyan-400"></i>
-                        1. System Components / Device Types <span class="text-rose-400">*</span>
-                    </label>
-                    <span id="category-pill-label" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                        Full Workstation (4 Items)
+            <!-- SECTION 1: Custodian & Responsibility Assignment -->
+            <section class="glass-card rounded-2xl p-4 shadow-sm space-y-3.5" aria-labelledby="section-custodian-heading">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-lg bg-violet-500/20 text-violet-400 flex items-center justify-center border border-violet-500/30">
+                            <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <h2 id="section-custodian-heading" class="text-xs font-extrabold uppercase tracking-wider text-slate-300">
+                            1. Custodian & Holder Assignment <span class="text-rose-400">*</span>
+                        </h2>
+                        <span id="custodian-status-pill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                            Assigned Holder
+                        </span>
+                    </div>
+                    <button type="button" onclick="setUnassigned()" id="btn-unassigned-pool"
+                        class="text-xs font-bold text-violet-400 hover:text-violet-300 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-950/60 border border-violet-800/60 transition-all active:scale-95 shadow-sm">
+                        <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                        <span>Pool / Unassigned</span>
+                    </button>
+                </div>
+
+                <!-- Fast Custodian Suggestion Pills (Quick 1-Tap Mobile Selection) -->
+                <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 pt-0.5" id="staff-quick-chips-container">
+                    <span class="text-[10px] text-slate-500 font-bold shrink-0 flex items-center gap-1">
+                        <i data-lucide="sparkles" class="w-3 h-3 text-violet-400"></i>
+                        Quick Pick:
                     </span>
+                    <button type="button" onclick="setUnassigned()" data-staff-name="Unassigned"
+                        class="staff-quick-chip px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-700/60 shrink-0 transition-colors">
+                        🏢 General Pool / Shared
+                    </button>
+                    {% for s in staff_list|slice:":5" %}
+                    <button type="button" onclick="setStaffQuick('{{ s.full_name }}')" data-staff-name="{{ s.full_name }}"
+                        class="staff-quick-chip px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-700/60 shrink-0 transition-colors">
+                        👨‍⚕️ {{ s.full_name }}
+                    </button>
+                    {% endfor %}
                 </div>
 
-                <!-- Fast Presets Toolbar for effortless 1-tap mobile operation -->
-                <div class="flex items-center justify-between gap-1.5 pt-0.5">
-                    <div class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
-                        <i data-lucide="sparkles" class="w-3 h-3 text-cyan-400"></i>
-                        <span>Quick Presets:</span>
+                <!-- Symmetrical 2x3 Grid (Balanced 2-Column Pairs) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <!-- Column 1: Staff / Doctor Name -->
+                    <div>
+                        <label for="input-user-name" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                            <i data-lucide="user" class="w-3 h-3 text-violet-400"></i>
+                            <span>Staff / Doctor Name</span>
+                        </label>
+                        <input type="text" id="input-user-name" name="assigned_user_name"
+                            list="staff-datalist"
+                            placeholder="e.g. Dr. Vikram Sharma"
+                            class="mobile-input mobile-input-violet text-sm font-medium"
+                            oninput="handleStaffInput(this.value)"
+                            autocomplete="off">
+                        <datalist id="staff-datalist">
+                            {% for s in staff_list %}
+                            <option value="{{ s.full_name }} ({{ s.emp_id }})"></option>
+                            {% endfor %}
+                        </datalist>
                     </div>
-                    <div class="flex items-center gap-1.5">
-                        <button type="button" onclick="applyComponentPreset('workstation')" class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-cyan-950/70 text-cyan-300 border border-cyan-700/60 hover:bg-cyan-900/80 active:scale-95 transition-all flex items-center gap-1 shadow-sm">
-                            <i data-lucide="layout-grid" class="w-3 h-3 text-cyan-400"></i>
-                            <span>+ Full Workstation</span>
-                        </button>
-                        <button type="button" onclick="applyComponentPreset('all')" class="text-[11px] font-semibold px-2 py-1 rounded-lg bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700 active:scale-95 transition-all">
-                            All
-                        </button>
-                        <button type="button" onclick="applyComponentPreset('clear')" class="text-[11px] font-semibold px-2 py-1 rounded-lg bg-slate-800/80 text-rose-300 border border-slate-700 hover:bg-slate-700 active:scale-95 transition-all">
-                            Clear
-                        </button>
+
+                    <!-- Column 2: Employee ID -->
+                    <div>
+                        <label for="input-emp-id" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                            <i data-lucide="badge-check" class="w-3 h-3 text-violet-400"></i>
+                            <span>Employee ID</span>
+                        </label>
+                        <input type="text" id="input-emp-id" name="assigned_emp_id"
+                            placeholder="e.g. MED-00042"
+                            class="mobile-input mobile-input-violet uppercase font-mono text-sm font-semibold"
+                            autocomplete="off">
                     </div>
-                </div>
 
-                <!-- 7 Hardware Component Checkbox Cards -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5" id="component-checkbox-grid">
-                    <!-- CPU -->
-                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-cyan-500/80 bg-cyan-950/35 text-white shadow-glow" data-comp="CPU">
-                        <input type="checkbox" value="CPU" checked onchange="toggleComponent('CPU', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
-                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
-                            <i data-lucide="cpu" class="w-4 h-4"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-xs font-bold leading-tight truncate">CPU / System</div>
-                            <div class="text-[10px] text-slate-400 leading-tight">Tower / Desktop</div>
-                        </div>
-                    </label>
+                    <!-- Column 3: Designation / Role -->
+                    <div>
+                        <label for="input-designation" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                            <i data-lucide="briefcase" class="w-3 h-3 text-violet-400"></i>
+                            <span>Designation / Role</span>
+                        </label>
+                        <input type="text" id="input-designation" name="assigned_designation"
+                            list="designation-datalist"
+                            placeholder="e.g. Chief Intensivist / HOD"
+                            class="mobile-input mobile-input-violet text-sm">
+                        <datalist id="designation-datalist">
+                            <option value="Chief Intensivist / HOD"></option>
+                            <option value="Consultant Cardiologist"></option>
+                            <option value="Senior Nursing Officer"></option>
+                            <option value="Biomedical Lead Engineer"></option>
+                            <option value="IT Systems Administrator"></option>
+                            <option value="Consultant Radiologist"></option>
+                            <option value="Triage Nurse Officer"></option>
+                            <option value="Clinical Data Analyst"></option>
+                            <option value="Pathology Specialist"></option>
+                        </datalist>
+                    </div>
 
-                    <!-- Display / Monitor -->
-                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-cyan-500/80 bg-cyan-950/35 text-white shadow-glow" data-comp="Display">
-                        <input type="checkbox" value="Display" checked onchange="toggleComponent('Display', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
-                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
-                            <i data-lucide="monitor" class="w-4 h-4"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-xs font-bold leading-tight truncate">Monitor / Display</div>
-                            <div class="text-[10px] text-slate-400 leading-tight">Screen / Panel</div>
-                        </div>
-                    </label>
+                    <!-- Column 4: Department / Clinical Wing -->
+                    <div>
+                        <label for="input-department" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                            <i data-lucide="building-2" class="w-3 h-3 text-violet-400"></i>
+                            <span>Department / Unit</span>
+                        </label>
+                        <input type="text" id="input-department" name="assigned_department"
+                            list="department-datalist"
+                            placeholder="e.g. Intensive Care Unit (ICU)"
+                            class="mobile-input mobile-input-violet text-sm">
+                        <datalist id="department-datalist">
+                            <option value="Intensive Care Unit (ICU)"></option>
+                            <option value="Emergency & Trauma"></option>
+                            <option value="Cardiology"></option>
+                            <option value="Radiology & Diagnostics"></option>
+                            <option value="General Surgery (OT)"></option>
+                            <option value="Pathology & Laboratory"></option>
+                            <option value="Biomedical Engineering"></option>
+                            <option value="IT & Network Infrastructure"></option>
+                            <option value="Hospital Administration"></option>
+                        </datalist>
+                    </div>
 
-                    <!-- Keyboard -->
-                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-cyan-500/80 bg-cyan-950/35 text-white shadow-glow" data-comp="Keyboard">
-                        <input type="checkbox" value="Keyboard" checked onchange="toggleComponent('Keyboard', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
-                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
-                            <i data-lucide="keyboard" class="w-4 h-4"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-xs font-bold leading-tight truncate">Keyboard</div>
-                            <div class="text-[10px] text-slate-400 leading-tight">USB / Wireless</div>
-                        </div>
-                    </label>
+                    <!-- Column 5: Contact Number -->
+                    <div>
+                        <label for="input-contact" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                            <i data-lucide="phone" class="w-3 h-3 text-violet-400"></i>
+                            <span>Contact Number</span>
+                        </label>
+                        <input type="tel" id="input-contact" name="assigned_phone"
+                            inputmode="tel"
+                            placeholder="e.g. +91 98112 23344"
+                            class="mobile-input mobile-input-violet text-sm">
+                    </div>
 
-                    <!-- Mouse -->
-                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-cyan-500/80 bg-cyan-950/35 text-white shadow-glow" data-comp="Mouse">
-                        <input type="checkbox" value="Mouse" checked onchange="toggleComponent('Mouse', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
-                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
-                            <i data-lucide="mouse" class="w-4 h-4"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-xs font-bold leading-tight truncate">Mouse</div>
-                            <div class="text-[10px] text-slate-400 leading-tight">Optical / USB</div>
-                        </div>
-                    </label>
-
-                    <!-- Printer -->
-                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-300" data-comp="Printer">
-                        <input type="checkbox" value="Printer" onchange="toggleComponent('Printer', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
-                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
-                            <i data-lucide="printer" class="w-4 h-4"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-xs font-bold leading-tight truncate">Printer</div>
-                            <div class="text-[10px] text-slate-400 leading-tight">Thermal / Laser</div>
-                        </div>
-                    </label>
-
-                    <!-- UPS -->
-                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-300" data-comp="UPS">
-                        <input type="checkbox" value="UPS" onchange="toggleComponent('UPS', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
-                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
-                            <i data-lucide="zap" class="w-4 h-4"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-xs font-bold leading-tight truncate">UPS</div>
-                            <div class="text-[10px] text-slate-400 leading-tight">Power Backup</div>
-                        </div>
-                    </label>
-
-                    <!-- Tablet -->
-                    <label class="component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-300" data-comp="Tablet">
-                        <input type="checkbox" value="Tablet" onchange="toggleComponent('Tablet', this.checked)" class="component-checkbox w-4 h-4 rounded border-slate-600 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-900 shrink-0 cursor-pointer">
-                        <div class="comp-icon-box w-8 h-8 rounded-lg bg-slate-800 text-slate-500 flex items-center justify-center shrink-0">
-                            <i data-lucide="tablet" class="w-4 h-4"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-xs font-bold leading-tight truncate">Tablet</div>
-                            <div class="text-[10px] text-slate-400 leading-tight">Clinical Mobile</div>
-                        </div>
-                    </label>
-                </div>
-
-                <!-- Single Asset Tag Assurance Banner for Single Holder -->
-                <div class="flex items-start gap-2.5 p-3 rounded-xl bg-cyan-950/30 border border-cyan-800/40 text-xs text-cyan-300">
-                    <i data-lucide="shield-check" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
-                    <div class="leading-relaxed">
-                        <span class="font-bold text-white">Single Holder / Single Asset Tag Rule:</span>
-                        All checked hardware components above are bundled under <span class="font-extrabold text-cyan-200">one single Asset Tag</span> for the single custodian holding this system.
+                    <!-- Column 6: Email Address -->
+                    <div>
+                        <label for="input-email" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                            <i data-lucide="mail" class="w-3 h-3 text-violet-400"></i>
+                            <span>Email Address</span>
+                        </label>
+                        <input type="email" id="input-email" name="assigned_email"
+                            inputmode="email"
+                            placeholder="e.g. vikram.sharma@hospital.org"
+                            class="mobile-input mobile-input-violet text-sm lowercase">
                     </div>
                 </div>
+            </section>
 
-                <input type="hidden" name="device_type" id="input-device-type" value="Workstation (CPU, Display, Keyboard, Mouse)">
-            </div>
+            <!-- SECTION 2: Physical Campus Placement (Building, Floor, Room) -->
+            <section class="glass-card rounded-2xl p-4 shadow-sm space-y-3.5" aria-labelledby="section-placement-heading">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <h2 id="section-placement-heading" class="text-xs font-extrabold uppercase tracking-wider text-slate-300">
+                            2. Campus Placement <span class="text-rose-400">*</span>
+                        </h2>
+                    </div>
+                    <span class="text-[11px] text-slate-400 font-medium">Auto-Tag Sync</span>
+                </div>
 
-            <!-- SECTION 2: Single Identifier (Asset Tag & Serial Number) -->
-            <div class="glass-card rounded-2xl p-4 shadow-sm space-y-3.5">
-                <div class="flex items-center justify-between">
-                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <i data-lucide="hash" class="w-3.5 h-3.5 text-cyan-400"></i>
-                        2. Unique Asset Identifier <span class="text-rose-400">*</span>
+                <!-- Building -->
+                <div>
+                    <label for="input-building" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                        <i data-lucide="building" class="w-3 h-3 text-emerald-400"></i>
+                        <span>Building / Wing</span>
                     </label>
+                    <input type="text" id="input-building" name="building_name" required
+                        list="building-datalist"
+                        value="PSM Hospital"
+                        class="mobile-input text-sm">
+                    <datalist id="building-datalist">
+                        {% for b in buildings %}
+                        <option value="{{ b }}"></option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+
+                <!-- Floor Pills -->
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 block mb-1.5 flex items-center gap-1">
+                        <i data-lucide="layers" class="w-3 h-3 text-emerald-400"></i>
+                        <span>Floor Level</span>
+                    </label>
+                    <div class="flex flex-wrap gap-1.5" id="floor-pills-container">
+                        {% for f in floors %}
+                        <button type="button" onclick="selectFloor('{{ f }}')" data-floor="{{ f }}"
+                            class="floor-pill px-3 py-1.5 rounded-xl border text-xs font-bold transition-all {% if forloop.counter == 3 %}bg-emerald-600/25 border-emerald-500 text-emerald-300 shadow-sm{% else %}bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200{% endif %}">
+                            {{ f }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="floor_name" id="input-floor" value="2nd Floor">
+                </div>
+
+                <!-- Room / Ward / Department -->
+                <div>
+                    <label for="input-room" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                        <i data-lucide="door-open" class="w-3 h-3 text-emerald-400"></i>
+                        <span>Room / Ward / Clinic <span class="text-rose-400">*</span></span>
+                    </label>
+                    <input type="text" id="input-room" name="room_name" required
+                        placeholder="e.g. ICU Room 102, Lab 3, Radiology"
+                        class="mobile-input text-sm font-medium">
+                    
+                    <!-- Quick Room Pills -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2">
+                        <span class="text-[10px] text-slate-500 font-bold shrink-0">Suggestions:</span>
+                        {% for r in rooms %}
+                        <button type="button" onclick="setRoomQuick('{{ r }}')"
+                            class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-700/60 shrink-0 transition-colors">
+                            {{ r }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: Unique Asset Identifier (Asset Tag & Serial Number) -->
+            <section class="glass-card rounded-2xl p-4 shadow-sm space-y-3.5" aria-labelledby="section-asset-id-heading">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                            <i data-lucide="hash" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <h2 id="section-asset-id-heading" class="text-xs font-extrabold uppercase tracking-wider text-slate-300">
+                            3. Unique Asset Identifier <span class="text-rose-400">*</span>
+                        </h2>
+                    </div>
                     <button type="button" onclick="autoGenerateTag(true)" id="btn-auto-tag" class="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-800/60 transition-all active:scale-95 shadow-sm">
                         <i data-lucide="zap" class="w-3.5 h-3.5"></i>
                         <span>Auto Generate</span>
@@ -314,18 +408,20 @@
                 </div>
 
                 <!-- Serial Number & Status -->
-                <div class="grid grid-cols-2 gap-3 pt-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">
-                            Serial Number
+                        <label for="input-serial-number" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                            <i data-lucide="barcode" class="w-3 h-3 text-cyan-400"></i>
+                            <span>Serial Number</span>
                         </label>
                         <input type="text" id="input-serial-number" name="serial_number"
                             placeholder="e.g. SN-DELL-88412"
                             class="mobile-input uppercase font-mono text-xs">
                     </div>
                     <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">
-                            Operational Status
+                        <label for="input-status" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                            <i data-lucide="activity" class="w-3 h-3 text-cyan-400"></i>
+                            <span>Operational Status</span>
                         </label>
                         <select id="input-status" name="status" class="mobile-input text-xs font-semibold">
                             <option value="Active" selected>Active / In Use</option>
@@ -335,148 +431,158 @@
                         </select>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- SECTION 3: Physical Location (Building, Floor, Room) -->
-            <div class="glass-card rounded-2xl p-4 shadow-sm space-y-3.5">
-                <div class="flex items-center justify-between">
-                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400"></i>
-                        3. Campus Placement <span class="text-rose-400">*</span>
-                    </label>
-                    <span class="text-[11px] text-slate-400 font-medium">Auto-Tag Sync</span>
+            <!-- SECTION 4: Hardware Components (Multi-Select Checkboxes for Single Holder) -->
+            <section class="glass-card rounded-2xl p-4 shadow-sm space-y-3.5" aria-labelledby="section-components-heading">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
+                            <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <h2 id="section-components-heading" class="text-xs font-extrabold uppercase tracking-wider text-slate-300">
+                            4. System Components / Device Types <span class="text-rose-400">*</span>
+                        </h2>
+                    </div>
+                    <span id="category-pill-label" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                        CPU (1 Item)
+                    </span>
                 </div>
 
-                <!-- Building -->
-                <div>
-                    <label class="text-[11px] font-bold text-slate-400 block mb-1">Building / Wing</label>
-                    <input type="text" id="input-building" name="building_name" required
-                        list="building-datalist"
-                        value="PSM Hospital"
-                        class="mobile-input text-sm">
-                    <datalist id="building-datalist">
-                        {% for b in buildings %}
-                        <option value="{{ b }}"></option>
-                        {% endfor %}
-                    </datalist>
-                </div>
-
-                <!-- Floor Pills -->
-                <div>
-                    <label class="text-[11px] font-bold text-slate-400 block mb-1.5">Floor Level</label>
-                    <div class="flex flex-wrap gap-1.5" id="floor-pills-container">
-                        {% for f in floors %}
-                        <button type="button" onclick="selectFloor('{{ f }}')" data-floor="{{ f }}"
-                            class="floor-pill px-3 py-1.5 rounded-xl border text-xs font-bold transition-all {% if forloop.counter == 3 %}bg-emerald-600/25 border-emerald-500 text-emerald-300 shadow-sm{% else %}bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200{% endif %}">
-                            {{ f }}
+                <!-- Fast Presets Toolbar for effortless 1-tap mobile operation -->
+                <div class="flex items-center justify-between gap-1.5 pt-0.5">
+                    <div class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                        <i data-lucide="sparkles" class="w-3 h-3 text-cyan-400"></i>
+                        <span>Quick Presets:</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="applyComponentPreset('cpu')" class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-cyan-950/80 text-cyan-300 border border-cyan-700/60 hover:bg-cyan-900 active:scale-95 transition-all flex items-center gap-1 shadow-sm">
+                            <i data-lucide="cpu" class="w-3 h-3 text-cyan-400"></i>
+                            <span>CPU Only</span>
                         </button>
-                        {% endfor %}
-                    </div>
-                    <input type="hidden" name="floor_name" id="input-floor" value="2nd Floor">
-                </div>
-
-                <!-- Room / Ward / Department -->
-                <div>
-                    <label class="text-[11px] font-bold text-slate-400 block mb-1">Room / Ward / Clinic <span class="text-rose-400">*</span></label>
-                    <input type="text" id="input-room" name="room_name" required
-                        placeholder="e.g. ICU Room 102, Lab 3, Radiology"
-                        class="mobile-input text-sm font-medium">
-                    
-                    <!-- Quick Room Pills -->
-                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2">
-                        <span class="text-[10px] text-slate-500 font-bold shrink-0">Suggestions:</span>
-                        {% for r in rooms %}
-                        <button type="button" onclick="setRoomQuick('{{ r }}')"
-                            class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-700/60 shrink-0 transition-colors">
-                            {{ r }}
+                        <button type="button" onclick="applyComponentPreset('workstation')" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700 active:scale-95 transition-all flex items-center gap-1">
+                            <i data-lucide="layout-grid" class="w-3 h-3 text-blue-400"></i>
+                            <span>+ Workstation (CPU + Monitor)</span>
                         </button>
-                        {% endfor %}
+                        <button type="button" onclick="applyComponentPreset('clear')" class="text-[11px] font-semibold px-2 py-1 rounded-lg bg-slate-800/80 text-rose-300 border border-slate-700 hover:bg-slate-700 active:scale-95 transition-all">
+                            Clear
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- SECTION 4: Custodian / User Assignment -->
-            <div class="glass-card rounded-2xl p-4 shadow-sm space-y-3">
-                <div class="flex items-center justify-between">
-                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <i data-lucide="user-check" class="w-3.5 h-3.5 text-violet-400"></i>
-                        4. Custodian Assignment
+                <!-- 7 Hardware Component Checkbox Cards -->
+                <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-2.5" id="component-checkbox-grid">
+                    <!-- CPU -->
+                    <label class="component-card relative min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-cyan-500 bg-cyan-950/40 text-cyan-300 shadow-glow ring-1 ring-cyan-500/30" data-comp="CPU">
+                        <input type="checkbox" value="CPU" checked onchange="toggleComponent('CPU', this.checked)" class="component-checkbox sr-only">
+                        <span class="comp-badge absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center shadow-sm">
+                            <i data-lucide="check" class="w-2.5 h-2.5 stroke-[3]"></i>
+                        </span>
+                        <i data-lucide="cpu" class="comp-icon w-6 h-6 text-cyan-400 shrink-0"></i>
+                        <span class="comp-label text-xs font-bold text-white tracking-tight text-center">CPU</span>
                     </label>
-                    <button type="button" onclick="setUnassigned()" class="text-xs font-bold text-slate-400 hover:text-slate-200 underline">
-                        Pool / Unassigned
-                    </button>
+
+                    <!-- Monitor (Display) -->
+                    <label class="component-card relative min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Display">
+                        <input type="checkbox" value="Display" onchange="toggleComponent('Display', this.checked)" class="component-checkbox sr-only">
+                        <span class="comp-badge absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
+                        <i data-lucide="monitor" class="comp-icon w-6 h-6 text-slate-400 shrink-0"></i>
+                        <span class="comp-label text-xs font-medium text-slate-400 tracking-tight text-center">Monitor</span>
+                    </label>
+
+                    <!-- Keyboard -->
+                    <label class="component-card relative min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Keyboard">
+                        <input type="checkbox" value="Keyboard" onchange="toggleComponent('Keyboard', this.checked)" class="component-checkbox sr-only">
+                        <span class="comp-badge absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
+                        <i data-lucide="keyboard" class="comp-icon w-6 h-6 text-slate-400 shrink-0"></i>
+                        <span class="comp-label text-xs font-medium text-slate-400 tracking-tight text-center">Keyboard</span>
+                    </label>
+
+                    <!-- Mouse -->
+                    <label class="component-card relative min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Mouse">
+                        <input type="checkbox" value="Mouse" onchange="toggleComponent('Mouse', this.checked)" class="component-checkbox sr-only">
+                        <span class="comp-badge absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
+                        <i data-lucide="mouse" class="comp-icon w-6 h-6 text-slate-400 shrink-0"></i>
+                        <span class="comp-label text-xs font-medium text-slate-400 tracking-tight text-center">Mouse</span>
+                    </label>
+
+                    <!-- Printer -->
+                    <label class="component-card relative min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Printer">
+                        <input type="checkbox" value="Printer" onchange="toggleComponent('Printer', this.checked)" class="component-checkbox sr-only">
+                        <span class="comp-badge absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
+                        <i data-lucide="printer" class="comp-icon w-6 h-6 text-slate-400 shrink-0"></i>
+                        <span class="comp-label text-xs font-medium text-slate-400 tracking-tight text-center">Printer</span>
+                    </label>
+
+                    <!-- UPS -->
+                    <label class="component-card relative min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="UPS">
+                        <input type="checkbox" value="UPS" onchange="toggleComponent('UPS', this.checked)" class="component-checkbox sr-only">
+                        <span class="comp-badge absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
+                        <i data-lucide="zap" class="comp-icon w-6 h-6 text-slate-400 shrink-0"></i>
+                        <span class="comp-label text-xs font-medium text-slate-400 tracking-tight text-center">UPS</span>
+                    </label>
+
+                    <!-- Tablet -->
+                    <label class="component-card relative min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Tablet">
+                        <input type="checkbox" value="Tablet" onchange="toggleComponent('Tablet', this.checked)" class="component-checkbox sr-only">
+                        <span class="comp-badge absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
+                        <i data-lucide="tablet" class="comp-icon w-6 h-6 text-slate-400 shrink-0"></i>
+                        <span class="comp-label text-xs font-medium text-slate-400 tracking-tight text-center">Tablet</span>
+                    </label>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Staff / Doctor Name</label>
-                        <input type="text" id="input-user-name" name="assigned_user_name"
-                            list="staff-datalist"
-                            placeholder="e.g. Dr. Vikram Sharma"
-                            class="mobile-input text-sm"
-                            oninput="handleStaffInput(this.value)">
-                        <datalist id="staff-datalist">
-                            {% for s in staff_list %}
-                            <option value="{{ s.full_name }} ({{ s.emp_id }})"></option>
-                            {% endfor %}
-                        </datalist>
-                    </div>
-                    <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Employee ID</label>
-                        <input type="text" id="input-emp-id" name="assigned_emp_id"
-                            placeholder="e.g. MED-00042"
-                            class="mobile-input uppercase font-mono text-sm">
-                    </div>
-
-                    <!-- Directly Below Staff / Doctor Name: Designation Input -->
-                    <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
-                            <i data-lucide="briefcase" class="w-3 h-3 text-violet-400"></i>
-                            <span>Designation</span>
-                        </label>
-                        <input type="text" id="input-designation" name="assigned_designation"
-                            list="designation-datalist"
-                            placeholder="e.g. Software Engineer"
-                            class="mobile-input text-sm">
-                        <datalist id="designation-datalist">
-                            <option value="Software Engineer"></option>
-                            <option value="Senior Software Engineer"></option>
-                            <option value="IT Systems Administrator"></option>
-                            <option value="Biomedical Lead Engineer"></option>
-                            <option value="Chief Intensivist / HOD"></option>
-                            <option value="Consultant Radiologist"></option>
-                            <option value="Senior Nursing Officer"></option>
-                            <option value="Triage Nurse Officer"></option>
-                            <option value="Clinical Data Analyst"></option>
-                        </datalist>
+                <!-- Single Asset Tag Assurance Banner for Single Holder -->
+                <div class="flex items-start gap-2.5 p-3 rounded-xl bg-cyan-950/30 border border-cyan-800/40 text-xs text-cyan-300">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
+                    <div class="leading-relaxed">
+                        <span class="font-bold text-white">Single Holder / Single Asset Tag Rule:</span>
+                        All checked hardware components above are bundled under <span class="font-extrabold text-cyan-200">one single Asset Tag</span> for the single custodian holding this system.
                     </div>
                 </div>
-            </div>
+
+                <input type="hidden" name="device_type" id="input-device-type" value="CPU">
+            </section>
 
             <!-- SECTION 5: Dynamic Hardware Specifications (Adapts to Type) -->
-            <div class="glass-card rounded-2xl p-4 shadow-sm space-y-3" id="specs-section">
-                <div class="flex items-center justify-between">
-                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <i data-lucide="sliders" class="w-3.5 h-3.5 text-amber-400"></i>
-                        5. Hardware Specifications
-                    </label>
+            <section class="glass-card rounded-2xl p-4 shadow-sm space-y-3" id="specs-section" aria-labelledby="section-specs-heading">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                            <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <h2 id="section-specs-heading" class="text-xs font-extrabold uppercase tracking-wider text-slate-300">
+                            5. Hardware Specifications
+                        </h2>
+                    </div>
                     <span id="specs-subtitle" class="text-[11px] text-amber-300 font-semibold">CPU Profile</span>
                 </div>
 
                 <!-- Dynamic Sub-panel for CPU -->
-                <div id="specs-cpu-panel" class="space-y-3">
+                <div id="specs-cpu-panel" class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 transition-all duration-300">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                                <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-white tracking-wide">CPU / Compute Specifications</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 font-bold">CPU Box</span>
+                    </div>
+
                     <div>
                         <label class="text-[11px] font-bold text-slate-400 block mb-1">Processor / CPU</label>
                         <input type="text" id="input-cpu" name="cpu_processor"
                             value="Intel Core i5 (Standard Workstation)"
-                            class="mobile-input text-xs">
+                            class="mobile-input text-xs font-medium"
+                            placeholder="e.g. Intel Core i5 / Core i7">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-[11px] font-bold text-slate-400 block mb-1">RAM & Storage</label>
                             <input type="text" id="input-ram" name="storage_ram"
                                 value="16GB RAM / 512GB SSD"
-                                class="mobile-input text-xs">
+                                class="mobile-input text-xs font-medium"
+                                placeholder="e.g. 16GB RAM / 512GB SSD">
                         </div>
                         <div>
                             <label class="text-[11px] font-bold text-slate-400 block mb-1">Operating System</label>
@@ -504,50 +610,174 @@
                     </div>
                 </div>
 
-                <!-- Dynamic Sub-panel for Display -->
-                <div id="specs-display-panel" class="space-y-3 hidden">
+                <!-- Dynamic Sub-panel for Display / Monitor -->
+                <div id="specs-display-panel" class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 transition-all duration-300 hidden">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
+                                <i data-lucide="monitor" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-white tracking-wide">Monitor / Display Specifications</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/60 font-bold">Display Box</span>
+                    </div>
+
                     <div>
                         <label class="text-[11px] font-bold text-slate-400 block mb-1">Monitor Specs & Resolution</label>
                         <input type="text" id="input-monitor" name="monitor_spec"
                             value='24" FHD IPS Medical / Office Grade (1920x1080)'
-                            class="mobile-input text-xs">
+                            placeholder='e.g. 24" FHD IPS Medical / Office Grade (1920x1080)'
+                            class="mobile-input text-xs font-medium">
                     </div>
                 </div>
 
-                <!-- Dynamic Sub-panel for Printer / Peripherals -->
-                <div id="specs-peripheral-panel" class="space-y-3 hidden">
+                <!-- Dynamic Sub-panel for Keyboard -->
+                <div id="specs-keyboard-panel" class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 transition-all duration-300 hidden">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                                <i data-lucide="keyboard" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-white tracking-wide">Keyboard Specifications</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/60 font-bold">Keyboard Box</span>
+                    </div>
+
                     <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Device Model & Details</label>
-                        <input type="text" id="input-peripheral-desc"
-                            placeholder="e.g. Zebra ZD420 Thermal Barcode or Logitech USB Keyboard"
-                            class="mobile-input text-xs">
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Keyboard Model & Type</label>
+                        <input type="text" id="input-keyboard" name="keyboard_spec"
+                            value="Dell KB216 USB Wired Keyboard (Spill-Resistant Membrane)"
+                            placeholder="e.g. Dell KB216 USB Wired / Logitech K120 / Disinfectable Hospital Keyboard"
+                            class="mobile-input text-xs font-medium">
                     </div>
                 </div>
-            </div>
+
+                <!-- Dynamic Sub-panel for Mouse -->
+                <div id="specs-mouse-panel" class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 transition-all duration-300 hidden">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg bg-violet-500/20 text-violet-400 flex items-center justify-center border border-violet-500/30">
+                                <i data-lucide="mouse" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-white tracking-wide">Mouse Specifications</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-violet-950/80 text-violet-300 border border-violet-800/60 font-bold">Mouse Box</span>
+                    </div>
+
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Mouse Model & Sensor</label>
+                        <input type="text" id="input-mouse" name="mouse_spec"
+                            value="Dell MS116 Optical USB Mouse (1000 DPI Cleanable)"
+                            placeholder="e.g. Dell MS116 Optical / Logitech B100 USB / Antimicrobial Clinic Mouse"
+                            class="mobile-input text-xs font-medium">
+                    </div>
+                </div>
+
+                <!-- Dynamic Sub-panel for Printer -->
+                <div id="specs-printer-panel" class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 transition-all duration-300 hidden">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-white tracking-wide">Printer Specifications</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 font-bold">Printer Box</span>
+                    </div>
+
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Printer Model & Type</label>
+                        <input type="text" id="input-printer" name="printer_spec"
+                            value="HP LaserJet Pro M404dn / Zebra ZD420 Barcode"
+                            placeholder="e.g. HP LaserJet Pro M404dn / Zebra ZD420 Thermal Barcode / Epson L3250"
+                            class="mobile-input text-xs font-medium">
+                    </div>
+                </div>
+
+                <!-- Dynamic Sub-panel for UPS -->
+                <div id="specs-ups-panel" class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 transition-all duration-300 hidden">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                                <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-white tracking-wide">UPS / Power Backup Specifications</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/60 font-bold">UPS Box</span>
+                    </div>
+
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">UPS Model & Capacity</label>
+                        <input type="text" id="input-ups" name="ups_spec"
+                            value="APC Back-UPS 650VA / 360W Line-Interactive (15-20 Mins Runtime)"
+                            placeholder="e.g. APC Smart-UPS 750VA / Microtek Legend 650VA (Line Interactive)"
+                            class="mobile-input text-xs font-medium">
+                    </div>
+                </div>
+
+                <!-- Dynamic Sub-panel for Tablet -->
+                <div id="specs-tablet-panel" class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 transition-all duration-300 hidden">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center border border-teal-500/30">
+                                <i data-lucide="tablet" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-white tracking-wide">Tablet Specifications</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-800/60 font-bold">Tablet Box</span>
+                    </div>
+
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Tablet Model & Screen Size</label>
+                        <input type="text" id="input-tablet" name="tablet_spec"
+                            value='10.5" Retina Multi-Touch Clinical Tablet (128GB Storage, iPadOS / Android)'
+                            placeholder='e.g. Apple iPad 10.2" (9th Gen) / Samsung Galaxy Tab S9 FE 10.9"'
+                            class="mobile-input text-xs font-medium">
+                    </div>
+                </div>
+
+                <!-- Empty State Alert when No Component is Selected -->
+                <div id="specs-empty-panel" class="p-5 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-center space-y-1.5 hidden">
+                    <i data-lucide="sliders" class="w-5 h-5 text-slate-500 mx-auto"></i>
+                    <div class="text-xs font-bold text-slate-400">No Hardware Component Selected</div>
+                    <div class="text-[11px] text-slate-500">Click CPU, Monitor, or other hardware above to configure specifications.</div>
+                </div>
+            </section>
 
             <!-- SECTION 6: Procurement & Warranty Dates -->
-            <div class="glass-card rounded-2xl p-4 shadow-sm">
-                <div class="flex items-center justify-between mb-3">
-                    <label class="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-blue-400"></i>
-                        6. Procurement & Dates
-                    </label>
+            <section class="glass-card rounded-2xl p-4 shadow-sm space-y-3.5" aria-labelledby="section-dates-heading">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <h2 id="section-dates-heading" class="text-xs font-extrabold uppercase tracking-wider text-slate-300">
+                            6. Procurement & Dates
+                        </h2>
+                    </div>
+                    <span class="text-[11px] text-slate-400 font-medium">Standard 3-Year Cycle</span>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Purchase Date</label>
+                        <label for="input-purchase-date" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                            <i data-lucide="calendar-check" class="w-3 h-3 text-blue-400"></i>
+                            <span>Purchase Date</span>
+                        </label>
                         <input type="text" id="input-purchase-date" name="purchase_date"
                             value="{{ today_str }}"
                             class="mobile-input text-xs font-medium">
                     </div>
                     <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Warranty Expiry</label>
+                        <label for="input-warranty-date" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                            <i data-lucide="shield-alert" class="w-3 h-3 text-blue-400"></i>
+                            <span>Warranty Expiry</span>
+                        </label>
                         <input type="text" id="input-warranty-date" name="warranty_expiry_date"
                             value="{{ warranty_str }}"
                             class="mobile-input text-xs font-medium">
                     </div>
                 </div>
-            </div>
+            </section>
 
             <!-- Batch Mode: Keep Location Switch -->
             <div class="p-3.5 rounded-2xl bg-slate-800/50 border border-slate-700/60 flex items-center justify-between">
@@ -647,13 +877,13 @@
     <!-- Client-Side JavaScript Application Logic -->
     <script>
         const currentOrg = 'HOSP';
-        let currentCategory = 'Workstation (CPU, Display, Keyboard, Mouse)';
+        let currentCategory = 'CPU';
         let currentFloor = '2nd Floor';
         let lastRegisteredAssetId = '';
-        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v6';
+        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v8';
 
-        // Multi-select components state (Default: Full Workstation package for single holder)
-        let selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse']);
+        // Multi-select components state (Default: CPU only)
+        let selectedComponents = new Set(['CPU']);
 
         document.addEventListener('DOMContentLoaded', () => {
             // Clean up obsolete legacy drafts
@@ -663,9 +893,12 @@
                 localStorage.removeItem('campus_asset_draft_v3');
                 localStorage.removeItem('campus_asset_draft_v4');
                 localStorage.removeItem('campus_asset_draft_v5');
+                localStorage.removeItem('campus_asset_draft_v6');
+                localStorage.removeItem('campus_asset_draft_v7');
             } catch (e) {}
 
             updateSelectedComponentsUI();
+            updateCustodianStatusUI();
             lucide.createIcons();
             loadDraftFromStorage();
             setupAutoSaveListeners();
@@ -691,8 +924,12 @@
         }
 
         function applyComponentPreset(preset) {
-            if (preset === 'workstation') {
+            if (preset === 'cpu') {
+                selectedComponents = new Set(['CPU']);
+            } else if (preset === 'workstation') {
                 selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse']);
+            } else if (preset === 'display' || preset === 'monitor') {
+                selectedComponents = new Set(['Display']);
             } else if (preset === 'all') {
                 selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse', 'Printer', 'UPS', 'Tablet']);
             } else if (preset === 'clear') {
@@ -746,41 +983,58 @@
             document.querySelectorAll('.component-card').forEach(card => {
                 const comp = card.dataset.comp;
                 const chk = card.querySelector('.component-checkbox');
-                const iconBox = card.querySelector('.comp-icon-box');
+                const badge = card.querySelector('.comp-badge');
+                const icon = card.querySelector('.comp-icon');
+                const label = card.querySelector('.comp-label');
                 const isChecked = selectedComponents.has(comp);
                 if (chk) chk.checked = isChecked;
 
                 if (isChecked) {
-                    card.className = "component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-cyan-500/80 bg-cyan-950/35 text-white shadow-glow";
-                    if (iconBox) iconBox.className = "comp-icon-box w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0";
+                    card.className = "component-card relative min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-cyan-500 bg-cyan-950/40 text-cyan-300 shadow-glow ring-1 ring-cyan-500/30";
+                    if (badge) {
+                        badge.className = "comp-badge absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center shadow-sm";
+                        badge.innerHTML = `<i data-lucide="check" class="w-2.5 h-2.5 stroke-[3]"></i>`;
+                    }
+                    if (icon) icon.className = "comp-icon w-6 h-6 text-cyan-400 shrink-0";
+                    if (label) label.className = "comp-label text-xs font-bold text-white tracking-tight text-center";
                 } else {
-                    card.className = "component-card relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer select-none transition-all active:scale-[0.98] border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-300";
-                    if (iconBox) iconBox.className = "comp-icon-box w-8 h-8 rounded-lg bg-slate-800 text-slate-500 flex items-center justify-center shrink-0";
+                    card.className = "component-card relative min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200";
+                    if (badge) {
+                        badge.className = "comp-badge absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center";
+                        badge.innerHTML = ``;
+                    }
+                    if (icon) icon.className = "comp-icon w-6 h-6 text-slate-400 shrink-0";
+                    if (label) label.className = "comp-label text-xs font-medium text-slate-400 tracking-tight text-center";
                 }
             });
 
             // Adjust dynamic hardware spec sub-panels
             const cpuPanel = document.getElementById('specs-cpu-panel');
             const dispPanel = document.getElementById('specs-display-panel');
-            const periPanel = document.getElementById('specs-peripheral-panel');
+            const keybPanel = document.getElementById('specs-keyboard-panel');
+            const mousePanel = document.getElementById('specs-mouse-panel');
+            const printerPanel = document.getElementById('specs-printer-panel');
+            const upsPanel = document.getElementById('specs-ups-panel');
+            const tabletPanel = document.getElementById('specs-tablet-panel');
+            const emptyPanel = document.getElementById('specs-empty-panel');
             const subTitle = document.getElementById('specs-subtitle');
 
-            const hasCpu = selectedComponents.has('CPU');
-            const hasDisplay = selectedComponents.has('Display') || selectedComponents.has('Tablet');
-            const hasPeripherals = selectedComponents.has('Printer') || selectedComponents.has('UPS');
-
-            if (cpuPanel) cpuPanel.classList.toggle('hidden', !hasCpu);
-            if (dispPanel) dispPanel.classList.toggle('hidden', !hasDisplay);
-            if (periPanel) periPanel.classList.toggle('hidden', !hasPeripherals && (hasCpu || hasDisplay));
+            if (cpuPanel) cpuPanel.classList.toggle('hidden', !selectedComponents.has('CPU'));
+            if (dispPanel) dispPanel.classList.toggle('hidden', !selectedComponents.has('Display'));
+            if (keybPanel) keybPanel.classList.toggle('hidden', !selectedComponents.has('Keyboard'));
+            if (mousePanel) mousePanel.classList.toggle('hidden', !selectedComponents.has('Mouse'));
+            if (printerPanel) printerPanel.classList.toggle('hidden', !selectedComponents.has('Printer'));
+            if (upsPanel) upsPanel.classList.toggle('hidden', !selectedComponents.has('UPS'));
+            if (tabletPanel) tabletPanel.classList.toggle('hidden', !selectedComponents.has('Tablet'));
+            if (emptyPanel) emptyPanel.classList.toggle('hidden', selectedComponents.size > 0);
 
             if (subTitle) {
-                if (hasCpu && hasDisplay) {
-                    subTitle.textContent = "Workstation Profile (CPU & Display Specs)";
-                } else if (hasCpu) {
-                    subTitle.textContent = "CPU & Compute Profile";
-                } else if (hasDisplay) {
-                    subTitle.textContent = "Display / Screen Profile";
-                } else if (selectedComponents.size > 0) {
+                if (selectedComponents.size === 1) {
+                    const item = Array.from(selectedComponents)[0];
+                    subTitle.textContent = `${item} Specification Profile`;
+                } else if (selectedComponents.size === 4 && selectedComponents.has('CPU') && selectedComponents.has('Display') && selectedComponents.has('Keyboard') && selectedComponents.has('Mouse')) {
+                    subTitle.textContent = "Workstation Profile (CPU, Display, Keyboard, Mouse)";
+                } else if (selectedComponents.size > 1) {
                     subTitle.textContent = `${compositeName} Profile`;
                 } else {
                     subTitle.textContent = "No Hardware Component Selected";
@@ -825,7 +1079,13 @@
             if (staffPayloadEl && staffPayloadEl.textContent.trim()) {
                 const staffArray = JSON.parse(staffPayloadEl.textContent);
                 staffArray.forEach(s => {
-                    const item = { empId: s.emp_id || '', desig: s.designation || '' };
+                    const item = {
+                        empId: s.emp_id || '',
+                        desig: s.designation || '',
+                        department: s.department || '',
+                        contact: s.phone || '',
+                        email: s.email || ''
+                    };
                     if (s.full_name) {
                         staffLookup[s.full_name] = item;
                         staffLookup[`${s.full_name} (${s.emp_id})`] = item;
@@ -836,12 +1096,76 @@
             console.warn('Could not parse staff lookup payload:', e);
         }
 
+        function updateCustodianStatusUI() {
+            const userNameInput = document.getElementById('input-user-name');
+            const pill = document.getElementById('custodian-status-pill');
+            const unassignedBtn = document.getElementById('btn-unassigned-pool');
+            if (!userNameInput || !pill) return;
+
+            const name = (userNameInput.value || '').trim();
+            const isUnassigned = !name || name.toLowerCase() === 'unassigned';
+
+            if (isUnassigned) {
+                pill.textContent = 'Shared Facility Pool';
+                pill.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
+                if (unassignedBtn) {
+                    unassignedBtn.className = 'text-xs font-bold text-violet-200 bg-violet-800/80 border border-violet-600 flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all active:scale-95 shadow-sm ring-1 ring-violet-500/30';
+                }
+            } else {
+                pill.textContent = 'Assigned Holder';
+                pill.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30';
+                if (unassignedBtn) {
+                    unassignedBtn.className = 'text-xs font-bold text-violet-400 hover:text-violet-300 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-950/60 border border-violet-800/60 transition-all active:scale-95 shadow-sm';
+                }
+            }
+        }
+
+        function highlightActiveStaffChip(name) {
+            const targetName = (name || '').trim();
+            document.querySelectorAll('.staff-quick-chip').forEach(btn => {
+                const btnName = (btn.dataset.staffName || '').trim();
+                const isActive = (targetName.toLowerCase() === 'unassigned' && btnName.toLowerCase() === 'unassigned') ||
+                                 (targetName && btnName && targetName.toLowerCase().includes(btnName.toLowerCase()));
+                if (isActive) {
+                    btn.className = 'staff-quick-chip px-2.5 py-1 rounded-lg bg-violet-900/70 text-violet-200 text-[11px] font-bold border border-violet-500 shrink-0 transition-colors shadow-sm ring-1 ring-violet-500/30';
+                } else {
+                    btn.className = 'staff-quick-chip px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-700/60 shrink-0 transition-colors';
+                }
+            });
+        }
+
         function handleStaffInput(val) {
             const clean = (val || '').trim();
+            const applyItem = (item) => {
+                const affected = [];
+                if (item.empId) {
+                    const el = document.getElementById('input-emp-id');
+                    if (el) { el.value = item.empId; affected.push(el); }
+                }
+                if (item.desig) {
+                    const el = document.getElementById('input-designation');
+                    if (el) { el.value = item.desig; affected.push(el); }
+                }
+                if (item.department) {
+                    const el = document.getElementById('input-department');
+                    if (el) { el.value = item.department; affected.push(el); }
+                }
+                if (item.contact) {
+                    const el = document.getElementById('input-contact');
+                    if (el) { el.value = item.contact; affected.push(el); }
+                }
+                if (item.email) {
+                    const el = document.getElementById('input-email');
+                    if (el) { el.value = item.email; affected.push(el); }
+                }
+                affected.forEach(el => {
+                    el.classList.add('ring-2', 'ring-violet-500/50', 'bg-violet-950/40');
+                    setTimeout(() => el.classList.remove('ring-2', 'ring-violet-500/50', 'bg-violet-950/40'), 800);
+                });
+            };
+
             if (staffLookup[clean]) {
-                const s = staffLookup[clean];
-                if (s.empId) document.getElementById('input-emp-id').value = s.empId;
-                if (s.desig) document.getElementById('input-designation').value = s.desig;
+                applyItem(staffLookup[clean]);
             } else {
                 const match = clean.match(/^(.*?)\s*\(([^)]+)\)$/);
                 if (match) {
@@ -849,12 +1173,25 @@
                     const empOnly = match[2].trim();
                     document.getElementById('input-user-name').value = nameOnly;
                     document.getElementById('input-emp-id').value = empOnly;
-                    if (staffLookup[nameOnly] && staffLookup[nameOnly].desig) {
-                        document.getElementById('input-designation').value = staffLookup[nameOnly].desig;
+                    const found = staffLookup[nameOnly] || staffLookup[clean];
+                    if (found) {
+                        applyItem(found);
                     }
                 }
             }
+            updateCustodianStatusUI();
+            highlightActiveStaffChip(clean);
             saveDraft();
+        }
+
+        function setStaffQuick(name) {
+            const input = document.getElementById('input-user-name');
+            if (input) {
+                input.value = name;
+                handleStaffInput(name);
+                input.focus();
+                if (navigator.vibrate) navigator.vibrate(15);
+            }
         }
 
         // Set Unassigned Custodian
@@ -863,7 +1200,16 @@
             document.getElementById('input-emp-id').value = "";
             const desigInput = document.getElementById('input-designation');
             if (desigInput) desigInput.value = "";
+            const deptInput = document.getElementById('input-department');
+            if (deptInput) deptInput.value = "";
+            const contactInput = document.getElementById('input-contact');
+            if (contactInput) contactInput.value = "";
+            const emailInput = document.getElementById('input-email');
+            if (emailInput) emailInput.value = "";
+            updateCustodianStatusUI();
+            highlightActiveStaffChip('Unassigned');
             saveDraft();
+            if (navigator.vibrate) navigator.vibrate(15);
         }
 
         // 3-Digit Unique Sequence Warning & Keystroke Guards
@@ -1125,12 +1471,20 @@
                 user_name: document.getElementById('input-user-name').value,
                 emp_id: document.getElementById('input-emp-id').value,
                 designation: document.getElementById('input-designation')?.value || '',
+                department: document.getElementById('input-department')?.value || '',
+                contact: document.getElementById('input-contact')?.value || '',
+                email: document.getElementById('input-email')?.value || '',
                 cpu: document.getElementById('input-cpu').value,
                 ram: document.getElementById('input-ram').value,
                 os: document.getElementById('input-os').value,
                 ip: document.getElementById('input-ip').value,
                 mac: document.getElementById('input-mac').value,
-                monitor: document.getElementById('input-monitor').value,
+                monitor: document.getElementById('input-monitor')?.value || '',
+                keyboard: document.getElementById('input-keyboard')?.value || '',
+                mouse: document.getElementById('input-mouse')?.value || '',
+                printer: document.getElementById('input-printer')?.value || '',
+                ups: document.getElementById('input-ups')?.value || '',
+                tablet: document.getElementById('input-tablet')?.value || '',
                 purchase: document.getElementById('input-purchase-date').value,
                 warranty: document.getElementById('input-warranty-date').value,
             };
@@ -1171,14 +1525,30 @@
                     if (draft.designation && document.getElementById('input-designation')) {
                         document.getElementById('input-designation').value = draft.designation;
                     }
+                    if (draft.department && document.getElementById('input-department')) {
+                        document.getElementById('input-department').value = draft.department;
+                    }
+                    if (draft.contact && document.getElementById('input-contact')) {
+                        document.getElementById('input-contact').value = draft.contact;
+                    }
+                    if (draft.email && document.getElementById('input-email')) {
+                        document.getElementById('input-email').value = draft.email;
+                    }
                     if (draft.cpu) document.getElementById('input-cpu').value = draft.cpu;
                     if (draft.ram) document.getElementById('input-ram').value = draft.ram;
                     if (draft.os) document.getElementById('input-os').value = draft.os;
                     if (draft.ip) document.getElementById('input-ip').value = draft.ip;
                     if (draft.mac) document.getElementById('input-mac').value = draft.mac;
-                    if (draft.monitor) document.getElementById('input-monitor').value = draft.monitor;
+                    if (draft.monitor && document.getElementById('input-monitor')) document.getElementById('input-monitor').value = draft.monitor;
+                    if (draft.keyboard && document.getElementById('input-keyboard')) document.getElementById('input-keyboard').value = draft.keyboard;
+                    if (draft.mouse && document.getElementById('input-mouse')) document.getElementById('input-mouse').value = draft.mouse;
+                    if (draft.printer && document.getElementById('input-printer')) document.getElementById('input-printer').value = draft.printer;
+                    if (draft.ups && document.getElementById('input-ups')) document.getElementById('input-ups').value = draft.ups;
+                    if (draft.tablet && document.getElementById('input-tablet')) document.getElementById('input-tablet').value = draft.tablet;
                     if (draft.purchase) document.getElementById('input-purchase-date').value = draft.purchase;
                     if (draft.warranty) document.getElementById('input-warranty-date').value = draft.warranty;
+                    updateCustodianStatusUI();
+                    highlightActiveStaffChip(draft.user_name || '');
                     lucide.createIcons();
                 }
             } catch (e) {
@@ -1190,8 +1560,18 @@
             localStorage.removeItem(DRAFT_STORAGE_KEY);
             document.getElementById('draft-banner').classList.add('hidden');
             document.getElementById('add-device-form').reset();
-            selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse']);
+            const desigInput = document.getElementById('input-designation');
+            if (desigInput) desigInput.value = '';
+            const deptInput = document.getElementById('input-department');
+            if (deptInput) deptInput.value = '';
+            const contactInput = document.getElementById('input-contact');
+            if (contactInput) contactInput.value = '';
+            const emailInput = document.getElementById('input-email');
+            if (emailInput) emailInput.value = '';
+            selectedComponents = new Set(['CPU']);
             updateSelectedComponentsUI();
+            updateCustodianStatusUI();
+            highlightActiveStaffChip('');
             selectFloor('2nd Floor');
             autoGenerateTag();
         }
@@ -1254,6 +1634,9 @@
             // Assemble payload
             const assignedUserName = document.getElementById('input-user-name').value.trim() || 'Unassigned';
             const assignedDesig = (document.getElementById('input-designation')?.value || '').trim();
+            const assignedDept = (document.getElementById('input-department')?.value || '').trim();
+            const assignedContact = (document.getElementById('input-contact')?.value || '').trim();
+            const assignedEmail = (document.getElementById('input-email')?.value || '').trim();
             const payload = {
                 asset_id: assetId,
                 device_type: currentCategory,
@@ -1265,10 +1648,18 @@
                 assigned_user_name: assignedUserName,
                 assigned_emp_id: document.getElementById('input-emp-id').value.trim(),
                 assigned_designation: assignedDesig,
+                assigned_department: assignedDept,
+                assigned_phone: assignedContact,
+                assigned_email: assignedEmail,
                 status: document.getElementById('input-status').value,
                 cpu_processor: document.getElementById('input-cpu').value.trim(),
                 storage_ram: document.getElementById('input-ram').value.trim(),
-                monitor_spec: document.getElementById('input-monitor').value.trim(),
+                monitor_spec: (document.getElementById('input-monitor')?.value || '').trim(),
+                keyboard_spec: (document.getElementById('input-keyboard')?.value || '').trim(),
+                mouse_spec: (document.getElementById('input-mouse')?.value || '').trim(),
+                printer_spec: (document.getElementById('input-printer')?.value || '').trim(),
+                ups_spec: (document.getElementById('input-ups')?.value || '').trim(),
+                tablet_spec: (document.getElementById('input-tablet')?.value || '').trim(),
                 operating_system: document.getElementById('input-os').value,
                 ip_address: document.getElementById('input-ip').value.trim(),
                 mac_address: document.getElementById('input-mac').value.trim(),
@@ -1333,9 +1724,19 @@
                 document.getElementById('input-room').value = "";
                 document.getElementById('input-user-name').value = "Unassigned";
                 document.getElementById('input-emp-id').value = "";
+                const desigEl = document.getElementById('input-designation');
+                if (desigEl) desigEl.value = "";
+                const deptEl = document.getElementById('input-department');
+                if (deptEl) deptEl.value = "";
+                const contactEl = document.getElementById('input-contact');
+                if (contactEl) contactEl.value = "";
+                const emailEl = document.getElementById('input-email');
+                if (emailEl) emailEl.value = "";
                 selectFloor('2nd Floor');
-                selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse']);
+                selectedComponents = new Set(['CPU']);
                 updateSelectedComponentsUI();
+                updateCustodianStatusUI();
+                highlightActiveStaffChip('');
             }
 
             // Auto-generate next tag for convenience

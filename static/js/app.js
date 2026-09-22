@@ -1535,6 +1535,8 @@ function openAddDeviceModal(editId = null) {
                 setVal("dev-input-user-name", "");
             }
             setVal("dev-input-designation", dev.designation || dev.assignedDesignation || dev.assigned_designation || (knownUserMatch ? knownUserMatch.designation : "") || "");
+            setVal("dev-input-phone", dev.phone || dev.assignedPhone || dev.assigned_phone || (knownUserMatch ? knownUserMatch.phone : "") || "");
+            setVal("dev-input-email", dev.email || dev.assignedEmail || dev.assigned_email || (knownUserMatch ? knownUserMatch.email : "") || "");
             setVal("dev-select-status", dev.status);
             setVal("dev-input-warranty", dev.warrantyExpiryDate);
         }
@@ -1546,6 +1548,8 @@ function openAddDeviceModal(editId = null) {
         if (userSelectEl) userSelectEl.value = "";
         setVal("dev-input-user-name", "");
         setVal("dev-input-designation", "");
+        setVal("dev-input-phone", "");
+        setVal("dev-input-email", "");
         const typeSelect = document.getElementById("dev-select-type");
         if (typeSelect) typeSelect.value = "C";
 
@@ -1681,10 +1685,23 @@ async function handleSaveDevice(e) {
 
     const typedDesigEl = document.getElementById("dev-input-designation");
     let assignedDesignation = typedDesigEl ? typedDesigEl.value.trim() : "";
-    if (!assignedDesignation && userEl && userEl.value) {
+    const typedPhoneEl = document.getElementById("dev-input-phone");
+    let assignedPhone = typedPhoneEl ? typedPhoneEl.value.trim() : "";
+    const typedEmailEl = document.getElementById("dev-input-email");
+    let assignedEmail = typedEmailEl ? typedEmailEl.value.trim() : "";
+
+    if (userEl && userEl.value) {
         const matchedUser = (appState.users || []).find(u => u.id === userEl.value);
-        if (matchedUser && matchedUser.designation) {
-            assignedDesignation = matchedUser.designation;
+        if (matchedUser) {
+            if (!assignedDesignation && matchedUser.designation) {
+                assignedDesignation = matchedUser.designation;
+            }
+            if (!assignedPhone && matchedUser.phone) {
+                assignedPhone = matchedUser.phone;
+            }
+            if (!assignedEmail && matchedUser.email) {
+                assignedEmail = matchedUser.email;
+            }
         }
     }
 
@@ -1707,6 +1724,10 @@ async function handleSaveDevice(e) {
         assignedEmpId,
         assignedDesignation,
         designation: assignedDesignation,
+        assignedPhone,
+        phone: assignedPhone,
+        assignedEmail,
+        email: assignedEmail,
         cpuProcessor,
         storageRam,
         monitorSpec,
