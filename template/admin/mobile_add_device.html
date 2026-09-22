@@ -222,7 +222,7 @@
                 <div>
                     <div class="relative">
                         <input type="text" id="input-asset-id" name="asset_id" required
-                            placeholder="e.g. PSM/IT/M/0826/001 or PSM/IT/C/0926/001"
+                            placeholder="e.g. PSM/IT/0926/001 or PSM/IT/0926/002"
                             class="mobile-input uppercase font-mono font-bold tracking-wide pr-10 text-base"
                             oninput="handleAssetIdInput(this)"
                             autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
@@ -527,7 +527,7 @@
                 <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
                     <span class="text-slate-400 font-semibold">Asset Tag:</span>
                     <span id="modal-saved-tag" class="font-mono font-black text-sm text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">
-                        PSM/IT/C/0926/001
+                        PSM/IT/0926/001
                     </span>
                 </div>
                 <div class="flex items-center justify-between">
@@ -733,26 +733,28 @@
 
         function handleAssetIdInput(input) {
             let val = (input.value || '').toUpperCase();
+            // Automatically strip any legacy type letter (e.g. PSM/IT/M/0926/002 -> PSM/IT/0926/002)
+            val = val.replace(/^PSM\/IT\/[A-Z]\/(\d{4}\/\d*)$/, 'PSM/IT/$1');
             const parts = val.split('/');
             let exceeded = false;
 
-            if (parts.length >= 5) {
-                const rawSeq = parts[4];
+            if (parts.length >= 4) {
+                const rawSeq = parts[3];
                 // Allow only numeric digits in the sequence part
                 const cleanSeq = rawSeq.replace(/[^0-9]/g, '');
                 if (cleanSeq.length > 3) {
-                    parts[4] = cleanSeq.slice(0, 3);
+                    parts[3] = cleanSeq.slice(0, 3);
                     exceeded = true;
                 } else {
-                    parts[4] = cleanSeq;
+                    parts[3] = cleanSeq;
                 }
-                // Discard any 6th segment or trailing slashes
-                val = parts.slice(0, 5).join('/');
+                // Discard any 5th segment or trailing slashes
+                val = parts.slice(0, 4).join('/');
                 input.value = val;
             }
 
             if (exceeded) {
-                showSequenceDigitWarning("Only 3 digits allowed in unique sequence (e.g. 001–999). More than 3 digits not accepted.");
+                showSequenceDigitWarning("Only 3 digits allowed in unique sequence (e.g. 001–999). Extra digits not accepted.");
             }
 
             validateAssetId(val);
@@ -771,14 +773,14 @@
 
                 const val = this.value;
                 const parts = val.split('/');
-                if (parts.length >= 5) {
+                if (parts.length >= 4) {
                     const selStart = this.selectionStart;
                     const selEnd = this.selectionEnd;
-                    const prefixLen = parts.slice(0, 4).join('/').length + 1; // index after the 4th slash
+                    const prefixLen = parts.slice(0, 3).join('/').length + 1; // index after the 3rd slash (PSM/IT/MMYY/)
 
-                    // If typing inside or at the end of the 5th segment
+                    // If typing inside or at the end of the 4th segment
                     if (selStart >= prefixLen && selStart === selEnd) {
-                        const curSeq = parts[4] || '';
+                        const curSeq = parts[3] || '';
                         // If already 3 digits and user is typing a character, reject keystroke!
                         if (curSeq.length >= 3 && e.key.length === 1) {
                             e.preventDefault();
@@ -792,9 +794,9 @@
             // On blur: auto-pad if 1 or 2 digits entered (e.g. 7 -> 007)
             assetInput.addEventListener('blur', function() {
                 const parts = this.value.trim().split('/');
-                if (parts.length === 5 && parts[4] && /^\d+$/.test(parts[4])) {
-                    if (parts[4].length < 3) {
-                        parts[4] = parts[4].padStart(3, '0');
+                if (parts.length === 4 && parts[3] && /^\d+$/.test(parts[3])) {
+                    if (parts[3].length < 3) {
+                        parts[3] = parts[3].padStart(3, '0');
                         this.value = parts.join('/');
                         validateAssetId(this.value);
                         saveDraft();
@@ -803,7 +805,7 @@
             });
         }
 
-        // Auto Generate Asset Tag (PSM/IT/<TYPE>/<MMYY>/<XXX>)
+        // Auto Generate Asset Tag (PSM/IT/<MMYY>/<XXX>)
         // Guarantees 100% unique, never-repeating sequence
         async function autoGenerateTag(forceNext = false) {
             const btn = document.getElementById('btn-auto-tag');
@@ -813,19 +815,14 @@
             }
 
             const currentVal = (document.getElementById('input-asset-id')?.value || '').trim();
-            const catMap = {
-                'CPU': 'C', 'Display': 'D', 'Mouse': 'M', 'Keyboard': 'K',
-                'Printer': 'P', 'Tablet': 'T', 'UPS': 'U'
-            };
-            const typeLetter = catMap[currentCategory] || (currentCategory ? currentCategory.charAt(0).toUpperCase() : 'C');
             const now = new Date();
             const mm = String(now.getMonth() + 1).padStart(2, '0');
             const yy = String(now.getFullYear()).slice(-2);
             const mmyy = `${mm}${yy}`;
-            const fallbackTag = `PSM/IT/${typeLetter}/${mmyy}/001`;
+            const fallbackTag = `PSM/IT/${mmyy}/001`;
 
             try {
-                const url = `/api/devices/quick-generate-id/?type=${encodeURIComponent(currentCategory)}&org=${encodeURIComponent(currentOrg)}&floor=${encodeURIComponent(currentFloor)}&current=${encodeURIComponent(currentVal)}&next=${forceNext ? '1' : '0'}&_t=${Date.now()}`;
+                const url = `/api/devices/quick-generate-id/?org=${encodeURIComponent(currentOrg)}&floor=${encodeURIComponent(currentFloor)}&current=${encodeURIComponent(currentVal)}&next=${forceNext ? '1' : '0'}&_t=${Date.now()}`;
                 const res = await fetch(url);
                 const data = await res.json();
                 if (data.success && data.asset_id) {
@@ -874,8 +871,8 @@
 
             // Check if sequence part exceeds 3 digits
             const parts = clean.split('/');
-            if (parts.length >= 5) {
-                const seq = parts[4];
+            if (parts.length >= 4) {
+                const seq = parts[parts.length === 4 ? 3 : 4];
                 if (seq.length > 3) {
                     if (statusIcon) {
                         statusIcon.classList.remove('hidden');
@@ -1060,8 +1057,8 @@
             }
 
             const tagParts = assetId.split('/');
-            if (tagParts.length >= 5) {
-                const seq = tagParts[4];
+            if (tagParts.length >= 4) {
+                const seq = tagParts[tagParts.length === 4 ? 3 : 4];
                 if (seq.length > 3 || (seq.length > 0 && !/^\d+$/.test(seq))) {
                     errorText.textContent = "Invalid Asset Tag: The unique sequence number allows only 3 digits (e.g. 001 to 999).";
                     errorBanner.classList.remove('hidden');

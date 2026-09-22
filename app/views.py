@@ -350,9 +350,9 @@ def api_save_device(request):
     if not asset_id:
         return JsonResponse({'success': False, 'message': 'Asset Tag / ID is required.'}, status=400)
 
-    # 3-digit sequence constraint validation
+    # 3-digit sequence constraint validation on last segment
     parts = asset_id.split('/')
-    if len(parts) >= 5 and (len(parts[4]) > 3 or (parts[4] and not parts[4].isdigit())):
+    if len(parts) >= 4 and (len(parts[-1]) > 3 or (parts[-1] and not parts[-1].isdigit())):
         return JsonResponse({
             'success': False,
             'message': 'Invalid Asset Tag: Sequence code cannot exceed 3 digits (e.g. 001 to 999).'
@@ -1319,37 +1319,18 @@ def mobile_add_device_view(request):
 def api_generate_asset_id(request):
     """
     Generates a unique, standardized hardware asset tag strictly for PSM Hospital.
-    Format: PSM/IT/<TYPE>/<MMYY>/<XXX>
-    Example:
-      - Mouse:    PSM/IT/M/0926/001 or PSM/IT/M/0926/002
-      - CPU:      PSM/IT/C/0926/003
-      - Display:  PSM/IT/D/0926/004
-      - Printer:  PSM/IT/P/0926/005
-      - Keyboard: PSM/IT/K/0926/006
-      - Tablet:   PSM/IT/T/0926/007
-      - UPS:      PSM/IT/U/0926/008
+    Format: PSM/IT/<MMYY>/<XXX>
+    Example: PSM/IT/0926/001, PSM/IT/0926/002, PSM/IT/0926/003, etc.
     Guarantees 100% collision-free against PostgreSQL DeviceAsset table.
     """
     import re
 
-    raw_type = (request.GET.get('type') or request.POST.get('type') or 'CPU').strip().upper()
     current_val = (request.GET.get('current') or request.POST.get('current') or '').strip().upper()
     force_next = request.GET.get('next') in ('1', 'true', 'True')
-    
-    type_letter_map = {
-        'M': 'M', 'MOUSE': 'M',
-        'C': 'C', 'CPU': 'C', 'WORKSTATION': 'C', 'DESKTOP': 'C', 'COMPUTER': 'C',
-        'D': 'D', 'DISPLAY': 'D', 'MONITOR': 'D', 'SCREEN': 'D',
-        'P': 'P', 'PRINTER': 'P', 'PRT': 'P',
-        'K': 'K', 'KEYBOARD': 'K', 'KB': 'K',
-        'T': 'T', 'TABLET': 'T', 'TAB': 'T', 'IPAD': 'T',
-        'U': 'U', 'UPS': 'U', 'INVERTER': 'U', 'POWER': 'U',
-    }
-    type_letter = type_letter_map.get(raw_type, raw_type[0] if raw_type else 'C')
 
     now = timezone.localtime()
     mmyy = now.strftime("%m%y")  # e.g. "0926"
-    prefix = f"PSM/IT/{type_letter}/{mmyy}/"
+    prefix = f"PSM/IT/{mmyy}/"
 
     # Scan ALL existing tags in PostgreSQL to guarantee global uniqueness
     all_tags = list(DeviceAsset.objects.all().values_list('asset_id', flat=True))
@@ -1364,11 +1345,11 @@ def api_generate_asset_id(request):
                 used_numbers.add(int(m.group(1)))
             except ValueError:
                 pass
-        # 2. Match standard 5-part structure
+        # 2. Match standard 4-part structure PSM/IT/<MMYY>/<XXX>
         parts = tag_str.split('/')
-        if len(parts) >= 5 and parts[3] == mmyy:
+        if len(parts) >= 4 and (parts[2] == mmyy or (len(parts) >= 5 and parts[3] == mmyy)):
             try:
-                used_numbers.add(int(parts[4]))
+                used_numbers.add(int(parts[-1]))
             except ValueError:
                 pass
 
@@ -1417,15 +1398,17 @@ def api_check_asset_id(request):
     if not asset_id:
         return JsonResponse({'exists': False, 'valid': False, 'message': 'Empty ID'})
 
-    # 3-digit sequence constraint validation
+    # 3-digit sequence constraint validation on last segment
     parts = asset_id.split('/')
-    if len(parts) >= 5 and (len(parts[4]) > 3 or (parts[4] and not parts[4].isdigit())):
-        return JsonResponse({
-            'exists': False,
-            'valid': False,
-            'asset_id': asset_id,
-            'message': 'Sequence number cannot exceed 3 digits (e.g. 001 to 999).'
-        })
+    if len(parts) >= 4:
+        seq = parts[-1]
+        if len(seq) > 3 or (seq and not seq.isdigit()):
+            return JsonResponse({
+                'exists': False,
+                'valid': False,
+                'asset_id': asset_id,
+                'message': 'Sequence number cannot exceed 3 digits (e.g. 001 to 999).'
+            })
 
     dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
     if dev:
@@ -2387,23 +2370,20 @@ def api_import_devices_excel(request):
             continue
 
         if not asset_id:
-            raw_t = find_val(r, ['device type', 'device_type', 'type', 'device category', 'category', 'device', 'equipment type'], 'CPU')
-            t_map = {'CPU': 'C', 'Display': 'D', 'Mouse': 'M', 'Keyboard': 'K', 'Printer': 'P', 'Tablet': 'T', 'UPS': 'U'}
-            t_code = t_map.get(raw_t, 'C')
             now_str = timezone.localtime().strftime("%m%y")
             all_m_tags = set(DeviceAsset.objects.filter(asset_id__contains=f"/{now_str}/").values_list('asset_id', flat=True))
             max_n = 0
             for t_tag in all_m_tags:
                 p_parts = t_tag.strip().split('/')
-                if len(p_parts) >= 5:
+                if len(p_parts) >= 4:
                     try:
-                        n_val = int(p_parts[4])
+                        n_val = int(p_parts[-1])
                         if n_val > max_n: max_n = n_val
                     except (ValueError, TypeError): pass
             next_n = max_n + 1
-            while f"PSM/IT/{t_code}/{now_str}/{next_n:03d}" in all_m_tags:
+            while f"PSM/IT/{now_str}/{next_n:03d}" in all_m_tags:
                 next_n += 1
-            asset_id = f"PSM/IT/{t_code}/{now_str}/{next_n:03d}"
+            asset_id = f"PSM/IT/{now_str}/{next_n:03d}"
 
 
         device_type_raw = find_val(r, [

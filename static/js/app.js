@@ -31,16 +31,23 @@ function initAppState() {
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
-            // Detect and purge legacy University data, outdated floor structure, or past sample devices
+            // Detect and purge legacy University data, outdated floor structure (< 7 floors), or past legacy tags
             const hasLegacyUni = (parsed.buildings && parsed.buildings.some(b => b.id === 'bldg-cs' || b.orgId === 'UNI')) ||
                 (parsed.devices && parsed.devices.some(d => d.orgId === 'UNI'));
-            const hasOldSampleDevices = (parsed.devices && parsed.devices.some(d => d.assetId && (d.assetId.includes('/B/C-0.01') || d.assetId.includes('/1F/C-101') || d.assetId.includes('0826/'))));
             const needsFloorRefresh = !parsed.floors || parsed.floors.length < 7 ||
                 !parsed.floors.some(f => f.id === 'fl-basement') ||
                 !parsed.floors.some(f => f.id === 'fl-5');
+            // Migrate any legacy tags with /M/, /C/, /K/, /P/, etc. to PSM/IT/MMYY/XXX format
+            if (Array.isArray(parsed.devices)) {
+                parsed.devices.forEach(d => {
+                    if (d.assetId) {
+                        d.assetId = d.assetId.replace(/^PSM\/IT\/[A-Z]\/(\d{4}\/\d+)$/i, 'PSM/IT/$1');
+                    }
+                });
+            }
 
-            if (hasLegacyUni || needsFloorRefresh || hasOldSampleDevices) {
-                // Clear out old cached data completely
+            if (hasLegacyUni || needsFloorRefresh) {
+                // Clear out old cached data completely and force fresh 7-floor PSM Hospital data
                 localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
                 localStorage.setItem("CAMPUS_SELECTED_ORG", "HOSP");
                 saveAppState();
@@ -71,7 +78,7 @@ function initAppState() {
                 if (Array.isArray(parsed.users) && parsed.users.length > 0) {
                     appState.users = parsed.users;
                 }
-                if (Array.isArray(parsed.devices)) {
+                if (Array.isArray(parsed.devices) && parsed.devices.length > 0) {
                     appState.devices = parsed.devices;
                 }
                 if (Array.isArray(parsed.locationHistories)) {
@@ -97,7 +104,7 @@ function initAppState() {
     if (serverDevicesEl && serverDevicesEl.textContent.trim()) {
         try {
             const serverDevices = JSON.parse(serverDevicesEl.textContent);
-            if (Array.isArray(serverDevices)) {
+            if (Array.isArray(serverDevices) && serverDevices.length > 0) {
                 serverDevices.forEach(dbDev => {
                     if (!dbDev.roomId && dbDev.roomName && appState.rooms) {
                         const matchRoom = appState.rooms.find(r =>
@@ -123,7 +130,7 @@ function initAppState() {
     if (serverLogsEl && serverLogsEl.textContent.trim()) {
         try {
             const serverLogs = JSON.parse(serverLogsEl.textContent);
-            if (Array.isArray(serverLogs)) {
+            if (Array.isArray(serverLogs) && serverLogs.length > 0) {
                 appState.assignmentHistories = serverLogs.map(log => ({
                     id: `db-${log.id}`,
                     deviceId: log.deviceAssetId,
@@ -1369,24 +1376,12 @@ function getFloorTagInfo(floorId) {
 }
 
 function calculateNextAssetTag(typeCode, floorId) {
-    const typeMap = {
-        'C': 'C', 'CPU': 'C',
-        'D': 'D', 'DISPLAY': 'D',
-        'M': 'M', 'MOUSE': 'M',
-        'K': 'K', 'KEYBOARD': 'K',
-        'P': 'P', 'PRINTER': 'P',
-        'T': 'T', 'TABLET': 'T',
-        'U': 'U', 'UPS': 'U'
-    };
-    const raw = (typeCode || 'C').toUpperCase().trim();
-    const code = typeMap[raw] || raw[0] || 'C';
-
     const now = new Date();
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const yy = String(now.getFullYear()).slice(-2);
     const mmyy = `${mm}${yy}`; // e.g. "0926"
 
-    const prefix = `PSM/IT/${code}/${mmyy}/`;
+    const prefix = `PSM/IT/${mmyy}/`;
     const monthPattern = `/${mmyy}/`;
 
     // Ensure XXX is globally unique for every device registered in this month
@@ -1397,8 +1392,9 @@ function calculateNextAssetTag(typeCode, floorId) {
     let maxNum = 0;
     allMonthTags.forEach(tag => {
         const parts = tag.split('/');
-        if (parts.length >= 5) {
-            const num = parseInt(parts[4], 10);
+        const seqStr = parts.length >= 4 ? parts[parts.length - 1] : null;
+        if (seqStr) {
+            const num = parseInt(seqStr, 10);
             if (!isNaN(num) && num > maxNum) {
                 maxNum = num;
             }
