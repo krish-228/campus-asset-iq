@@ -305,15 +305,7 @@
                     </span>
                     <span class="sidebar-expand-target flex items-center justify-between flex-1 min-w-0 pr-3.5">
                         <span class="truncate font-semibold text-xs">1. Devices Inventory</span>
-                        {% if nav_device_count %}
-                        <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold shrink-0 {% if '/inventory' in request.path %}bg-white/20 text-white{% else %}bg-white/10 text-slate-300 group-hover/item:bg-white/20 group-hover/item:text-white{% endif %}">
-                            {{ nav_device_count }}
-                        </span>
-                        {% endif %}
                     </span>
-                    {% if nav_device_count and not '/inventory' in request.path %}
-                    <span class="sidebar-compact-indicator rounded-full bg-blue-500 w-2 h-2"></span>
-                    {% endif %}
                 </a>
 
                 <!-- Mobile Device Provisioning -->
