@@ -109,27 +109,27 @@
         <div class="flex items-center gap-2 overflow-x-auto pb-1 text-sm font-semibold no-print scrollbar-none">
             <button onclick="setCategoryFilter('ALL')" id="pill-all" class="category-pill px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-xs transition-all flex items-center gap-2 whitespace-nowrap">
                 <i data-lucide="layers" class="w-4 h-4"></i>
-                <span>All Equipment (134)</span>
+                <span>All Equipment (<span id="pill-count-all">{{ total_count }}</span>)</span>
             </button>
             <button onclick="setCategoryFilter('computer')" id="pill-computer" class="category-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
                 <i data-lucide="monitor" class="w-4 h-4 text-blue-600"></i>
-                <span>Computers (35)</span>
+                <span>Computers (<span id="pill-count-computer">{{ count_computer }}</span>)</span>
             </button>
             <button onclick="setCategoryFilter('printer')" id="pill-printer" class="category-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
                 <i data-lucide="printer" class="w-4 h-4 text-emerald-600"></i>
-                <span>Printers (20)</span>
+                <span>Printers (<span id="pill-count-printer">{{ count_printer }}</span>)</span>
             </button>
             <button onclick="setCategoryFilter('cub')" id="pill-cub" class="category-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
                 <i data-lucide="network" class="w-4 h-4 text-indigo-600"></i>
-                <span>CUB / Hubs (10)</span>
+                <span>CUB / Hubs (<span id="pill-count-cub">{{ count_cub }}</span>)</span>
             </button>
             <button onclick="setCategoryFilter('landline')" id="pill-landline" class="category-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
                 <i data-lucide="phone" class="w-4 h-4 text-violet-600"></i>
-                <span>Landlines (68)</span>
+                <span>Landlines (<span id="pill-count-landline">{{ count_landline }}</span>)</span>
             </button>
             <button onclick="setCategoryFilter('cctv')" id="pill-cctv" class="category-pill px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all flex items-center gap-2 whitespace-nowrap">
                 <i data-lucide="camera" class="w-4 h-4 text-amber-600"></i>
-                <span>CCTV (1)</span>
+                <span>CCTV (<span id="pill-count-cctv">{{ count_cctv }}</span>)</span>
             </button>
         </div>
 
@@ -174,7 +174,7 @@
                         <option value="35">35 / page</option>
                         <option value="50">50 / page</option>
                         <option value="100">100 / page</option>
-                        <option value="ALL" selected>All 134</option>
+                        <option value="ALL" selected>All ({{ total_count }})</option>
                     </select>
                 </div>
 
@@ -860,8 +860,68 @@
     <script>
         let currentCategory = 'ALL';
 
+        function matchesCategoryFilter(equipmentName, cat) {
+            if (!cat || cat === 'ALL' || cat === 'all') return true;
+            const eq = (equipmentName || '').toLowerCase();
+            const c = cat.toLowerCase();
+            if (c === 'computer') {
+                return eq.includes('computer') || eq.includes('pc') || eq.includes('desktop') || eq.includes('laptop') || eq.includes('cpu') || eq.includes('workstation');
+            }
+            if (c === 'printer') {
+                return eq.includes('printer') || eq.includes('scanner');
+            }
+            if (c === 'cub') {
+                return eq.includes('cub') || eq.includes('hub') || eq.includes('switch') || eq.includes('router');
+            }
+            if (c === 'landline') {
+                return eq.includes('landline') || eq.includes('phone') || eq.includes('intercom');
+            }
+            if (c === 'cctv') {
+                return eq.includes('cctv') || eq.includes('camera');
+            }
+            return eq.includes(c);
+        }
+
+        function updatePillCountsFromDOM() {
+            const rows = document.querySelectorAll('.pms-row');
+            const total = rows.length;
+            let computers = 0, printers = 0, cubs = 0, landlines = 0, cctvs = 0;
+
+            rows.forEach(row => {
+                const eq = (row.getAttribute('data-equipment') || '').toLowerCase();
+                if (eq.includes('computer') || eq.includes('pc') || eq.includes('desktop') || eq.includes('laptop') || eq.includes('cpu') || eq.includes('workstation')) {
+                    computers++;
+                } else if (eq.includes('printer') || eq.includes('scanner')) {
+                    printers++;
+                } else if (eq.includes('cub') || eq.includes('hub') || eq.includes('switch') || eq.includes('router')) {
+                    cubs++;
+                } else if (eq.includes('landline') || eq.includes('phone') || eq.includes('intercom')) {
+                    landlines++;
+                } else if (eq.includes('cctv') || eq.includes('camera')) {
+                    cctvs++;
+                }
+            });
+
+            const elAll = document.getElementById('pill-count-all');
+            if (elAll) elAll.textContent = total;
+            const elComp = document.getElementById('pill-count-computer');
+            if (elComp) elComp.textContent = computers;
+            const elPrt = document.getElementById('pill-count-printer');
+            if (elPrt) elPrt.textContent = printers;
+            const elCub = document.getElementById('pill-count-cub');
+            if (elCub) elCub.textContent = cubs;
+            const elLand = document.getElementById('pill-count-landline');
+            if (elLand) elLand.textContent = landlines;
+            const elCctv = document.getElementById('pill-count-cctv');
+            if (elCctv) elCctv.textContent = cctvs;
+
+            const optAll = document.querySelector('#pms-page-size option[value="ALL"]');
+            if (optAll) optAll.textContent = `All (${total})`;
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            updatePillCountsFromDOM();
         });
 
         // Category Pill Filter
@@ -880,36 +940,50 @@
             filterPMSTable();
         }
 
-        // Filter Table by Search Text, Company, Status, and Category
+        function changePageSize() {
+            filterPMSTable();
+        }
+
+        // Filter Table by Search Text, Company, Status, Category, and Page Size
         function filterPMSTable() {
             const searchVal = document.getElementById('pms-search-input').value.toLowerCase().trim();
             const companyVal = document.getElementById('pms-company-filter').value;
             const statusVal = document.getElementById('pms-status-filter').value;
+            const pageSizeVal = document.getElementById('pms-page-size') ? document.getElementById('pms-page-size').value : 'ALL';
+            const limit = (pageSizeVal === 'ALL') ? Infinity : (parseInt(pageSizeVal, 10) || Infinity);
 
             const rows = document.querySelectorAll('.pms-row');
             let visibleCount = 0;
+            let displayedCount = 0;
 
             rows.forEach(row => {
-                const asset = row.getAttribute('data-asset') || '';
+                const asset = (row.getAttribute('data-asset') || '').toLowerCase();
                 const equipment = row.getAttribute('data-equipment') || '';
                 const company = row.getAttribute('data-company') || '';
                 const status = row.getAttribute('data-status') || '';
 
-                const matchesCategory = (currentCategory === 'ALL') || equipment.includes(currentCategory);
-                const matchesSearch = !searchVal || asset.includes(searchVal) || equipment.includes(searchVal) || company.toLowerCase().includes(searchVal);
+                const matchesCategory = matchesCategoryFilter(equipment, currentCategory);
+                const matchesSearch = !searchVal || asset.includes(searchVal) || equipment.toLowerCase().includes(searchVal) || company.toLowerCase().includes(searchVal);
                 const matchesCompany = (companyVal === 'ALL') || (company === companyVal);
                 const matchesStatus = (statusVal === 'ALL') || (status === statusVal);
 
                 if (matchesCategory && matchesSearch && matchesCompany && matchesStatus) {
-                    row.style.display = '';
                     visibleCount++;
+                    if (displayedCount < limit) {
+                        row.style.display = '';
+                        displayedCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
                 } else {
                     row.style.display = 'none';
                 }
             });
 
-            document.getElementById('filtered-records-badge').innerText = `${visibleCount} Records`;
-            document.getElementById('showing-count').innerText = visibleCount;
+            const badge = document.getElementById('filtered-records-badge');
+            if (badge) badge.innerText = `${visibleCount} Records`;
+            const showingCount = document.getElementById('showing-count');
+            if (showingCount) showingCount.innerText = displayedCount;
         }
 
         function resetPMSFilters() {

@@ -1935,6 +1935,19 @@ def pms_schedule(request):
     completed_count = EquipmentPMS.objects.filter(status='Completed').count()
     pending_count = EquipmentPMS.objects.filter(status='Pending 4th PMS').count()
     due_soon_count = EquipmentPMS.objects.filter(status='Due Soon').count()
+
+    # Dynamic equipment category counts from database
+    computer_q = models.Q(equipment_name__icontains='computer') | models.Q(equipment_name__icontains='pc') | models.Q(equipment_name__icontains='desktop') | models.Q(equipment_name__icontains='laptop') | models.Q(equipment_name__icontains='cpu')
+    printer_q = models.Q(equipment_name__icontains='printer') | models.Q(equipment_name__icontains='scanner')
+    cub_q = models.Q(equipment_name__icontains='cub') | models.Q(equipment_name__icontains='hub') | models.Q(equipment_name__icontains='switch') | models.Q(equipment_name__icontains='router')
+    landline_q = models.Q(equipment_name__icontains='landline') | models.Q(equipment_name__icontains='phone') | models.Q(equipment_name__icontains='intercom')
+    cctv_q = models.Q(equipment_name__icontains='cctv') | models.Q(equipment_name__icontains='camera')
+
+    count_computer = EquipmentPMS.objects.filter(computer_q).count()
+    count_printer = EquipmentPMS.objects.filter(printer_q).count()
+    count_cub = EquipmentPMS.objects.filter(cub_q).count()
+    count_landline = EquipmentPMS.objects.filter(landline_q).count()
+    count_cctv = EquipmentPMS.objects.filter(cctv_q).count()
     
     companies = EquipmentPMS.objects.values_list('company_name', flat=True).distinct().order_by('company_name')
 
@@ -1949,6 +1962,11 @@ def pms_schedule(request):
         'completed_count': completed_count,
         'pending_count': pending_count,
         'due_soon_count': due_soon_count,
+        'count_computer': count_computer,
+        'count_printer': count_printer,
+        'count_cub': count_cub,
+        'count_landline': count_landline,
+        'count_cctv': count_cctv,
         'companies': companies,
         'search': search,
         'filter_company': filter_company,
