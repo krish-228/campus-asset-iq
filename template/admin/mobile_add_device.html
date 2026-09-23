@@ -604,12 +604,23 @@
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/60 font-bold">Display Box</span>
                     </div>
 
-                    <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
-                        <input type="text" id="input-monitor-brand" name="monitor_brand"
-                            value="Dell"
-                            class="mobile-input text-xs font-medium"
-                            placeholder="e.g. Dell / HP / LG / Samsung / ViewSonic">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                            <input type="text" id="input-monitor-brand" name="monitor_brand"
+                                value="Dell"
+                                class="mobile-input text-xs font-medium"
+                                placeholder="e.g. Dell / HP / LG / Samsung / ViewSonic">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <i data-lucide="barcode" class="w-3 h-3 text-blue-400"></i>
+                                <span>Serial Number (S/N)</span>
+                            </label>
+                            <input type="text" id="input-monitor-sn" name="monitor_serial"
+                                class="mobile-input text-xs font-mono uppercase"
+                                placeholder="e.g. CN-0H754T-74261">
+                        </div>
                     </div>
 
                     <div>
@@ -633,12 +644,23 @@
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/60 font-bold">Keyboard Box</span>
                     </div>
 
-                    <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
-                        <input type="text" id="input-keyboard-brand" name="keyboard_brand"
-                            value="Dell"
-                            class="mobile-input text-xs font-medium"
-                            placeholder="e.g. Dell / Logitech / HP / Lenovo">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                            <input type="text" id="input-keyboard-brand" name="keyboard_brand"
+                                value="Dell"
+                                class="mobile-input text-xs font-medium"
+                                placeholder="e.g. Dell / Logitech / HP / Lenovo">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <i data-lucide="barcode" class="w-3 h-3 text-indigo-400"></i>
+                                <span>Serial Number (S/N)</span>
+                            </label>
+                            <input type="text" id="input-keyboard-sn" name="keyboard_serial"
+                                class="mobile-input text-xs font-mono uppercase"
+                                placeholder="e.g. CN-0DJ425-71581">
+                        </div>
                     </div>
 
                     <div>
@@ -662,12 +684,23 @@
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-violet-950/80 text-violet-300 border border-violet-800/60 font-bold">Mouse Box</span>
                     </div>
 
-                    <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
-                        <input type="text" id="input-mouse-brand" name="mouse_brand"
-                            value="Dell"
-                            class="mobile-input text-xs font-medium"
-                            placeholder="e.g. Dell / Logitech / HP / Lenovo">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                            <input type="text" id="input-mouse-brand" name="mouse_brand"
+                                value="Dell"
+                                class="mobile-input text-xs font-medium"
+                                placeholder="e.g. Dell / Logitech / HP / Lenovo">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <i data-lucide="barcode" class="w-3 h-3 text-violet-400"></i>
+                                <span>Serial Number (S/N)</span>
+                            </label>
+                            <input type="text" id="input-mouse-sn" name="mouse_serial"
+                                class="mobile-input text-xs font-mono uppercase"
+                                placeholder="e.g. CN-011DMT-73826">
+                        </div>
                     </div>
 
                     <div>
@@ -691,12 +724,23 @@
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 font-bold">Printer Box</span>
                     </div>
 
-                    <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
-                        <input type="text" id="input-printer-brand" name="printer_brand"
-                            value="HP"
-                            class="mobile-input text-xs font-medium"
-                            placeholder="e.g. HP / Zebra / Canon / Epson / Brother">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                            <input type="text" id="input-printer-brand" name="printer_brand"
+                                value="HP"
+                                class="mobile-input text-xs font-medium"
+                                placeholder="e.g. HP / Zebra / Canon / Epson / Brother">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <i data-lucide="barcode" class="w-3 h-3 text-emerald-400"></i>
+                                <span>Serial Number (S/N)</span>
+                            </label>
+                            <input type="text" id="input-printer-sn" name="printer_serial"
+                                class="mobile-input text-xs font-mono uppercase"
+                                placeholder="e.g. VNC3K89124 / ZBR-420-991">
+                        </div>
                     </div>
 
                     <div>
@@ -720,12 +764,23 @@
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/60 font-bold">UPS Box</span>
                     </div>
 
-                    <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
-                        <input type="text" id="input-ups-brand" name="ups_brand"
-                            value="APC"
-                            class="mobile-input text-xs font-medium"
-                            placeholder="e.g. APC / Microtek / Luminous / CyberPower">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                            <input type="text" id="input-ups-brand" name="ups_brand"
+                                value="APC"
+                                class="mobile-input text-xs font-medium"
+                                placeholder="e.g. APC / Microtek / Luminous / CyberPower">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <i data-lucide="barcode" class="w-3 h-3 text-amber-400"></i>
+                                <span>Serial Number (S/N)</span>
+                            </label>
+                            <input type="text" id="input-ups-sn" name="ups_serial"
+                                class="mobile-input text-xs font-mono uppercase"
+                                placeholder="e.g. 3B2144X12345">
+                        </div>
                     </div>
 
                     <div>
@@ -749,12 +804,23 @@
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-800/60 font-bold">Tablet Box</span>
                     </div>
 
-                    <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
-                        <input type="text" id="input-tablet-brand" name="tablet_brand"
-                            value="Samsung"
-                            class="mobile-input text-xs font-medium"
-                            placeholder="e.g. Samsung / Apple / Lenovo / Zebra">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                            <input type="text" id="input-tablet-brand" name="tablet_brand"
+                                value="Samsung"
+                                class="mobile-input text-xs font-medium"
+                                placeholder="e.g. Samsung / Apple / Lenovo / Zebra">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <i data-lucide="barcode" class="w-3 h-3 text-teal-400"></i>
+                                <span>Serial Number (S/N)</span>
+                            </label>
+                            <input type="text" id="input-tablet-sn" name="tablet_serial"
+                                class="mobile-input text-xs font-mono uppercase"
+                                placeholder="e.g. R52R80XYZAB / DMPZX081">
+                        </div>
                     </div>
 
                     <div>
@@ -1465,16 +1531,22 @@
                 mac: document.getElementById('input-mac').value,
                 monitor: document.getElementById('input-monitor')?.value || '',
                 monitor_brand: document.getElementById('input-monitor-brand')?.value || '',
+                monitor_sn: document.getElementById('input-monitor-sn')?.value || '',
                 keyboard: document.getElementById('input-keyboard')?.value || '',
                 keyboard_brand: document.getElementById('input-keyboard-brand')?.value || '',
+                keyboard_sn: document.getElementById('input-keyboard-sn')?.value || '',
                 mouse: document.getElementById('input-mouse')?.value || '',
                 mouse_brand: document.getElementById('input-mouse-brand')?.value || '',
+                mouse_sn: document.getElementById('input-mouse-sn')?.value || '',
                 printer: document.getElementById('input-printer')?.value || '',
                 printer_brand: document.getElementById('input-printer-brand')?.value || '',
+                printer_sn: document.getElementById('input-printer-sn')?.value || '',
                 ups: document.getElementById('input-ups')?.value || '',
                 ups_brand: document.getElementById('input-ups-brand')?.value || '',
+                ups_sn: document.getElementById('input-ups-sn')?.value || '',
                 tablet: document.getElementById('input-tablet')?.value || '',
                 tablet_brand: document.getElementById('input-tablet-brand')?.value || '',
+                tablet_sn: document.getElementById('input-tablet-sn')?.value || '',
                 purchase: document.getElementById('input-purchase-date').value,
                 warranty: document.getElementById('input-warranty-date').value,
             };
@@ -1532,16 +1604,22 @@
                     if (draft.mac) document.getElementById('input-mac').value = draft.mac;
                     if (draft.monitor && document.getElementById('input-monitor')) document.getElementById('input-monitor').value = draft.monitor;
                     if (draft.monitor_brand && document.getElementById('input-monitor-brand')) document.getElementById('input-monitor-brand').value = draft.monitor_brand;
+                    if (draft.monitor_sn && document.getElementById('input-monitor-sn')) document.getElementById('input-monitor-sn').value = draft.monitor_sn;
                     if (draft.keyboard && document.getElementById('input-keyboard')) document.getElementById('input-keyboard').value = draft.keyboard;
                     if (draft.keyboard_brand && document.getElementById('input-keyboard-brand')) document.getElementById('input-keyboard-brand').value = draft.keyboard_brand;
+                    if (draft.keyboard_sn && document.getElementById('input-keyboard-sn')) document.getElementById('input-keyboard-sn').value = draft.keyboard_sn;
                     if (draft.mouse && document.getElementById('input-mouse')) document.getElementById('input-mouse').value = draft.mouse;
                     if (draft.mouse_brand && document.getElementById('input-mouse-brand')) document.getElementById('input-mouse-brand').value = draft.mouse_brand;
+                    if (draft.mouse_sn && document.getElementById('input-mouse-sn')) document.getElementById('input-mouse-sn').value = draft.mouse_sn;
                     if (draft.printer && document.getElementById('input-printer')) document.getElementById('input-printer').value = draft.printer;
                     if (draft.printer_brand && document.getElementById('input-printer-brand')) document.getElementById('input-printer-brand').value = draft.printer_brand;
+                    if (draft.printer_sn && document.getElementById('input-printer-sn')) document.getElementById('input-printer-sn').value = draft.printer_sn;
                     if (draft.ups && document.getElementById('input-ups')) document.getElementById('input-ups').value = draft.ups;
                     if (draft.ups_brand && document.getElementById('input-ups-brand')) document.getElementById('input-ups-brand').value = draft.ups_brand;
+                    if (draft.ups_sn && document.getElementById('input-ups-sn')) document.getElementById('input-ups-sn').value = draft.ups_sn;
                     if (draft.tablet && document.getElementById('input-tablet')) document.getElementById('input-tablet').value = draft.tablet;
                     if (draft.tablet_brand && document.getElementById('input-tablet-brand')) document.getElementById('input-tablet-brand').value = draft.tablet_brand;
+                    if (draft.tablet_sn && document.getElementById('input-tablet-sn')) document.getElementById('input-tablet-sn').value = draft.tablet_sn;
                     if (draft.purchase) document.getElementById('input-purchase-date').value = draft.purchase;
                     if (draft.warranty) document.getElementById('input-warranty-date').value = draft.warranty;
                     updateCustodianStatusUI();
@@ -1565,6 +1643,10 @@
             if (contactInput) contactInput.value = '';
             const emailInput = document.getElementById('input-email');
             if (emailInput) emailInput.value = '';
+            ['input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
             selectedComponents = new Set(['CPU']);
             updateSelectedComponentsUI();
             updateCustodianStatusUI();
@@ -1655,16 +1737,22 @@
                 storage_ram: document.getElementById('input-ram').value.trim(),
                 monitor_spec: (document.getElementById('input-monitor')?.value || '').trim(),
                 monitor_brand: (document.getElementById('input-monitor-brand')?.value || '').trim(),
+                monitor_serial: (document.getElementById('input-monitor-sn')?.value || '').trim(),
                 keyboard_spec: (document.getElementById('input-keyboard')?.value || '').trim(),
                 keyboard_brand: (document.getElementById('input-keyboard-brand')?.value || '').trim(),
+                keyboard_serial: (document.getElementById('input-keyboard-sn')?.value || '').trim(),
                 mouse_spec: (document.getElementById('input-mouse')?.value || '').trim(),
                 mouse_brand: (document.getElementById('input-mouse-brand')?.value || '').trim(),
+                mouse_serial: (document.getElementById('input-mouse-sn')?.value || '').trim(),
                 printer_spec: (document.getElementById('input-printer')?.value || '').trim(),
                 printer_brand: (document.getElementById('input-printer-brand')?.value || '').trim(),
+                printer_serial: (document.getElementById('input-printer-sn')?.value || '').trim(),
                 ups_spec: (document.getElementById('input-ups')?.value || '').trim(),
                 ups_brand: (document.getElementById('input-ups-brand')?.value || '').trim(),
+                ups_serial: (document.getElementById('input-ups-sn')?.value || '').trim(),
                 tablet_spec: (document.getElementById('input-tablet')?.value || '').trim(),
                 tablet_brand: (document.getElementById('input-tablet-brand')?.value || '').trim(),
+                tablet_serial: (document.getElementById('input-tablet-sn')?.value || '').trim(),
                 operating_system: document.getElementById('input-os').value,
                 ip_address: document.getElementById('input-ip').value.trim(),
                 mac_address: document.getElementById('input-mac').value.trim(),
@@ -1739,6 +1827,10 @@
                 if (contactEl) contactEl.value = "";
                 const emailEl = document.getElementById('input-email');
                 if (emailEl) emailEl.value = "";
+                ['input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
                 selectFloor('2nd Floor');
                 selectedComponents = new Set(['CPU']);
                 updateSelectedComponentsUI();

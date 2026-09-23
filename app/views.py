@@ -413,6 +413,12 @@ def api_save_device(request):
     printer_brand = (data.get('printer_brand') or '').strip()
     ups_brand = (data.get('ups_brand') or '').strip()
     tablet_brand = (data.get('tablet_brand') or '').strip()
+    monitor_serial = (data.get('monitor_serial') or data.get('monitor_sn') or '').strip()
+    keyboard_serial = (data.get('keyboard_serial') or data.get('keyboard_sn') or '').strip()
+    mouse_serial = (data.get('mouse_serial') or data.get('mouse_sn') or '').strip()
+    printer_serial = (data.get('printer_serial') or data.get('printer_sn') or '').strip()
+    ups_serial = (data.get('ups_serial') or data.get('ups_sn') or '').strip()
+    tablet_serial = (data.get('tablet_serial') or data.get('tablet_sn') or '').strip()
 
     # For standalone single-device registrations, align cpu_processor if empty or default
     if not ('workstation' in device_type.lower() or ',' in device_type):
@@ -475,10 +481,22 @@ def api_save_device(request):
                 # Serial number per component
                 comp_upper = comp.upper()
                 comp_abbr = ABBR_MAP.get(comp_upper, comp_upper[:3])
-                if serial_number:
-                    comp_sn = f"{serial_number}-{comp_abbr}"
+                if comp_upper == 'CPU':
+                    comp_sn = serial_number if serial_number else f"SN-PSM-CPU-{comp_tag.split('/')[-1]}"
+                elif comp_upper == 'DISPLAY':
+                    comp_sn = monitor_serial or (f"{serial_number}-DISP" if serial_number else f"SN-PSM-DISP-{comp_tag.split('/')[-1]}")
+                elif comp_upper == 'KEYBOARD':
+                    comp_sn = keyboard_serial or (f"{serial_number}-KB" if serial_number else f"SN-PSM-KB-{comp_tag.split('/')[-1]}")
+                elif comp_upper == 'MOUSE':
+                    comp_sn = mouse_serial or (f"{serial_number}-MS" if serial_number else f"SN-PSM-MS-{comp_tag.split('/')[-1]}")
+                elif comp_upper == 'TABLET':
+                    comp_sn = tablet_serial or (f"{serial_number}-TAB" if serial_number else f"SN-PSM-TAB-{comp_tag.split('/')[-1]}")
+                elif comp_upper == 'PRINTER':
+                    comp_sn = printer_serial or (f"{serial_number}-PRT" if serial_number else f"SN-PSM-PRT-{comp_tag.split('/')[-1]}")
+                elif comp_upper == 'UPS':
+                    comp_sn = ups_serial or (f"{serial_number}-UPS" if serial_number else f"SN-PSM-UPS-{comp_tag.split('/')[-1]}")
                 else:
-                    comp_sn = f"SN-PSM-{comp_abbr}-{comp_tag.split('/')[-1]}"
+                    comp_sn = f"{serial_number}-{comp_abbr}" if serial_number else f"SN-PSM-{comp_abbr}-{comp_tag.split('/')[-1]}"
 
                 # Component-specific compute / specs & brand
                 if comp_upper == 'CPU':
@@ -705,6 +723,21 @@ def api_save_device(request):
             single_brand = tablet_brand or 'Samsung'
         else:
             single_brand = ''
+
+    if not serial_number:
+        dtype_up = device_type.upper()
+        if 'DISPLAY' in dtype_up or 'MONITOR' in dtype_up:
+            serial_number = monitor_serial
+        elif 'KEYBOARD' in dtype_up:
+            serial_number = keyboard_serial
+        elif 'MOUSE' in dtype_up:
+            serial_number = mouse_serial
+        elif 'PRINTER' in dtype_up:
+            serial_number = printer_serial
+        elif 'UPS' in dtype_up:
+            serial_number = ups_serial
+        elif 'TABLET' in dtype_up:
+            serial_number = tablet_serial
 
     is_new = False
     if dev:
