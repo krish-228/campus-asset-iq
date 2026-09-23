@@ -9,145 +9,15 @@ from django.conf import settings
 import json
 import urllib.parse
 import random
-from django.db import models
+from django.db import models, transaction
 from .models import DeviceComplaint, UserProfile, DeviceAsset, CustodyTransferLog, EquipmentPMS, EquipmentBreakdown
 
 # ============================================================================
 # REALISTIC CAMPUS HARDWARE & STAFF CATALOG
 # ============================================================================
 
-SAMPLE_STAFF = [
-    {
-        'id': 'usr-dr-sharma',
-        'empId': 'MED-00042',
-        'username': 'dr_sharma',
-        'fullName': 'Dr. Vikram Sharma',
-        'orgId': 'HOSP',
-        'orgName': 'PSM Hospital',
-        'department': 'Emergency & Critical Care',
-        'designation': 'Chief Intensivist / HOD',
-        'email': 'vikram.sharma@hospital.org',
-        'phone': '9811223344',
-        'assignedAssetId': 'PSM/IT/2F/C-201'
-    },
-    {
-        'id': 'usr-nurse-kavita',
-        'empId': 'MED-00115',
-        'username': 'kavita',
-        'fullName': 'Kavita Nair',
-        'orgId': 'HOSP',
-        'orgName': 'PSM Hospital',
-        'department': 'ICU Nursing',
-        'designation': 'Senior Nursing Officer',
-        'email': 'kavita.nair@hospital.org',
-        'phone': '9877001122',
-        'assignedAssetId': 'PSM/IT/2F/C-203'
-    },
-    {
-        'id': 'usr-dr-mehta',
-        'empId': 'MED-00078',
-        'username': 'dr_mehta',
-        'fullName': 'Dr. Aarti Mehta',
-        'orgId': 'HOSP',
-        'orgName': 'PSM Hospital',
-        'department': 'Radiology',
-        'designation': 'Consultant Radiologist',
-        'email': 'aarti.mehta@hospital.org',
-        'phone': '9900112233',
-        'assignedAssetId': 'PSM/IT/GF/C-003'
-    },
-    {
-        'id': 'usr-triage-nurse',
-        'empId': 'MED-00142',
-        'username': 'rekha',
-        'fullName': 'Staff Nurse Rekha',
-        'orgId': 'HOSP',
-        'orgName': 'PSM Hospital',
-        'department': 'Emergency & Trauma Care',
-        'designation': 'Emergency Triage Officer',
-        'email': 'rekha.menon@hospital.org',
-        'phone': '9811442200',
-        'assignedAssetId': 'PSM/IT/GF/C-001'
-    },
-    {
-        'id': 'usr-bill-exec',
-        'empId': 'MED-00205',
-        'username': 'ramesh',
-        'fullName': 'Ramesh Patel',
-        'orgId': 'HOSP',
-        'orgName': 'PSM Hospital',
-        'department': 'Patient Billing & Registration',
-        'designation': 'Senior Billing Executive',
-        'email': 'ramesh.patel@hospital.org',
-        'phone': '9866554433',
-        'assignedAssetId': 'PSM/IT/1F/C-102'
-    },
-    {
-        'id': 'usr-xray-tech',
-        'empId': 'MED-00188',
-        'username': 'suresh',
-        'fullName': 'Suresh Verma',
-        'orgId': 'HOSP',
-        'orgName': 'PSM Hospital',
-        'department': 'Radiology & Imaging',
-        'designation': 'Chief Radiographer',
-        'email': 'suresh.verma@hospital.org',
-        'phone': '9877889900',
-        'assignedAssetId': 'PSM/IT/GF/C-004'
-    },
-    {
-        'id': 'usr-path-lead',
-        'empId': 'MED-00064',
-        'username': 'pooja',
-        'fullName': 'Dr. Pooja Iyer',
-        'orgId': 'HOSP',
-        'orgName': 'PSM Hospital',
-        'department': 'Central Pathology',
-        'designation': 'Chief Clinical Pathologist',
-        'email': 'pooja.iyer@hospital.org',
-        'phone': '9822334455',
-        'assignedAssetId': 'PSM/IT/5F/C-501'
-    },
-    {
-        'id': 'usr-biomed-lead',
-        'empId': 'MED-00030',
-        'username': 'rajesh_bme',
-        'fullName': 'Er. Rajesh Kulkarni',
-        'orgId': 'HOSP',
-        'orgName': 'PSM Hospital',
-        'department': 'Biomedical Engineering',
-        'designation': 'Chief Biomedical Engineer',
-        'email': 'rajesh.bme@hospital.org',
-        'phone': '9844001122',
-        'assignedAssetId': 'PSM/IT/B/C-0.01'
-    },
-    {
-        'id': 'usr-dr-joshi',
-        'empId': 'MED-00055',
-        'username': 'ananya_joshi',
-        'fullName': 'Dr. Ananya Joshi',
-        'orgId': 'HOSP',
-        'orgName': 'PSM Hospital',
-        'department': 'Surgical Sciences & OT',
-        'designation': 'Senior Consultant Surgeon / OT Incharge',
-        'email': 'ananya.joshi@hospital.org',
-        'phone': '9833445566',
-        'assignedAssetId': 'PSM/IT/3F/C-301'
-    },
-    {
-        'id': 'usr-ward-nurse',
-        'empId': 'MED-00164',
-        'username': 'priya_ward',
-        'fullName': 'Sister Priya Nair',
-        'orgId': 'HOSP',
-        'orgName': 'PSM Hospital',
-        'department': 'Inpatient Care & Deluxe Wards',
-        'designation': 'Senior Ward Incharge',
-        'email': 'priya.ward@hospital.org',
-        'phone': '9844556677',
-        'assignedAssetId': 'PSM/IT/4F/C-401'
-    }
-]
+SAMPLE_STAFF = []
+
 
 SAMPLE_DEVICES = []
 
@@ -186,6 +56,108 @@ def normalize_device_type(code, asset_id=''):
     if '/T/' in aid or '/T-' in aid: return 'Tablet'
     if '/U/' in aid or '/U-' in aid: return 'UPS'
     return code or 'CPU'
+
+def parse_and_normalize_components(components_input, device_type_str='', monitor_spec='', keyboard_spec='', mouse_spec='', tablet_spec='', printer_spec='', ups_spec=''):
+    """
+    Parses and normalizes a list of hardware components selected for a workstation.
+    Returns an ordered list of canonical component types, e.g. ['CPU', 'Display', 'Keyboard', 'Mouse', 'Tablet'].
+    """
+    import re
+    comps = []
+    if isinstance(components_input, list) and components_input:
+        comps = [str(c).strip() for c in components_input if str(c).strip()]
+    elif isinstance(components_input, str) and components_input.strip():
+        comps = [s.strip() for s in components_input.split(',') if s.strip()]
+    elif device_type_str:
+        dt = device_type_str.strip()
+        match = re.search(r'\(([^)]+)\)', dt)
+        if match:
+            comps = [s.strip() for s in match.group(1).split(',') if s.strip()]
+        elif 'workstation' in dt.lower():
+            comps = ['CPU']
+            if monitor_spec: comps.append('Display')
+            if keyboard_spec: comps.append('Keyboard')
+            if mouse_spec: comps.append('Mouse')
+            if tablet_spec: comps.append('Tablet')
+            if printer_spec: comps.append('Printer')
+            if ups_spec: comps.append('UPS')
+            if len(comps) == 1:
+                comps = ['CPU', 'Display', 'Keyboard', 'Mouse']
+        elif ',' in dt:
+            comps = [s.strip() for s in dt.split(',') if s.strip()]
+
+    canonical = []
+    for c in comps:
+        u = c.upper()
+        if 'CPU' in u or 'DESKTOP' in u or 'PC' in u:
+            canonical.append('CPU')
+        elif 'DISPLAY' in u or 'MONITOR' in u or 'SCREEN' in u:
+            canonical.append('Display')
+        elif 'KEYBOARD' in u or 'KB' in u:
+            canonical.append('Keyboard')
+        elif 'MOUSE' in u:
+            canonical.append('Mouse')
+        elif 'TABLET' in u or 'TAB' in u or 'IPAD' in u:
+            canonical.append('Tablet')
+        elif 'PRINTER' in u or 'PRT' in u:
+            canonical.append('Printer')
+        elif 'UPS' in u or 'POWER' in u or 'INVERTER' in u:
+            canonical.append('UPS')
+        else:
+            canonical.append(c)
+
+    order = ['CPU', 'Display', 'Keyboard', 'Mouse', 'Tablet', 'Printer', 'UPS']
+    unique_comps = []
+    for o in order:
+        if o in canonical and o not in unique_comps:
+            unique_comps.append(o)
+    for c in canonical:
+        if c not in unique_comps:
+            unique_comps.append(c)
+
+    return unique_comps
+
+def allocate_sequential_tags(base_tag, count):
+    """
+    Allocates `count` collision-free sequential asset tags starting from `base_tag`.
+    Guarantees 100% collision-free against PostgreSQL DeviceAsset table.
+    """
+    import re
+    now = timezone.localtime()
+    mmyy = now.strftime("%m%y")
+    
+    parts = base_tag.strip().split('/')
+    if len(parts) >= 4 and parts[-1].isdigit():
+        prefix = "/".join(parts[:-1]) + "/"
+        try:
+            start_num = int(parts[-1])
+        except ValueError:
+            start_num = 1
+    else:
+        prefix = f"PSM/IT/{mmyy}/"
+        start_num = 1
+
+    existing_tags = set(DeviceAsset.objects.values_list('asset_id', flat=True))
+    existing_upper = {t.upper().strip() for t in existing_tags if t}
+
+    allocated = []
+    curr = start_num
+    while len(allocated) < count and curr <= 999:
+        candidate = f"{prefix}{curr:03d}"
+        if candidate.upper() not in existing_upper and candidate not in allocated:
+            allocated.append(candidate)
+        curr += 1
+
+    # Fallback if 999 reached
+    if len(allocated) < count:
+        for n in range(1, 1000):
+            candidate = f"{prefix}{n:03d}"
+            if candidate.upper() not in existing_upper and candidate not in allocated:
+                allocated.append(candidate)
+                if len(allocated) >= count:
+                    break
+
+    return allocated
 
 def ensure_sample_devices():
     """No-op: sample devices permanently purged."""
@@ -233,6 +205,8 @@ def api_get_devices(request):
             'purchaseDate': d.purchase_date,
             'warrantyExpiryDate': d.warranty_expiry_date,
             'status': d.status,
+            'brandName': getattr(d, 'brand_name', '') or '',
+            'brand': getattr(d, 'brand_name', '') or '',
         })
     return JsonResponse({'success': True, 'devices': devices_data})
 
@@ -431,18 +405,27 @@ def api_save_device(request):
     status = (data.get('status') or 'Active').strip()
     purchase_date = (data.get('purchaseDate') or data.get('purchase_date') or timezone.now().strftime('%d-%b-%Y')).strip()
     warranty_expiry_date = (data.get('warrantyExpiryDate') or data.get('warranty_expiry_date') or (datetime.date.today() + datetime.timedelta(days=1095)).strftime('%d-%b-%Y')).strip()
+    brand_name = (data.get('brand_name') or data.get('brand') or '').strip()
+    cpu_brand = (data.get('cpu_brand') or '').strip()
+    monitor_brand = (data.get('monitor_brand') or '').strip()
+    keyboard_brand = (data.get('keyboard_brand') or '').strip()
+    mouse_brand = (data.get('mouse_brand') or '').strip()
+    printer_brand = (data.get('printer_brand') or '').strip()
+    ups_brand = (data.get('ups_brand') or '').strip()
+    tablet_brand = (data.get('tablet_brand') or '').strip()
 
     # For standalone single-device registrations, align cpu_processor if empty or default
-    if 'keyboard' in device_type.lower() and keyboard_spec:
-        cpu_processor = keyboard_spec
-    elif 'mouse' in device_type.lower() and mouse_spec:
-        cpu_processor = mouse_spec
-    elif 'printer' in device_type.lower() and printer_spec:
-        cpu_processor = printer_spec
-    elif 'ups' in device_type.lower() and ups_spec:
-        cpu_processor = ups_spec
-    elif 'tablet' in device_type.lower() and tablet_spec:
-        cpu_processor = tablet_spec
+    if not ('workstation' in device_type.lower() or ',' in device_type):
+        if 'keyboard' in device_type.lower() and keyboard_spec:
+            cpu_processor = keyboard_spec
+        elif 'mouse' in device_type.lower() and mouse_spec:
+            cpu_processor = mouse_spec
+        elif 'printer' in device_type.lower() and printer_spec:
+            cpu_processor = printer_spec
+        elif 'ups' in device_type.lower() and ups_spec:
+            cpu_processor = ups_spec
+        elif 'tablet' in device_type.lower() and tablet_spec:
+            cpu_processor = tablet_spec
 
     is_edit_request = bool(data.get('is_edit') or data.get('editId') or data.get('edit_id') or data.get('allow_overwrite'))
     dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
@@ -453,9 +436,281 @@ def api_save_device(request):
             'message': f'Asset Tag "{asset_id}" is already registered to {dev.device_type} in {dev.room_name}. Please click "Auto Generate" for the next unique code.'
         }, status=409)
 
+    # Determine multi-component workstation composition
+    raw_components = data.get('components')
+    components = parse_and_normalize_components(
+        raw_components,
+        data.get('deviceType') or data.get('device_type'),
+        monitor_spec=monitor_spec,
+        keyboard_spec=keyboard_spec,
+        mouse_spec=mouse_spec,
+        tablet_spec=tablet_spec,
+        printer_spec=printer_spec,
+        ups_spec=ups_spec
+    )
+
+    # =========================================================================
+    # MULTI-COMPONENT WORKSTATION ITEMIZATION (Rajesh Kulkarni Header + Sub-Bundle architecture)
+    # Saves distinct DeviceAsset rows in PostgreSQL for each selected hardware piece
+    # =========================================================================
+    if not is_edit_request and len(components) > 1:
+        allocated_tags = allocate_sequential_tags(asset_id, len(components))
+        created_devices = []
+
+        ABBR_MAP = {
+            'CPU': 'CPU',
+            'DISPLAY': 'DISP',
+            'KEYBOARD': 'KB',
+            'MOUSE': 'MS',
+            'TABLET': 'TAB',
+            'PRINTER': 'PRT',
+            'UPS': 'UPS'
+        }
+
+        with transaction.atomic():
+            for idx, comp in enumerate(components):
+                comp_tag = allocated_tags[idx]
+                comp_dev_id = f"dev-{uuid.uuid4().hex[:8]}"
+
+                # Serial number per component
+                comp_upper = comp.upper()
+                comp_abbr = ABBR_MAP.get(comp_upper, comp_upper[:3])
+                if serial_number:
+                    comp_sn = f"{serial_number}-{comp_abbr}"
+                else:
+                    comp_sn = f"SN-PSM-{comp_abbr}-{comp_tag.split('/')[-1]}"
+
+                # Component-specific compute / specs & brand
+                if comp_upper == 'CPU':
+                    item_dev_type = 'CPU'
+                    item_brand = cpu_brand or brand_name or 'Dell'
+                    item_cpu = cpu_processor or 'Intel Core i5 (Standard)'
+                    item_ram = storage_ram or '16GB RAM / 512GB SSD'
+                    item_os = operating_system or 'Windows 11 Pro'
+                    item_ip = ip_address
+                    item_mac = mac_address
+                elif comp_upper == 'DISPLAY':
+                    item_dev_type = 'Display'
+                    item_brand = monitor_brand or brand_name or 'Dell'
+                    item_cpu = monitor_spec or '24" FHD IPS Medical / Office Grade Display'
+                    item_ram = 'Hardware Display Monitor'
+                    item_os = 'Hardware Display'
+                    item_ip = '-'
+                    item_mac = '-'
+                elif comp_upper == 'KEYBOARD':
+                    item_dev_type = 'Keyboard'
+                    item_brand = keyboard_brand or brand_name or 'Dell'
+                    item_cpu = keyboard_spec or 'Spill-Resistant Membrane USB Keyboard'
+                    item_ram = 'Hardware Peripheral (HID)'
+                    item_os = 'Hardware Peripheral (HID)'
+                    item_ip = '-'
+                    item_mac = '-'
+                elif comp_upper == 'MOUSE':
+                    item_dev_type = 'Mouse'
+                    item_brand = mouse_brand or brand_name or 'Dell'
+                    item_cpu = mouse_spec or 'Ergonomic Optical Cleanable Clinic Mouse'
+                    item_ram = 'Hardware Peripheral (HID)'
+                    item_os = 'Hardware Peripheral (HID)'
+                    item_ip = '-'
+                    item_mac = '-'
+                elif comp_upper == 'TABLET':
+                    item_dev_type = 'Tablet'
+                    item_brand = tablet_brand or brand_name or 'Samsung'
+                    item_cpu = tablet_spec or 'Mobile Diagnostic Tablet'
+                    item_ram = 'Mobile Workstation Unit'
+                    item_os = 'Mobile OS / Windows Tablet'
+                    item_ip = ip_address or '-'
+                    item_mac = mac_address or '-'
+                elif comp_upper == 'PRINTER':
+                    item_dev_type = 'Printer'
+                    item_brand = printer_brand or brand_name or 'HP'
+                    item_cpu = printer_spec or 'Direct Thermal & Document Printer'
+                    item_ram = 'Direct Print Unit'
+                    item_os = 'Printer Firmware'
+                    item_ip = ip_address or '-'
+                    item_mac = mac_address or '-'
+                elif comp_upper == 'UPS':
+                    item_dev_type = 'UPS'
+                    item_brand = ups_brand or brand_name or 'APC'
+                    item_cpu = ups_spec or 'Line-Interactive Battery Backup Unit'
+                    item_ram = 'AC Power Protection'
+                    item_os = 'Power Unit'
+                    item_ip = '-'
+                    item_mac = '-'
+                else:
+                    item_dev_type = comp
+                    item_brand = brand_name or ''
+                    item_cpu = f'{comp} Hardware Unit'
+                    item_ram = 'Standard Hardware Component'
+                    item_os = operating_system or 'Hardware Firmware'
+                    item_ip = '-'
+                    item_mac = '-'
+
+                item_dev = DeviceAsset.objects.create(
+                    dev_id=comp_dev_id,
+                    asset_id=comp_tag,
+                    device_type=item_dev_type,
+                    brand_name=item_brand,
+                    serial_number=comp_sn,
+                    org_id=org_id,
+                    org_name=org_name,
+                    building_name=building_name,
+                    floor_name=floor_name,
+                    room_name=room_name,
+                    assigned_user_id=assigned_user_id,
+                    assigned_user_name=assigned_user_name,
+                    assigned_emp_id=assigned_emp_id,
+                    assigned_designation=assigned_designation,
+                    assigned_department=assigned_department,
+                    assigned_email=assigned_email,
+                    assigned_phone=assigned_phone,
+                    cpu_processor=item_cpu,
+                    storage_ram=item_ram,
+                    monitor_spec=monitor_spec if comp_upper in ('CPU', 'DISPLAY') else '',
+                    keyboard_spec=keyboard_spec if comp_upper in ('CPU', 'KEYBOARD') else '',
+                    mouse_spec=mouse_spec if comp_upper in ('CPU', 'MOUSE') else '',
+                    printer_spec=printer_spec if comp_upper in ('CPU', 'PRINTER') else '',
+                    ups_spec=ups_spec if comp_upper in ('CPU', 'UPS') else '',
+                    tablet_spec=tablet_spec if comp_upper in ('CPU', 'TABLET') else '',
+                    operating_system=item_os,
+                    ip_address=item_ip,
+                    mac_address=item_mac,
+                    purchase_date=purchase_date,
+                    warranty_expiry_date=warranty_expiry_date,
+                    status=status
+                )
+                created_devices.append(item_dev)
+
+                if assigned_user_name and assigned_user_name.lower() != 'unassigned':
+                    CustodyTransferLog.objects.create(
+                        device=item_dev,
+                        device_asset_id=item_dev.asset_id,
+                        from_user_name="Initial Provisioning",
+                        from_emp_id="",
+                        to_user_name=assigned_user_name,
+                        to_emp_id=assigned_emp_id,
+                        handover_date=purchase_date,
+                        assigned_by=request.session.get('staff_name', 'IT Admin Desk') if hasattr(request, 'session') else 'IT Admin Desk',
+                        remarks=f"Initial Workstation assignment ({item_dev.device_type}) to {assigned_user_name}"
+                    )
+
+            if assigned_emp_id:
+                UserProfile.objects.filter(emp_id=assigned_emp_id).update(assigned_asset_id=allocated_tags[0])
+
+        primary = created_devices[0]
+        tag_summary = f"{allocated_tags[0]} to {allocated_tags[-1]} ({len(allocated_tags)} Items)"
+
+        return JsonResponse({
+            'success': True,
+            'message': f"Workstation Set ({len(created_devices)} itemized hardware devices: {allocated_tags[0]} to {allocated_tags[-1]}) registered successfully and synchronized with Inventory!",
+            'is_new': True,
+            'is_workstation': True,
+            'asset_id': allocated_tags[0],
+            'asset_tag_summary': tag_summary,
+            'created_count': len(created_devices),
+            'tags': allocated_tags,
+            'tag_url': f"/tag/?asset_id={urllib.parse.quote(allocated_tags[0])}",
+            'device': {
+                'id': primary.dev_id,
+                'assetId': primary.asset_id,
+                'deviceType': primary.device_type,
+                'serialNumber': primary.serial_number,
+                'orgId': primary.org_id,
+                'orgName': primary.org_name,
+                'buildingName': primary.building_name,
+                'floorName': primary.floor_name,
+                'roomName': primary.room_name,
+                'assignedUserId': primary.assigned_user_id,
+                'assignedUserName': primary.assigned_user_name,
+                'empId': primary.assigned_emp_id,
+                'designation': primary.assigned_designation or '',
+                'assignedDesignation': primary.assigned_designation or '',
+                'email': getattr(primary, 'assigned_email', '') or '',
+                'assignedEmail': getattr(primary, 'assigned_email', '') or '',
+                'phone': getattr(primary, 'assigned_phone', '') or '',
+                'assignedPhone': getattr(primary, 'assigned_phone', '') or '',
+                'cpuProcessor': primary.cpu_processor,
+                'storageRam': primary.storage_ram,
+                'monitorSpec': primary.monitor_spec,
+                'keyboardSpec': getattr(primary, 'keyboard_spec', '') or '',
+                'mouseSpec': getattr(primary, 'mouse_spec', '') or '',
+                'printerSpec': getattr(primary, 'printer_spec', '') or '',
+                'upsSpec': getattr(primary, 'ups_spec', '') or '',
+                'tabletSpec': getattr(primary, 'tablet_spec', '') or '',
+                'operatingSystem': primary.operating_system,
+                'ipAddress': primary.ip_address,
+                'macAddress': primary.mac_address,
+                'purchaseDate': primary.purchase_date,
+                'warrantyExpiryDate': primary.warranty_expiry_date,
+                'status': primary.status,
+                'brandName': getattr(primary, 'brand_name', '') or '',
+                'brand': getattr(primary, 'brand_name', '') or '',
+            },
+            'devices': [
+                {
+                    'id': d.dev_id,
+                    'assetId': d.asset_id,
+                    'deviceType': d.device_type,
+                    'brandName': getattr(d, 'brand_name', '') or '',
+                    'brand': getattr(d, 'brand_name', '') or '',
+                    'serialNumber': d.serial_number,
+                    'orgId': d.org_id,
+                    'orgName': d.org_name,
+                    'buildingName': d.building_name,
+                    'floorName': d.floor_name,
+                    'roomName': d.room_name,
+                    'assignedUserId': d.assigned_user_id,
+                    'assignedUserName': d.assigned_user_name,
+                    'empId': d.assigned_emp_id,
+                    'designation': d.assigned_designation or '',
+                    'assignedDesignation': d.assigned_designation or '',
+                    'email': getattr(d, 'assigned_email', '') or '',
+                    'assignedEmail': getattr(d, 'assigned_email', '') or '',
+                    'phone': getattr(d, 'assigned_phone', '') or '',
+                    'assignedPhone': getattr(d, 'assigned_phone', '') or '',
+                    'cpuProcessor': d.cpu_processor,
+                    'storageRam': d.storage_ram,
+                    'monitorSpec': d.monitor_spec,
+                    'keyboardSpec': getattr(d, 'keyboard_spec', '') or '',
+                    'mouseSpec': getattr(d, 'mouse_spec', '') or '',
+                    'printerSpec': getattr(d, 'printer_spec', '') or '',
+                    'upsSpec': getattr(d, 'ups_spec', '') or '',
+                    'tabletSpec': getattr(d, 'tablet_spec', '') or '',
+                    'operatingSystem': d.operating_system,
+                    'ipAddress': d.ip_address,
+                    'macAddress': d.mac_address,
+                    'purchaseDate': d.purchase_date,
+                    'warrantyExpiryDate': d.warranty_expiry_date,
+                    'status': d.status,
+                } for d in created_devices
+            ]
+        })
+
+    single_brand = brand_name
+    if not single_brand:
+        dtype_up = device_type.upper()
+        if 'CPU' in dtype_up or 'WORKSTATION' in dtype_up:
+            single_brand = cpu_brand or 'Dell'
+        elif 'DISPLAY' in dtype_up or 'MONITOR' in dtype_up:
+            single_brand = monitor_brand or 'Dell'
+        elif 'KEYBOARD' in dtype_up:
+            single_brand = keyboard_brand or 'Dell'
+        elif 'MOUSE' in dtype_up:
+            single_brand = mouse_brand or 'Dell'
+        elif 'PRINTER' in dtype_up:
+            single_brand = printer_brand or 'HP'
+        elif 'UPS' in dtype_up:
+            single_brand = ups_brand or 'APC'
+        elif 'TABLET' in dtype_up:
+            single_brand = tablet_brand or 'Samsung'
+        else:
+            single_brand = ''
+
     is_new = False
     if dev:
         dev.device_type = device_type
+        if single_brand:
+            dev.brand_name = single_brand
         if serial_number:
             dev.serial_number = serial_number
         dev.org_id = org_id
@@ -492,6 +747,7 @@ def api_save_device(request):
             dev_id=dev_id,
             asset_id=asset_id,
             device_type=device_type,
+            brand_name=single_brand,
             serial_number=serial_number,
             org_id=org_id,
             org_name=org_name,
@@ -520,6 +776,9 @@ def api_save_device(request):
             warranty_expiry_date=warranty_expiry_date,
             status=status
         )
+
+    if is_new and assigned_emp_id:
+        UserProfile.objects.filter(emp_id=assigned_emp_id).update(assigned_asset_id=dev.asset_id)
 
     # Initial custody audit log if assigned
     if is_new and assigned_user_name and assigned_user_name.lower() != 'unassigned':
@@ -574,6 +833,8 @@ def api_save_device(request):
             'purchaseDate': dev.purchase_date,
             'warrantyExpiryDate': dev.warranty_expiry_date,
             'status': dev.status,
+            'brandName': getattr(dev, 'brand_name', '') or '',
+            'brand': getattr(dev, 'brand_name', '') or '',
         }
     })
 
@@ -2518,13 +2779,143 @@ def api_import_devices_excel(request):
         else:
             status = 'Active'
 
+        brand_name = find_val(r, ['brand', 'brand_name', 'make', 'manufacturer', 'company'], '')
+
+        # Check if imported row represents a multi-component Workstation
+        imported_components = parse_and_normalize_components(
+            [],
+            device_type_raw or device_type,
+            monitor_spec=monitor_spec
+        )
+
+        if len(imported_components) > 1:
+            # Unpack into itemized components under custodian
+            allocated_import_tags = allocate_sequential_tags(asset_id, len(imported_components))
+            for c_idx, comp_name in enumerate(imported_components):
+                c_tag = allocated_import_tags[c_idx]
+                c_upper = comp_name.upper()
+                c_sn = f"{serial_number}-{c_upper[:3]}" if serial_number else f"SN-PSM-{c_upper[:3]}-{c_tag.split('/')[-1]}"
+                c_brand = brand_name or ('Dell' if c_upper in ('CPU', 'DISPLAY', 'KEYBOARD', 'MOUSE') else 'HP' if c_upper == 'PRINTER' else 'APC' if c_upper == 'UPS' else 'Samsung' if c_upper == 'TABLET' else '')
+
+                if c_upper == 'CPU':
+                    c_type = 'CPU'
+                    c_cpu = cpu_processor
+                    c_ram = storage_ram
+                    c_os = operating_system
+                    c_ip = ip_address
+                    c_mac = mac_address
+                elif c_upper == 'DISPLAY':
+                    c_type = 'Display'
+                    c_cpu = monitor_spec or '24" FHD IPS Medical / Office Grade Display'
+                    c_ram = 'Hardware Display Monitor'
+                    c_os = 'Hardware Display'
+                    c_ip = '-'
+                    c_mac = '-'
+                elif c_upper == 'KEYBOARD':
+                    c_type = 'Keyboard'
+                    c_cpu = 'Spill-Resistant Membrane USB Keyboard'
+                    c_ram = 'Hardware Peripheral (HID)'
+                    c_os = 'Hardware Peripheral (HID)'
+                    c_ip = '-'
+                    c_mac = '-'
+                elif c_upper == 'MOUSE':
+                    c_type = 'Mouse'
+                    c_cpu = 'Ergonomic Optical Cleanable Clinic Mouse'
+                    c_ram = 'Hardware Peripheral (HID)'
+                    c_os = 'Hardware Peripheral (HID)'
+                    c_ip = '-'
+                    c_mac = '-'
+                elif c_upper == 'TABLET':
+                    c_type = 'Tablet'
+                    c_cpu = 'Mobile Diagnostic Tablet'
+                    c_ram = 'Mobile Workstation Unit'
+                    c_os = 'Mobile OS / Windows Tablet'
+                    c_ip = '-'
+                    c_mac = '-'
+                elif c_upper == 'PRINTER':
+                    c_type = 'Printer'
+                    c_cpu = 'Direct Thermal & Document Printer'
+                    c_ram = 'Direct Print Unit'
+                    c_os = 'Printer Firmware'
+                    c_ip = '-'
+                    c_mac = '-'
+                elif c_upper == 'UPS':
+                    c_type = 'UPS'
+                    c_cpu = 'Line-Interactive Battery Backup Unit'
+                    c_ram = 'AC Power Protection'
+                    c_os = 'Power Unit'
+                    c_ip = '-'
+                    c_mac = '-'
+                else:
+                    c_type = comp_name
+                    c_cpu = f'{comp_name} Hardware Unit'
+                    c_ram = 'Standard Hardware Component'
+                    c_os = operating_system
+                    c_ip = '-'
+                    c_mac = '-'
+
+                c_dev = DeviceAsset.objects.filter(asset_id__iexact=c_tag).first()
+                if c_dev:
+                    c_dev.device_type = c_type
+                    if c_brand:
+                        c_dev.brand_name = c_brand
+                    c_dev.serial_number = c_sn
+                    c_dev.building_name = building_name
+                    c_dev.floor_name = floor_name
+                    c_dev.room_name = room_name
+                    c_dev.assigned_user_name = assigned_user_name
+                    c_dev.assigned_emp_id = assigned_emp_id
+                    c_dev.cpu_processor = c_cpu
+                    c_dev.storage_ram = c_ram
+                    c_dev.monitor_spec = monitor_spec if c_upper in ('CPU', 'DISPLAY') else ''
+                    c_dev.operating_system = c_os
+                    c_dev.ip_address = c_ip
+                    c_dev.mac_address = c_mac
+                    c_dev.purchase_date = purchase_date
+                    c_dev.warranty_expiry_date = warranty_expiry_date
+                    c_dev.status = status
+                    c_dev.save()
+                    updated_count += 1
+                else:
+                    DeviceAsset.objects.create(
+                        dev_id=f"dev-{uuid.uuid4().hex[:8]}",
+                        asset_id=c_tag,
+                        device_type=c_type,
+                        brand_name=c_brand,
+                        serial_number=c_sn,
+                        org_id='HOSP',
+                        org_name='PSM Hospital',
+                        building_name=building_name,
+                        floor_name=floor_name,
+                        room_name=room_name,
+                        assigned_user_id='',
+                        assigned_user_name=assigned_user_name,
+                        assigned_emp_id=assigned_emp_id,
+                        cpu_processor=c_cpu,
+                        storage_ram=c_ram,
+                        monitor_spec=monitor_spec if c_upper in ('CPU', 'DISPLAY') else '',
+                        operating_system=c_os,
+                        ip_address=c_ip,
+                        mac_address=c_mac,
+                        purchase_date=purchase_date,
+                        warranty_expiry_date=warranty_expiry_date,
+                        status=status
+                    )
+                    created_count += 1
+                saved_count += 1
+            continue
+
         # Look up existing record by asset_id (or serial_number)
         dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
         if not dev and serial_number:
             dev = DeviceAsset.objects.filter(serial_number__iexact=serial_number).first()
 
+        dev_brand = brand_name or ('Dell' if device_type.upper() in ('CPU', 'DISPLAY', 'KEYBOARD', 'MOUSE') else 'HP' if 'PRINTER' in device_type.upper() else 'APC' if 'UPS' in device_type.upper() else 'Samsung' if 'TABLET' in device_type.upper() else '')
+
         if dev:
             dev.device_type = device_type
+            if dev_brand:
+                dev.brand_name = dev_brand
             dev.serial_number = serial_number
             dev.building_name = building_name
             dev.floor_name = floor_name
@@ -2548,6 +2939,7 @@ def api_import_devices_excel(request):
                 dev_id=dev_id,
                 asset_id=asset_id,
                 device_type=device_type,
+                brand_name=dev_brand,
                 serial_number=serial_number,
                 org_id='HOSP',
                 org_name='PSM Hospital',

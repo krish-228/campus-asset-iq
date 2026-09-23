@@ -27,6 +27,14 @@ function initAppState() {
         ...INITIAL_SAMPLE_DATA
     };
 
+    // Automatic Cache Version Purge for clean slate & workstation sets
+    const CURRENT_CACHE_VERSION = "v7.1_workstations";
+    if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
+        localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
+        localStorage.removeItem("CAMPUS_SELECTED_ORG");
+        localStorage.setItem("CAMPUS_CACHE_VERSION", CURRENT_CACHE_VERSION);
+    }
+
     const saved = localStorage.getItem("CAMPUS_DEVICE_TRACKER_DATA");
     if (saved) {
         try {
@@ -319,6 +327,11 @@ function getFilteredDevices() {
                 (dev.cpuProcessor || "").toLowerCase().includes(q) ||
                 (dev.storageRam || "").toLowerCase().includes(q) ||
                 (dev.monitorSpec || "").toLowerCase().includes(q) ||
+                (dev.keyboardSpec || "").toLowerCase().includes(q) ||
+                (dev.mouseSpec || "").toLowerCase().includes(q) ||
+                (dev.tabletSpec || "").toLowerCase().includes(q) ||
+                (dev.printerSpec || "").toLowerCase().includes(q) ||
+                (dev.upsSpec || "").toLowerCase().includes(q) ||
                 (dev.operatingSystem || "").toLowerCase().includes(q) ||
                 userName.includes(q) ||
                 empId.includes(q) ||
@@ -345,59 +358,69 @@ function getDeviceTypeBadge(dev) {
         else if (aid.includes('/U/') || aid.includes('/U-') || aid.includes('/U.')) rawType = 'UPS';
     }
     const t = (rawType || 'CPU').toUpperCase();
+    let typeHtml = '';
     if (t.includes('WORKSTATION') || t.includes(',')) {
-        return `<span class="inline-flex items-center gap-2 text-base font-bold text-sky-800" title="${rawType}">
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-sky-800" title="${rawType}">
             <i data-lucide="layout-grid" class="w-5 h-5 text-sky-600 shrink-0"></i>
             <span>${rawType}</span>
         </span>`;
-    }
-    if (t === 'C' || t === 'CPU' || t === 'DESKTOP' || t === 'PC' || t === 'COMPUTER') {
-        return `<span class="inline-flex items-center gap-2 text-base font-bold text-sky-800">
+    } else if (t === 'C' || t === 'CPU' || t === 'DESKTOP' || t === 'PC' || t === 'COMPUTER') {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-sky-800">
             <i data-lucide="cpu" class="w-5 h-5 text-sky-600 shrink-0"></i>
             <span>CPU</span>
         </span>`;
-    }
-    if (t === 'D' || t === 'DISPLAY' || t === 'MONITOR' || t === 'SCREEN') {
-        return `<span class="inline-flex items-center gap-2 text-base font-bold text-indigo-800">
+    } else if (t === 'D' || t === 'DISPLAY' || t === 'MONITOR' || t === 'SCREEN') {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-indigo-800">
             <i data-lucide="monitor" class="w-5 h-5 text-indigo-600 shrink-0"></i>
             <span>Display</span>
         </span>`;
-    }
-    if (t === 'K' || t === 'KB' || t === 'KEYBOARD') {
-        return `<span class="inline-flex items-center gap-2 text-base font-bold text-amber-800">
+    } else if (t === 'K' || t === 'KB' || t === 'KEYBOARD') {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-amber-800">
             <i data-lucide="keyboard" class="w-5 h-5 text-amber-600 shrink-0"></i>
             <span>Keyboard</span>
         </span>`;
-    }
-    if (t === 'M' || t === 'MOUSE') {
-        return `<span class="inline-flex items-center gap-2 text-base font-bold text-purple-800">
+    } else if (t === 'M' || t === 'MOUSE') {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-purple-800">
             <i data-lucide="mouse" class="w-5 h-5 text-purple-600 shrink-0"></i>
             <span>Mouse</span>
         </span>`;
-    }
-    if (t === 'P' || t === 'PRT' || t === 'PRINTER' || t.includes('PRINT')) {
-        return `<span class="inline-flex items-center gap-2 text-base font-bold text-emerald-800">
+    } else if (t === 'P' || t === 'PRT' || t === 'PRINTER' || t.includes('PRINT')) {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-emerald-800">
             <i data-lucide="printer" class="w-5 h-5 text-emerald-600 shrink-0"></i>
             <span>Printer</span>
         </span>`;
-    }
-    if (t === 'T' || t === 'TABLET' || t === 'TAB' || t === 'IPAD') {
-        return `<span class="inline-flex items-center gap-2 text-base font-bold text-teal-800">
+    } else if (t === 'T' || t === 'TABLET' || t === 'TAB' || t === 'IPAD') {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-teal-800">
             <i data-lucide="tablet" class="w-5 h-5 text-teal-600 shrink-0"></i>
             <span>Tablet</span>
         </span>`;
-    }
-    if (t === 'U' || t === 'UPS' || t === 'POWER' || t === 'INVERTER') {
-        return `<span class="inline-flex items-center gap-2 text-base font-bold text-orange-800">
+    } else if (t === 'U' || t === 'UPS' || t === 'POWER' || t === 'INVERTER') {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-orange-800">
             <i data-lucide="zap" class="w-5 h-5 text-orange-600 shrink-0"></i>
             <span>UPS</span>
         </span>`;
+    } else {
+        const label = rawType || 'Device';
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-slate-800">
+            <i data-lucide="hard-drive" class="w-5 h-5 text-slate-500 shrink-0"></i>
+            <span>${label}</span>
+        </span>`;
     }
-    const label = rawType || 'Device';
-    return `<span class="inline-flex items-center gap-2 text-base font-bold text-slate-800">
-        <i data-lucide="hard-drive" class="w-5 h-5 text-slate-500 shrink-0"></i>
-        <span>${label}</span>
-    </span>`;
+
+    const brand = (dev.brandName || dev.brand || dev.brand_name || '').trim();
+    if (brand) {
+        return `
+            <div class="space-y-0.5">
+                <div>${typeHtml}</div>
+                <div class="flex items-center gap-1">
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200 shadow-3xs" title="Hardware Brand: ${brand}">
+                        ${brand}
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+    return typeHtml;
 }
 
 // ============================================================================
@@ -522,6 +545,18 @@ function getWorkstationRoleBadge(dev, displayName) {
             <div class="space-y-0.5">
                 <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-orange-50 text-orange-800 border border-orange-200 shadow-3xs whitespace-nowrap">
                     <i data-lucide="zap" class="w-3.5 h-3.5 text-orange-600"></i> Power Backup
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('TABLET') || raw.includes('TAB') || raw.includes('IPAD')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="tablet" class="w-3.5 h-3.5 text-teal-600"></i> Mobile Terminal
                 </span>
                 <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
                     <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
@@ -737,6 +772,113 @@ function setupWorkstationHoverListeners() {
             });
         });
     });
+// ============================================================================
+// COMPOSITE WORKSTATION EXPANSION (Single-Holder Workstations -> Workstation Sets)
+// ============================================================================
+function isCompositeWorkstation(dev) {
+    if (!dev) return false;
+    const rawType = (dev.deviceType || dev.device_type || '').trim().toLowerCase();
+    if (rawType.startsWith('workstation (') || rawType === 'workstation' || (rawType.startsWith('workstation') && rawType.includes(','))) {
+        return true;
+    }
+    if (rawType.includes('cpu') && (rawType.includes('display') || rawType.includes('monitor') || rawType.includes('keyboard') || rawType.includes('mouse'))) {
+        return true;
+    }
+    return false;
+}
+
+function expandCompositeWorkstation(dev, group) {
+    const rawType = (dev.deviceType || dev.device_type || '').trim();
+    let components = [];
+    
+    // Extract anything between parentheses e.g. "Workstation (CPU, Display, Keyboard, Mouse, Tablet)"
+    const match = rawType.match(/\(([^)]+)\)/);
+    if (match) {
+        components = match[1].split(/[,+]/).map(s => s.trim()).filter(Boolean);
+    } else {
+        if (dev.cpuProcessor || dev.storageRam) components.push('CPU');
+        if (dev.monitorSpec) components.push('Display');
+        if (dev.keyboardSpec) components.push('Keyboard');
+        if (dev.mouseSpec) components.push('Mouse');
+        if (dev.tabletSpec) components.push('Tablet');
+        if (dev.printerSpec) components.push('Printer');
+        if (dev.upsSpec) components.push('UPS');
+    }
+    
+    // Normalize component names
+    const normalized = [];
+    components.forEach(c => {
+        const u = c.toUpperCase();
+        if (u.includes('CPU') || u.includes('DESKTOP') || u.includes('PC')) normalized.push('CPU');
+        else if (u.includes('DISPLAY') || u.includes('MONITOR') || u.includes('SCREEN')) normalized.push('Display');
+        else if (u.includes('KEYBOARD') || u.includes('KB')) normalized.push('Keyboard');
+        else if (u.includes('MOUSE')) normalized.push('Mouse');
+        else if (u.includes('TABLET') || u.includes('TAB') || u.includes('IPAD')) normalized.push('Tablet');
+        else if (u.includes('PRINTER') || u.includes('PRT')) normalized.push('Printer');
+        else if (u.includes('UPS') || u.includes('POWER') || u.includes('INVERTER')) normalized.push('UPS');
+        else normalized.push(c);
+    });
+    
+    const uniqueComps = [...new Set(normalized)];
+    if (uniqueComps.length === 0) uniqueComps.push('CPU');
+
+    return uniqueComps.map((comp, idx) => {
+        const sub = { ...dev };
+        sub._isCompositeSubItem = true;
+        sub._compositeIndex = idx;
+        sub._parentAssetId = dev.assetId;
+        sub.deviceType = comp;
+
+        const compUpper = comp.toUpperCase();
+        if (compUpper === 'CPU') {
+            sub.cpuProcessor = dev.cpuProcessor || 'Workstation Compute Engine';
+            sub.storageRam = dev.storageRam || 'System RAM & NVMe Storage';
+            sub.brandName = dev.cpuBrand || dev.brandName || dev.brand || 'Dell';
+        } else if (compUpper === 'DISPLAY') {
+            sub.cpuProcessor = dev.monitorSpec || '24" FHD IPS Medical / Office Grade';
+            sub.storageRam = 'Connected Display Monitor';
+            sub.operatingSystem = 'Hardware Display';
+            sub.ipAddress = '—';
+            sub.macAddress = '—';
+            sub.brandName = dev.monitorBrand || dev.brandName || dev.brand || 'Dell';
+        } else if (compUpper === 'KEYBOARD') {
+            sub.cpuProcessor = dev.keyboardSpec || 'Spill-Resistant Membrane USB Keyboard';
+            sub.storageRam = 'Hardware Peripheral (HID)';
+            sub.operatingSystem = 'Hardware Peripheral (HID)';
+            sub.ipAddress = '—';
+            sub.macAddress = '—';
+            sub.brandName = dev.keyboardBrand || dev.brandName || dev.brand || 'Dell';
+        } else if (compUpper === 'MOUSE') {
+            sub.cpuProcessor = dev.mouseSpec || 'Ergonomic Optical Cleanable Clinic Mouse';
+            sub.storageRam = 'Hardware Peripheral (HID)';
+            sub.operatingSystem = 'Hardware Peripheral (HID)';
+            sub.ipAddress = '—';
+            sub.macAddress = '—';
+            sub.brandName = dev.mouseBrand || dev.brandName || dev.brand || 'Dell';
+        } else if (compUpper === 'TABLET') {
+            sub.cpuProcessor = dev.tabletSpec || 'Mobile Diagnostic Tablet';
+            sub.storageRam = 'Mobile Workstation Unit';
+            sub.operatingSystem = 'Mobile OS';
+            sub.ipAddress = '—';
+            sub.macAddress = '—';
+            sub.brandName = dev.tabletBrand || dev.brandName || dev.brand || 'Samsung';
+        } else if (compUpper === 'PRINTER') {
+            sub.cpuProcessor = dev.printerSpec || 'High-Speed Medical Document Printer';
+            sub.storageRam = 'Direct Print Unit';
+            sub.operatingSystem = 'Printer Firmware';
+            sub.ipAddress = '—';
+            sub.macAddress = '—';
+            sub.brandName = dev.printerBrand || dev.brandName || dev.brand || 'HP';
+        } else if (compUpper === 'UPS') {
+            sub.cpuProcessor = dev.upsSpec || 'Line-Interactive Battery Backup Unit';
+            sub.storageRam = 'AC Power Protection';
+            sub.operatingSystem = 'Power Unit';
+            sub.ipAddress = '—';
+            sub.macAddress = '—';
+            sub.brandName = dev.upsBrand || dev.brandName || dev.brand || 'APC';
+        }
+        return sub;
+    });
 }
 
 function renderInventoryTable() {
@@ -845,6 +987,20 @@ function renderInventoryTable() {
                 groupsMap[key].bldgName = bldgName;
             }
         }
+    });
+
+    // Automatically expand composite Workstations (e.g. "Workstation (CPU, Display, Keyboard, Mouse, Tablet)")
+    // so single-holder workstations get full WORKSTATION SET headers and sub-bundle component rows just like multi-device sets
+    Object.values(groupsMap).forEach(group => {
+        const expanded = [];
+        group.devices.forEach(dev => {
+            if (isCompositeWorkstation(dev)) {
+                expanded.push(...expandCompositeWorkstation(dev, group));
+            } else {
+                expanded.push(dev);
+            }
+        });
+        group.devices = expanded;
     });
 
     const multiDeviceWorkstations = Object.values(groupsMap).filter(g => g.devices.length > 1);
@@ -972,13 +1128,18 @@ function renderInventoryTable() {
                         <tr class="hover:bg-indigo-50/50 transition-colors divide-x divide-slate-100 text-slate-800 border-l-4 border-indigo-500/80 bg-slate-50/20" data-custodian-key="${group.key}">
                             <td class="py-3.5 pl-5 pr-3">
                                 <div class="space-y-1">
-                                    <div class="flex items-center gap-1.5">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
                                         <span class="font-mono font-black text-sm px-2.5 py-1 rounded-md border ${assetBadgeClass} shadow-3xs whitespace-nowrap inline-block">
                                             ${dev.assetId}
                                         </span>
+                                        ${dev._isCompositeSubItem ? `
+                                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded shadow-3xs ${dev.deviceType === 'CPU' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}">
+                                                ${dev.deviceType === 'CPU' ? 'Workstation Core' : 'Linked Component'}
+                                            </span>
+                                        ` : ''}
                                     </div>
                                     <div class="text-xs text-slate-500 font-mono font-medium whitespace-nowrap flex items-center gap-1.5">
-                                        <span><span class="text-slate-400 font-semibold">SN:</span> ${dev.serialNumber}</span>
+                                        <span><span class="text-slate-400 font-semibold">SN:</span> ${dev.serialNumber || (dev._isCompositeSubItem ? 'Bundled with Workstation' : '—')}</span>
                                     </div>
                                 </div>
                             </td>

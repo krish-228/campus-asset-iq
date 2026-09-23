@@ -544,6 +544,14 @@
                     </div>
 
                     <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                        <input type="text" id="input-cpu-brand" name="cpu_brand"
+                            value="Dell"
+                            class="mobile-input text-xs font-medium"
+                            placeholder="e.g. Dell / HP / Lenovo / Custom">
+                    </div>
+
+                    <div>
                         <label class="text-[11px] font-bold text-slate-400 block mb-1">Processor / CPU</label>
                         <input type="text" id="input-cpu" name="cpu_processor"
                             value="Intel Core i5 (Standard Workstation)"
@@ -597,6 +605,14 @@
                     </div>
 
                     <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                        <input type="text" id="input-monitor-brand" name="monitor_brand"
+                            value="Dell"
+                            class="mobile-input text-xs font-medium"
+                            placeholder="e.g. Dell / HP / LG / Samsung / ViewSonic">
+                    </div>
+
+                    <div>
                         <label class="text-[11px] font-bold text-slate-400 block mb-1">Monitor Specs & Resolution</label>
                         <input type="text" id="input-monitor" name="monitor_spec"
                             value='24" FHD IPS Medical / Office Grade (1920x1080)'
@@ -615,6 +631,14 @@
                             <span class="text-xs font-extrabold text-white tracking-wide">Keyboard Specifications</span>
                         </div>
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/60 font-bold">Keyboard Box</span>
+                    </div>
+
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                        <input type="text" id="input-keyboard-brand" name="keyboard_brand"
+                            value="Dell"
+                            class="mobile-input text-xs font-medium"
+                            placeholder="e.g. Dell / Logitech / HP / Lenovo">
                     </div>
 
                     <div>
@@ -639,6 +663,14 @@
                     </div>
 
                     <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                        <input type="text" id="input-mouse-brand" name="mouse_brand"
+                            value="Dell"
+                            class="mobile-input text-xs font-medium"
+                            placeholder="e.g. Dell / Logitech / HP / Lenovo">
+                    </div>
+
+                    <div>
                         <label class="text-[11px] font-bold text-slate-400 block mb-1">Mouse Model & Sensor</label>
                         <input type="text" id="input-mouse" name="mouse_spec"
                             value="Dell MS116 Optical USB Mouse (1000 DPI Cleanable)"
@@ -657,6 +689,14 @@
                             <span class="text-xs font-extrabold text-white tracking-wide">Printer Specifications</span>
                         </div>
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 font-bold">Printer Box</span>
+                    </div>
+
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                        <input type="text" id="input-printer-brand" name="printer_brand"
+                            value="HP"
+                            class="mobile-input text-xs font-medium"
+                            placeholder="e.g. HP / Zebra / Canon / Epson / Brother">
                     </div>
 
                     <div>
@@ -681,6 +721,14 @@
                     </div>
 
                     <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                        <input type="text" id="input-ups-brand" name="ups_brand"
+                            value="APC"
+                            class="mobile-input text-xs font-medium"
+                            placeholder="e.g. APC / Microtek / Luminous / CyberPower">
+                    </div>
+
+                    <div>
                         <label class="text-[11px] font-bold text-slate-400 block mb-1">UPS Model & Capacity</label>
                         <input type="text" id="input-ups" name="ups_spec"
                             value="APC Back-UPS 650VA / 360W Line-Interactive (15-20 Mins Runtime)"
@@ -699,6 +747,14 @@
                             <span class="text-xs font-extrabold text-white tracking-wide">Tablet Specifications</span>
                         </div>
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-800/60 font-bold">Tablet Box</span>
+                    </div>
+
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                        <input type="text" id="input-tablet-brand" name="tablet_brand"
+                            value="Samsung"
+                            class="mobile-input text-xs font-medium"
+                            placeholder="e.g. Samsung / Apple / Lenovo / Zebra">
                     </div>
 
                     <div>
@@ -1402,16 +1458,23 @@
                 contact: document.getElementById('input-contact')?.value || '',
                 email: document.getElementById('input-email')?.value || '',
                 cpu: document.getElementById('input-cpu').value,
+                cpu_brand: document.getElementById('input-cpu-brand')?.value || '',
                 ram: document.getElementById('input-ram').value,
                 os: document.getElementById('input-os').value,
                 ip: document.getElementById('input-ip').value,
                 mac: document.getElementById('input-mac').value,
                 monitor: document.getElementById('input-monitor')?.value || '',
+                monitor_brand: document.getElementById('input-monitor-brand')?.value || '',
                 keyboard: document.getElementById('input-keyboard')?.value || '',
+                keyboard_brand: document.getElementById('input-keyboard-brand')?.value || '',
                 mouse: document.getElementById('input-mouse')?.value || '',
+                mouse_brand: document.getElementById('input-mouse-brand')?.value || '',
                 printer: document.getElementById('input-printer')?.value || '',
+                printer_brand: document.getElementById('input-printer-brand')?.value || '',
                 ups: document.getElementById('input-ups')?.value || '',
+                ups_brand: document.getElementById('input-ups-brand')?.value || '',
                 tablet: document.getElementById('input-tablet')?.value || '',
+                tablet_brand: document.getElementById('input-tablet-brand')?.value || '',
                 purchase: document.getElementById('input-purchase-date').value,
                 warranty: document.getElementById('input-warranty-date').value,
             };
@@ -1462,16 +1525,23 @@
                         document.getElementById('input-email').value = draft.email;
                     }
                     if (draft.cpu) document.getElementById('input-cpu').value = draft.cpu;
+                    if (draft.cpu_brand && document.getElementById('input-cpu-brand')) document.getElementById('input-cpu-brand').value = draft.cpu_brand;
                     if (draft.ram) document.getElementById('input-ram').value = draft.ram;
                     if (draft.os) document.getElementById('input-os').value = draft.os;
                     if (draft.ip) document.getElementById('input-ip').value = draft.ip;
                     if (draft.mac) document.getElementById('input-mac').value = draft.mac;
                     if (draft.monitor && document.getElementById('input-monitor')) document.getElementById('input-monitor').value = draft.monitor;
+                    if (draft.monitor_brand && document.getElementById('input-monitor-brand')) document.getElementById('input-monitor-brand').value = draft.monitor_brand;
                     if (draft.keyboard && document.getElementById('input-keyboard')) document.getElementById('input-keyboard').value = draft.keyboard;
+                    if (draft.keyboard_brand && document.getElementById('input-keyboard-brand')) document.getElementById('input-keyboard-brand').value = draft.keyboard_brand;
                     if (draft.mouse && document.getElementById('input-mouse')) document.getElementById('input-mouse').value = draft.mouse;
+                    if (draft.mouse_brand && document.getElementById('input-mouse-brand')) document.getElementById('input-mouse-brand').value = draft.mouse_brand;
                     if (draft.printer && document.getElementById('input-printer')) document.getElementById('input-printer').value = draft.printer;
+                    if (draft.printer_brand && document.getElementById('input-printer-brand')) document.getElementById('input-printer-brand').value = draft.printer_brand;
                     if (draft.ups && document.getElementById('input-ups')) document.getElementById('input-ups').value = draft.ups;
+                    if (draft.ups_brand && document.getElementById('input-ups-brand')) document.getElementById('input-ups-brand').value = draft.ups_brand;
                     if (draft.tablet && document.getElementById('input-tablet')) document.getElementById('input-tablet').value = draft.tablet;
+                    if (draft.tablet_brand && document.getElementById('input-tablet-brand')) document.getElementById('input-tablet-brand').value = draft.tablet_brand;
                     if (draft.purchase) document.getElementById('input-purchase-date').value = draft.purchase;
                     if (draft.warranty) document.getElementById('input-warranty-date').value = draft.warranty;
                     updateCustodianStatusUI();
@@ -1567,6 +1637,7 @@
             const payload = {
                 asset_id: assetId,
                 device_type: currentCategory,
+                components: Array.from(selectedComponents),
                 serial_number: document.getElementById('input-serial-number').value.trim(),
                 org_id: currentOrg,
                 building_name: document.getElementById('input-building').value.trim(),
@@ -1580,13 +1651,20 @@
                 assigned_email: assignedEmail,
                 status: document.getElementById('input-status').value,
                 cpu_processor: document.getElementById('input-cpu').value.trim(),
+                cpu_brand: (document.getElementById('input-cpu-brand')?.value || '').trim(),
                 storage_ram: document.getElementById('input-ram').value.trim(),
                 monitor_spec: (document.getElementById('input-monitor')?.value || '').trim(),
+                monitor_brand: (document.getElementById('input-monitor-brand')?.value || '').trim(),
                 keyboard_spec: (document.getElementById('input-keyboard')?.value || '').trim(),
+                keyboard_brand: (document.getElementById('input-keyboard-brand')?.value || '').trim(),
                 mouse_spec: (document.getElementById('input-mouse')?.value || '').trim(),
+                mouse_brand: (document.getElementById('input-mouse-brand')?.value || '').trim(),
                 printer_spec: (document.getElementById('input-printer')?.value || '').trim(),
+                printer_brand: (document.getElementById('input-printer-brand')?.value || '').trim(),
                 ups_spec: (document.getElementById('input-ups')?.value || '').trim(),
+                ups_brand: (document.getElementById('input-ups-brand')?.value || '').trim(),
                 tablet_spec: (document.getElementById('input-tablet')?.value || '').trim(),
+                tablet_brand: (document.getElementById('input-tablet-brand')?.value || '').trim(),
                 operating_system: document.getElementById('input-os').value,
                 ip_address: document.getElementById('input-ip').value.trim(),
                 mac_address: document.getElementById('input-mac').value.trim(),
@@ -1605,11 +1683,13 @@
 
                 const data = await res.json();
                 if (data.success) {
-                    lastRegisteredAssetId = assetId;
+                    lastRegisteredAssetId = data.asset_id || assetId;
 
                     // Populate success modal
-                    document.getElementById('modal-saved-tag').textContent = assetId;
-                    document.getElementById('modal-saved-type').textContent = `${currentCategory} (${payload.status})`;
+                    document.getElementById('modal-saved-tag').textContent = data.asset_tag_summary || assetId;
+                    document.getElementById('modal-saved-type').textContent = data.created_count > 1 
+                        ? `${currentCategory} (${data.created_count} Itemized Assets)`
+                        : `${currentCategory} (${payload.status})`;
                     document.getElementById('modal-saved-room').textContent = `${roomName} • ${currentFloor}`;
                     const custodianSummary = (assignedDesig && assignedUserName.toLowerCase() !== 'unassigned')
                         ? `${assignedUserName} • ${assignedDesig}`
