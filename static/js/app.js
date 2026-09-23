@@ -4183,7 +4183,9 @@ function renderAll() {
         updateLandingCounts();
     }
 
-    lucide.createIcons();
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        lucide.createIcons();
+    }
 }
 
 // Helper to retrieve CSRF token for secure POST requests
@@ -4260,8 +4262,13 @@ async function syncAuditLogsFromDatabase() {
     }
 }
 
-// Robust Application Initialization (handles already-loaded DOM)
+// Robust Application Initialization (guaranteed idempotent single-execution)
+let isCampusTrackerAppInitialized = false;
+
 function initCampusTrackerApp() {
+    if (isCampusTrackerAppInitialized) return;
+    isCampusTrackerAppInitialized = true;
+
     initAppState();
     renderAll();
     if (window.lucide && typeof window.lucide.createIcons === 'function') {
@@ -4287,8 +4294,9 @@ function initCampusTrackerApp() {
     } catch (e) { }
 }
 
+// Ensure execution exactly once when the DOM is ready
 if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initCampusTrackerApp);
+    document.addEventListener("DOMContentLoaded", initCampusTrackerApp, { once: true });
 } else {
     initCampusTrackerApp();
-}
+}
