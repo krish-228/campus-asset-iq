@@ -727,7 +727,6 @@ function renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMultiDevice
                 </div>
             </td>
             <td class="py-3.5 px-3.5 whitespace-nowrap">${getDeviceTypeBadge(dev)}</td>
-            <td class="py-3 px-3.5">${userDisplay}</td>
             <td class="py-3 px-3.5">${locationDisplay}</td>
             <td class="py-3 px-3.5">${computeDisplay}</td>
             <td class="py-3 px-3.5">${getOsDisplayHtml(dev)}</td>
@@ -909,7 +908,7 @@ function renderInventoryTable() {
     if (devices.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="9" class="text-center py-12 text-slate-400">
+                <td colspan="8" class="text-center py-12 text-slate-400">
                     <div class="flex flex-col items-center justify-center gap-2">
                         <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                         <span class="font-semibold text-xs">No matching devices found in inventory.</span>
@@ -1041,7 +1040,7 @@ function renderInventoryTable() {
 
             html += `
                 <tr class="bg-gradient-to-r from-indigo-50/95 via-slate-50 to-indigo-50/50 border-t-2 border-indigo-500/80 shadow-2xs group-header-row cursor-pointer select-none" onclick="toggleWorkstationCollapse('${group.key}')">
-                    <td colspan="9" class="py-3 px-5">
+                    <td colspan="8" class="py-3 px-5">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
                             <!-- Left: Workstation Title, Custodian Details & Location -->
                             <div class="flex items-center gap-3.5 min-w-0">
@@ -1097,7 +1096,6 @@ function renderInventoryTable() {
                 group.devices.forEach((dev) => {
                     const isHosp = dev.orgId === 'HOSP';
                     const assetBadgeClass = isHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
-                    const roleBadge = getWorkstationRoleBadge(dev, group.displayName);
 
                     const devRoom = dev._meta.roomName || group.roomName;
                     const devFloor = dev._meta.floorName || group.floorName;
@@ -1146,7 +1144,6 @@ function renderInventoryTable() {
                                 </div>
                             </td>
                             <td class="py-3.5 px-3.5 whitespace-nowrap">${getDeviceTypeBadge(dev)}</td>
-                            <td class="py-3 px-3.5">${roleBadge}</td>
                             <td class="py-3 px-3.5">${locationDisplay}</td>
                             <td class="py-3 px-3.5">${computeDisplay}</td>
                             <td class="py-3 px-3.5">${getOsDisplayHtml(dev)}</td>
@@ -1189,7 +1186,7 @@ function renderInventoryTable() {
         if (unassignedDevices.length > 0) {
             html += `
                 <tr class="bg-slate-100/90 border-t-2 border-slate-300/80 shadow-2xs">
-                    <td colspan="9" class="py-2.5 px-5">
+                    <td colspan="8" class="py-2.5 px-5">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2.5">
                                 <span class="w-7 h-7 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs shadow-2xs shrink-0">
