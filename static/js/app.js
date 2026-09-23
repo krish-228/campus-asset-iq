@@ -772,6 +772,8 @@ function setupWorkstationHoverListeners() {
             });
         });
     });
+}
+
 // ============================================================================
 // COMPOSITE WORKSTATION EXPANSION (Single-Holder Workstations -> Workstation Sets)
 // ============================================================================
