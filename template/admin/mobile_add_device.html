@@ -381,29 +381,18 @@
                     <div id="asset-id-warning" class="text-[11px] text-rose-400 font-semibold mt-1.5 hidden flex items-center gap-1.5"></div>
                 </div>
 
-                <!-- Serial Number & Status -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div>
-                        <label for="input-serial-number" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
-                            <i data-lucide="barcode" class="w-3 h-3 text-cyan-400"></i>
-                            <span>Serial Number</span>
-                        </label>
-                        <input type="text" id="input-serial-number" name="serial_number"
-                            placeholder="e.g. SN-DELL-88412"
-                            class="mobile-input uppercase font-mono text-xs">
-                    </div>
-                    <div>
-                        <label for="input-status" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
-                            <i data-lucide="activity" class="w-3 h-3 text-cyan-400"></i>
-                            <span>Operational Status</span>
-                        </label>
-                        <select id="input-status" name="status" class="mobile-input text-xs font-semibold">
-                            <option value="Active" selected>Active / In Use</option>
-                            <option value="In Maintenance">In Maintenance</option>
-                            <option value="In Stock">In Stock / Backup</option>
-                            <option value="Decommissioned">Decommissioned</option>
-                        </select>
-                    </div>
+                <!-- Operational Status -->
+                <div class="pt-1">
+                    <label for="input-status" class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                        <i data-lucide="activity" class="w-3 h-3 text-cyan-400"></i>
+                        <span>Operational Status</span>
+                    </label>
+                    <select id="input-status" name="status" class="mobile-input text-xs font-semibold">
+                        <option value="Active" selected>Active / In Use</option>
+                        <option value="In Maintenance">In Maintenance</option>
+                        <option value="In Stock">In Stock / Backup</option>
+                        <option value="Decommissioned">Decommissioned</option>
+                    </select>
                 </div>
             </section>
 
@@ -543,12 +532,25 @@
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 font-bold">CPU Box</span>
                     </div>
 
-                    <div>
-                        <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
-                        <input type="text" id="input-cpu-brand" name="cpu_brand"
-                            value="Dell"
-                            class="mobile-input text-xs font-medium"
-                            placeholder="e.g. Dell / HP / Lenovo / Custom">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <span>Brand Name</span>
+                            </label>
+                            <input type="text" id="input-cpu-brand" name="cpu_brand"
+                                value="Dell"
+                                class="mobile-input text-xs font-medium"
+                                placeholder="e.g. Dell / HP / Lenovo / Custom">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <i data-lucide="barcode" class="w-3 h-3 text-cyan-400"></i>
+                                <span>Serial Number (S/N)</span>
+                            </label>
+                            <input type="text" id="input-cpu-sn" name="cpu_serial"
+                                class="mobile-input uppercase font-mono text-xs"
+                                placeholder="e.g. SN-DELL-88412">
+                        </div>
                     </div>
 
                     <div>
@@ -1512,7 +1514,8 @@
                 components: Array.from(selectedComponents),
                 category: currentCategory,
                 asset_id: document.getElementById('input-asset-id').value,
-                serial: document.getElementById('input-serial-number').value,
+                serial: document.getElementById('input-cpu-sn')?.value || '',
+                cpu_sn: document.getElementById('input-cpu-sn')?.value || '',
                 status: document.getElementById('input-status').value,
                 building: document.getElementById('input-building').value,
                 floor: currentFloor,
@@ -1578,7 +1581,9 @@
                     } else {
                         autoGenerateTag();
                     }
-                    if (draft.serial) document.getElementById('input-serial-number').value = draft.serial;
+                    if ((draft.cpu_sn || draft.serial) && document.getElementById('input-cpu-sn')) {
+                        document.getElementById('input-cpu-sn').value = draft.cpu_sn || draft.serial;
+                    }
                     if (draft.status) document.getElementById('input-status').value = draft.status;
                     if (draft.building) document.getElementById('input-building').value = draft.building;
                     if (draft.room) document.getElementById('input-room').value = draft.room;
@@ -1643,7 +1648,7 @@
             if (contactInput) contactInput.value = '';
             const emailInput = document.getElementById('input-email');
             if (emailInput) emailInput.value = '';
-            ['input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn'].forEach(id => {
+            ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
@@ -1716,11 +1721,13 @@
             const assignedDept = (document.getElementById('input-department')?.value || '').trim();
             const assignedContact = (document.getElementById('input-contact')?.value || '').trim();
             const assignedEmail = (document.getElementById('input-email')?.value || '').trim();
+            const cpuSerial = (document.getElementById('input-cpu-sn')?.value || '').trim();
             const payload = {
                 asset_id: assetId,
                 device_type: currentCategory,
                 components: Array.from(selectedComponents),
-                serial_number: document.getElementById('input-serial-number').value.trim(),
+                serial_number: cpuSerial,
+                cpu_serial: cpuSerial,
                 org_id: currentOrg,
                 building_name: document.getElementById('input-building').value.trim(),
                 floor_name: currentFloor,
@@ -1810,9 +1817,10 @@
             document.getElementById('modal-success').classList.add('hidden');
             const keepLocation = document.getElementById('toggle-keep-location').checked;
 
-            // Reset asset ID and serial number
+            // Reset asset ID and CPU serial number
             document.getElementById('input-asset-id').value = "";
-            document.getElementById('input-serial-number').value = "";
+            const cpuSnEl = document.getElementById('input-cpu-sn');
+            if (cpuSnEl) cpuSnEl.value = "";
             document.getElementById('asset-id-status').classList.add('hidden');
 
             if (!keepLocation) {
@@ -1827,7 +1835,7 @@
                 if (contactEl) contactEl.value = "";
                 const emailEl = document.getElementById('input-email');
                 if (emailEl) emailEl.value = "";
-                ['input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn'].forEach(id => {
+                ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = '';
                 });
