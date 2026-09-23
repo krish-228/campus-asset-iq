@@ -107,6 +107,8 @@ class DeviceAsset(models.Model):
     tablet_spec = models.CharField(max_length=255, blank=True, default="")
     ip_address = models.CharField(max_length=50, blank=True)
     mac_address = models.CharField(max_length=50, blank=True)
+    device_id = models.CharField(max_length=100, blank=True, default="", help_text="Hardware / Tablet Device ID")
+    anydesk_id = models.CharField(max_length=100, blank=True, default="", help_text="AnyDesk Remote ID")
     operating_system = models.CharField(max_length=100, blank=True)
     purchase_date = models.CharField(max_length=50, blank=True)
     warranty_expiry_date = models.CharField(max_length=50, blank=True)

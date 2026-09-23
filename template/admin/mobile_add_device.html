@@ -811,6 +811,37 @@
                             placeholder='e.g. Apple iPad 10.2" (9th Gen) / Samsung Galaxy Tab S9 FE 10.9"'
                             class="mobile-input text-xs font-medium">
                     </div>
+
+                    <!-- Additional Tablet Identifiers & Remote Access -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <i data-lucide="hash" class="w-3 h-3 text-teal-400"></i>
+                                <span>Device ID</span>
+                            </label>
+                            <input type="text" id="input-tablet-device-id" name="tablet_device_id"
+                                class="mobile-input text-xs font-mono uppercase"
+                                placeholder="e.g. TAB-DEV-0042">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <i data-lucide="monitor-up" class="w-3 h-3 text-teal-400"></i>
+                                <span>AnyDesk ID</span>
+                            </label>
+                            <input type="text" id="input-tablet-anydesk-id" name="tablet_anydesk_id"
+                                class="mobile-input text-xs font-mono"
+                                placeholder="e.g. 982 411 204">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <i data-lucide="wifi" class="w-3 h-3 text-teal-400"></i>
+                                <span>MAC Address</span>
+                            </label>
+                            <input type="text" id="input-tablet-mac" name="tablet_mac_address"
+                                class="mobile-input text-xs font-mono uppercase"
+                                placeholder="e.g. 48:2C:6A:11:22:33">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Empty State Alert when No Component is Selected -->
@@ -1529,6 +1560,9 @@
                 tablet: document.getElementById('input-tablet')?.value || '',
                 tablet_brand: document.getElementById('input-tablet-brand')?.value || '',
                 tablet_sn: document.getElementById('input-tablet-sn')?.value || '',
+                tablet_device_id: document.getElementById('input-tablet-device-id')?.value || '',
+                tablet_anydesk_id: document.getElementById('input-tablet-anydesk-id')?.value || '',
+                tablet_mac: document.getElementById('input-tablet-mac')?.value || '',
                 purchase: document.getElementById('input-purchase-date').value,
                 warranty: document.getElementById('input-warranty-date').value,
             };
@@ -1604,6 +1638,9 @@
                     if (draft.tablet && document.getElementById('input-tablet')) document.getElementById('input-tablet').value = draft.tablet;
                     if (draft.tablet_brand && document.getElementById('input-tablet-brand')) document.getElementById('input-tablet-brand').value = draft.tablet_brand;
                     if (draft.tablet_sn && document.getElementById('input-tablet-sn')) document.getElementById('input-tablet-sn').value = draft.tablet_sn;
+                    if (draft.tablet_device_id && document.getElementById('input-tablet-device-id')) document.getElementById('input-tablet-device-id').value = draft.tablet_device_id;
+                    if (draft.tablet_anydesk_id && document.getElementById('input-tablet-anydesk-id')) document.getElementById('input-tablet-anydesk-id').value = draft.tablet_anydesk_id;
+                    if (draft.tablet_mac && document.getElementById('input-tablet-mac')) document.getElementById('input-tablet-mac').value = draft.tablet_mac;
                     if (draft.purchase) document.getElementById('input-purchase-date').value = draft.purchase;
                     if (draft.warranty) document.getElementById('input-warranty-date').value = draft.warranty;
                     updateCustodianStatusUI();
@@ -1627,7 +1664,7 @@
             if (contactInput) contactInput.value = '';
             const emailInput = document.getElementById('input-email');
             if (emailInput) emailInput.value = '';
-            ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn'].forEach(id => {
+            ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn', 'input-tablet-device-id', 'input-tablet-anydesk-id', 'input-tablet-mac'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
@@ -1739,6 +1776,11 @@
                 tablet_spec: (document.getElementById('input-tablet')?.value || '').trim(),
                 tablet_brand: (document.getElementById('input-tablet-brand')?.value || '').trim(),
                 tablet_serial: (document.getElementById('input-tablet-sn')?.value || '').trim(),
+                tablet_device_id: (document.getElementById('input-tablet-device-id')?.value || '').trim(),
+                tablet_anydesk_id: (document.getElementById('input-tablet-anydesk-id')?.value || '').trim(),
+                tablet_mac_address: (document.getElementById('input-tablet-mac')?.value || '').trim(),
+                device_id: (document.getElementById('input-tablet-device-id')?.value || '').trim(),
+                anydesk_id: (document.getElementById('input-tablet-anydesk-id')?.value || '').trim(),
                 operating_system: document.getElementById('input-os').value,
                 ip_address: document.getElementById('input-ip').value.trim(),
                 mac_address: document.getElementById('input-mac').value.trim(),
@@ -1814,7 +1856,7 @@
                 if (contactEl) contactEl.value = "";
                 const emailEl = document.getElementById('input-email');
                 if (emailEl) emailEl.value = "";
-                ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn'].forEach(id => {
+                ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn', 'input-tablet-device-id', 'input-tablet-anydesk-id', 'input-tablet-mac'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = '';
                 });

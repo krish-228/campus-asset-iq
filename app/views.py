@@ -207,6 +207,8 @@ def api_get_devices(request):
             'status': d.status,
             'brandName': getattr(d, 'brand_name', '') or '',
             'brand': getattr(d, 'brand_name', '') or '',
+            'hardwareDeviceId': getattr(d, 'device_id', '') or '',
+            'anydeskId': getattr(d, 'anydesk_id', '') or '',
         })
     return JsonResponse({'success': True, 'devices': devices_data})
 
@@ -420,6 +422,11 @@ def api_save_device(request):
     printer_serial = (data.get('printer_serial') or data.get('printer_sn') or '').strip().upper()
     ups_serial = (data.get('ups_serial') or data.get('ups_sn') or '').strip().upper()
     tablet_serial = (data.get('tablet_serial') or data.get('tablet_sn') or '').strip().upper()
+    tablet_device_id = (data.get('tablet_device_id') or data.get('device_id') or '').strip().upper()
+    tablet_anydesk_id = (data.get('tablet_anydesk_id') or data.get('anydesk_id') or '').strip()
+    tablet_mac = (data.get('tablet_mac_address') or data.get('tablet_mac') or '').strip().upper()
+    device_id = (data.get('device_id') or tablet_device_id or '').strip()
+    anydesk_id = (data.get('anydesk_id') or tablet_anydesk_id or '').strip()
 
     if not serial_number and cpu_serial:
         serial_number = cpu_serial
@@ -542,7 +549,7 @@ def api_save_device(request):
                     item_ram = 'Mobile Workstation Unit'
                     item_os = 'Mobile OS / Windows Tablet'
                     item_ip = ip_address or '-'
-                    item_mac = mac_address or '-'
+                    item_mac = tablet_mac or mac_address or '-'
                 elif comp_upper == 'PRINTER':
                     item_dev_type = 'Printer'
                     item_brand = printer_brand or brand_name or 'HP'
@@ -574,6 +581,8 @@ def api_save_device(request):
                     device_type=item_dev_type,
                     brand_name=item_brand,
                     serial_number=comp_sn,
+                    device_id=tablet_device_id if comp_upper == 'TABLET' else (device_id if comp_upper == 'CPU' else ''),
+                    anydesk_id=tablet_anydesk_id if comp_upper == 'TABLET' else anydesk_id,
                     org_id=org_id,
                     org_name=org_name,
                     building_name=building_name,
@@ -774,7 +783,17 @@ def api_save_device(request):
         dev.tablet_spec = tablet_spec
         dev.operating_system = operating_system
         dev.ip_address = ip_address
-        dev.mac_address = mac_address
+        dev.mac_address = tablet_mac if ('TABLET' in dtype_up and tablet_mac) else mac_address
+        if 'TABLET' in dtype_up:
+            if tablet_device_id:
+                dev.device_id = tablet_device_id
+            if tablet_anydesk_id:
+                dev.anydesk_id = tablet_anydesk_id
+        else:
+            if device_id:
+                dev.device_id = device_id
+            if anydesk_id:
+                dev.anydesk_id = anydesk_id
         dev.purchase_date = purchase_date
         dev.warranty_expiry_date = warranty_expiry_date
         dev.status = status
@@ -788,6 +807,8 @@ def api_save_device(request):
             device_type=device_type,
             brand_name=single_brand,
             serial_number=serial_number,
+            device_id=tablet_device_id if 'TABLET' in dtype_up else device_id,
+            anydesk_id=tablet_anydesk_id if 'TABLET' in dtype_up else anydesk_id,
             org_id=org_id,
             org_name=org_name,
             building_name=building_name,
@@ -810,7 +831,7 @@ def api_save_device(request):
             tablet_spec=tablet_spec,
             operating_system=operating_system,
             ip_address=ip_address,
-            mac_address=mac_address,
+            mac_address=tablet_mac if ('TABLET' in dtype_up and tablet_mac) else mac_address,
             purchase_date=purchase_date,
             warranty_expiry_date=warranty_expiry_date,
             status=status
@@ -874,6 +895,8 @@ def api_save_device(request):
             'status': dev.status,
             'brandName': getattr(dev, 'brand_name', '') or '',
             'brand': getattr(dev, 'brand_name', '') or '',
+            'hardwareDeviceId': getattr(dev, 'device_id', '') or '',
+            'anydeskId': getattr(dev, 'anydesk_id', '') or '',
         }
     })
 
