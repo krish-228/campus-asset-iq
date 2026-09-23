@@ -12,18 +12,7 @@ import random
 from django.db import models, transaction
 from .models import DeviceComplaint, UserProfile, DeviceAsset, CustodyTransferLog, EquipmentPMS, EquipmentBreakdown
 
-# ============================================================================
-# REALISTIC CAMPUS HARDWARE & STAFF CATALOG
-# ============================================================================
 
-SAMPLE_STAFF = []
-
-
-SAMPLE_DEVICES = []
-
-def ensure_sample_complaints():
-    """No-op: sample complaints permanently purged."""
-    pass
 
 def normalize_device_type(code, asset_id=''):
     c = (code or '').upper().strip()
@@ -271,16 +260,11 @@ def api_reassign_device(request):
                 }
             })
 
-        # Lookup new user info from SAMPLE_STAFF or UserProfile if not provided
-        if not new_user_name:
-            staff_match = next((s for s in SAMPLE_STAFF if s['id'] == new_user_id or s['empId'] == new_emp_id), None)
-            if staff_match:
-                new_user_name = staff_match['fullName']
-                new_emp_id = staff_match['empId']
-            else:
-                profile = UserProfile.objects.filter(emp_id=new_emp_id).first()
-                if profile:
-                    new_user_name = profile.full_name
+        # Lookup new user info from UserProfile if not provided
+        if not new_user_name and new_emp_id:
+            profile = UserProfile.objects.filter(emp_id=new_emp_id).first()
+            if profile:
+                new_user_name = profile.full_name
 
         device.assigned_user_id = new_user_id
         device.assigned_user_name = new_user_name or "Assigned Staff"
@@ -380,18 +364,7 @@ def api_save_device(request):
                 assigned_phone = prof.phone
             if not assigned_email and prof.user and prof.user.email:
                 assigned_email = prof.user.email
-        else:
-            for s in SAMPLE_STAFF:
-                if s.get('fullName', '').lower() == assigned_user_name.lower() or (assigned_emp_id and s.get('empId', '').lower() == assigned_emp_id.lower()):
-                    if not assigned_designation:
-                        assigned_designation = s.get('designation', '')
-                    if not assigned_department:
-                        assigned_department = s.get('department', '') or s.get('dept', '')
-                    if not assigned_phone:
-                        assigned_phone = s.get('phone', '')
-                    if not assigned_email:
-                        assigned_email = s.get('email', '')
-                    break
+
 
     cpu_processor = (data.get('cpuProcessor') or data.get('cpu_processor') or 'Intel Core i5 (Standard)').strip()
     storage_ram = (data.get('storageRam') or data.get('storage_ram') or '16GB RAM / 512GB SSD').strip()
@@ -1342,12 +1315,7 @@ def mobile_report_view(request, asset_id=None):
             if prof:
                 user_desig = prof.designation or ''
                 user_dept = prof.department or ''
-            else:
-                for s in SAMPLE_STAFF:
-                    if s.get('fullName', '').lower() == device_obj.assigned_user_name.lower():
-                        user_desig = s.get('designation', '')
-                        user_dept = s.get('department', '')
-                        break
+
 
         # Determine readable hardware model / processor line (e.g. Intel Core i5-13400 (10 cores))
         hardware_model = device_obj.cpu_processor or device_obj.monitor_spec or (f"{device_obj.device_type} Workstation")
@@ -1503,8 +1471,6 @@ def api_submit_quick_complaint(request):
 @admin_required
 def admin_complaints(request):
     """Admin Helpdesk Tickets / Complaints view (PSM Hospital only)."""
-    ensure_sample_complaints()
-
     org = request.GET.get('org', 'HOSP')
     if org == 'UNI':
         return redirect('/admin-complaints/?org=HOSP')
@@ -1700,19 +1666,7 @@ def mobile_add_device_view(request):
             }
             for prof in staff_qs
         ]
-    else:
-        staff_list = [
-            {
-                'full_name': s.get('fullName', ''),
-                'emp_id': s.get('empId', ''),
-                'department': s.get('department', ''),
-                'designation': s.get('designation', ''),
-                'phone': s.get('phone', ''),
-                'email': s.get('email', ''),
-                'org_id': s.get('orgId', 'HOSP')
-            }
-            for s in SAMPLE_STAFF if s.get('orgId') == 'HOSP'
-        ]
+
 
     context = {
         'today_str': today_str,
@@ -2237,17 +2191,9 @@ def api_import_pms_excel(request):
 # ============================================================================
 # 8. EQUIPMENT BREAKDOWN REGISTER
 # ============================================================================
-
-def ensure_sample_breakdowns():
-    """No-op: sample breakdowns permanently purged."""
-    pass
-
-
 @admin_required
 def equipment_breakdown(request):
     """8. Equipment Breakdown Register view."""
-    ensure_sample_breakdowns()
-
     org = request.GET.get('org', 'ALL')
     search = request.GET.get('search', '').strip()
     filter_device = request.GET.get('device', 'ALL')

@@ -55,18 +55,12 @@ urlpatterns = [
     # Existing Admin Hardware Lifecycle Routes
     path('inventory/', views.inventory, name='inventory'),
     path('inventory/add/', views.mobile_add_device_view, name='mobile_add_device'),
-    path('inventory/add', views.mobile_add_device_view),
-    path('add-device/', views.mobile_add_device_view, name='mobile_add_device_alias'),
-    path('add-device', views.mobile_add_device_view),
     path('api/devices/quick-generate-id/', views.api_generate_asset_id, name='api_generate_asset_id'),
     path('api/devices/check-asset-id/', views.api_check_asset_id, name='api_check_asset_id'),
     path('user/', views.user, name='user'),
-    path('users/', views.user, name='users'),
     path('location/', views.location, name='location'),
-    path('locations/', views.location, name='locations'),
     path('audit/', views.audit, name='audit'),
     path('tag/', views.tag, name='tag'),
-    path('tags/', views.tag, name='tags'),
 
     # Preventive Maintenance Service (PMS) Schedule
     path('pms-schedule/', views.pms_schedule, name='pms_schedule'),
@@ -88,7 +82,6 @@ urlpatterns = [
     path('api/devices/import-excel/', views.api_import_devices_excel, name='api_import_devices_excel'),
     path('api/devices/reassign/', views.api_reassign_device, name='api_reassign_device'),
     path('api/devices/save/', views.api_save_device, name='api_save_device'),
-    path('api/devices/add/', views.api_save_device, name='api_add_device'),
     path('api/audit-logs/', views.api_get_audit_logs, name='api_get_audit_logs'),
 ]
 

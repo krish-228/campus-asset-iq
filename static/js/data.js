@@ -118,8 +118,6 @@ const INITIAL_SAMPLE_DATA = {
     ],
 
     users: [],
-
-
     devices: [],
     locationHistories: [],
     assignmentHistories: [],
