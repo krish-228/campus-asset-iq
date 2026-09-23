@@ -549,12 +549,87 @@
                         </div>
                         <div>
                             <label class="text-[11px] font-bold text-slate-400 block mb-1">Operating System</label>
-                            <select id="input-os" name="operating_system" class="mobile-input text-xs font-semibold">
-                                <option value="Windows 11 Pro" selected>Windows 11 Pro</option>
-                                <option value="Windows 10 Pro">Windows 10 Pro</option>
-                                <option value="Linux Ubuntu 24.04">Linux Ubuntu LTS</option>
-                                <option value="Link-OS / Medical">Link-OS / Embedded</option>
-                            </select>
+                            <div class="relative">
+                                <input type="text" id="input-os" name="operating_system" list="os-datalist"
+                                    value="Windows 11 Pro"
+                                    class="mobile-input text-xs font-semibold pr-8"
+                                    placeholder="e.g. Windows 11 Pro / Linux"
+                                    autocomplete="off">
+                                <button type="button" onclick="toggleOsMenu(event)" id="btn-toggle-os-menu"
+                                    class="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-all active:scale-95"
+                                    title="Choose from presets">
+                                    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                                </button>
+
+                                <!-- Dropdown Menu for fast 1-click selection -->
+                                <div id="os-menu" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900/95 border border-slate-700/90 rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto p-1.5 backdrop-blur-md space-y-0.5">
+                                    <button type="button" onclick="selectOsPreset('Windows 11 Pro')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>Windows 11 Pro</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">Standard</span>
+                                    </button>
+                                    <button type="button" onclick="selectOsPreset('Windows 11 Enterprise')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>Windows 11 Enterprise</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">Corp</span>
+                                    </button>
+                                    <button type="button" onclick="selectOsPreset('Windows 10 Pro')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>Windows 10 Pro</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">Legacy</span>
+                                    </button>
+                                    <button type="button" onclick="selectOsPreset('Windows 10 Enterprise LTSC')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>Windows 10 Enterprise LTSC</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">Medical</span>
+                                    </button>
+                                    <button type="button" onclick="selectOsPreset('Windows Server 2022')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>Windows Server 2022</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">Server</span>
+                                    </button>
+                                    <button type="button" onclick="selectOsPreset('Linux Ubuntu 24.04 LTS')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>Linux Ubuntu 24.04 LTS</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">Linux</span>
+                                    </button>
+                                    <button type="button" onclick="selectOsPreset('Linux Ubuntu 22.04 LTS')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>Linux Ubuntu 22.04 LTS</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">Linux</span>
+                                    </button>
+                                    <button type="button" onclick="selectOsPreset('Red Hat Enterprise Linux (RHEL)')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>Red Hat Enterprise Linux</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">RHEL</span>
+                                    </button>
+                                    <button type="button" onclick="selectOsPreset('macOS Sonoma / Sequoia')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>macOS Sonoma / Sequoia</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">Apple</span>
+                                    </button>
+                                    <button type="button" onclick="selectOsPreset('Android 14 / Medical OS')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>Android 14 / Medical OS</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">Embedded</span>
+                                    </button>
+                                    <button type="button" onclick="selectOsPreset('Link-OS / Medical Printer')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>Link-OS / Medical Printer</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">Printer</span>
+                                    </button>
+                                    <button type="button" onclick="selectOsPreset('ChromeOS Flex')" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-cyan-950/80 hover:text-cyan-300 rounded-lg flex items-center justify-between transition-colors">
+                                        <span>ChromeOS Flex</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">Thin Client</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <datalist id="os-datalist">
+                                <option value="Windows 11 Pro">
+                                <option value="Windows 11 Enterprise">
+                                <option value="Windows 11 Home">
+                                <option value="Windows 10 Pro">
+                                <option value="Windows 10 Enterprise LTSC">
+                                <option value="Windows Server 2022">
+                                <option value="Windows Server 2019">
+                                <option value="Linux Ubuntu 24.04 LTS">
+                                <option value="Linux Ubuntu 22.04 LTS">
+                                <option value="Red Hat Enterprise Linux">
+                                <option value="Debian 12">
+                                <option value="macOS Sonoma / Sequoia">
+                                <option value="Android 14 / Medical OS">
+                                <option value="Link-OS / Medical">
+                                <option value="ChromeOS Flex">
+                            </datalist>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
@@ -1133,6 +1208,39 @@
             if (navigator.vibrate) navigator.vibrate(15);
             saveDraft();
         }
+
+        // Operating System Combobox Toggle & Selection Handlers
+        function toggleOsMenu(e) {
+            if (e) e.stopPropagation();
+            const menu = document.getElementById('os-menu');
+            if (menu) {
+                menu.classList.toggle('hidden');
+                if (!menu.classList.contains('hidden')) {
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }
+            }
+        }
+
+        function selectOsPreset(val) {
+            const input = document.getElementById('input-os');
+            if (input) {
+                input.value = val;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            const menu = document.getElementById('os-menu');
+            if (menu) menu.classList.add('hidden');
+            saveDraft();
+        }
+
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('os-menu');
+            const btn = document.getElementById('btn-toggle-os-menu');
+            if (menu && !menu.classList.contains('hidden')) {
+                if (!menu.contains(e.target) && (!btn || !btn.contains(e.target))) {
+                    menu.classList.add('hidden');
+                }
+            }
+        });
 
         const staffLookup = {};
         try {
