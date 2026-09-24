@@ -417,8 +417,12 @@ def api_save_device(request):
         elif 'tablet' in device_type.lower() and tablet_spec:
             cpu_processor = tablet_spec
 
-    is_edit_request = bool(data.get('is_edit') or data.get('editId') or data.get('edit_id') or data.get('allow_overwrite'))
-    dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
+    edit_id = (data.get('editId') or data.get('edit_id') or data.get('id') or '').strip()
+    is_edit_request = bool(data.get('is_edit') or edit_id or data.get('allow_overwrite'))
+    if edit_id:
+        dev = DeviceAsset.objects.filter(dev_id=edit_id).first() or DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
+    else:
+        dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
 
     if dev and not is_edit_request:
         return JsonResponse({
@@ -440,11 +444,12 @@ def api_save_device(request):
     )
 
     # =========================================================================
-    # MULTI-COMPONENT WORKSTATION ITEMIZATION (Rajesh Kulkarni Header + Sub-Bundle architecture)
+    # MULTI-COMPONENT WORKSTATION ITEMIZATION (Single Asset Tag Architecture)
     # Saves distinct DeviceAsset rows in PostgreSQL for each selected hardware piece
+    # All components for this person share the exact same single asset tag
     # =========================================================================
     if not is_edit_request and len(components) > 1:
-        allocated_tags = allocate_sequential_tags(asset_id, len(components))
+        allocated_tags = [asset_id] * len(components)
         created_devices = []
 
         ABBR_MAP = {
@@ -599,21 +604,21 @@ def api_save_device(request):
                     )
 
             if assigned_emp_id:
-                UserProfile.objects.filter(emp_id=assigned_emp_id).update(assigned_asset_id=allocated_tags[0])
+                UserProfile.objects.filter(emp_id=assigned_emp_id).update(assigned_asset_id=asset_id)
 
         primary = created_devices[0]
-        tag_summary = f"{allocated_tags[0]} to {allocated_tags[-1]} ({len(allocated_tags)} Items)"
+        tag_summary = f"{asset_id} ({len(created_devices)} Components)"
 
         return JsonResponse({
             'success': True,
-            'message': f"Workstation Set ({len(created_devices)} itemized hardware devices: {allocated_tags[0]} to {allocated_tags[-1]}) registered successfully and synchronized with Inventory!",
+            'message': f"Workstation Set ({len(created_devices)} hardware components under Asset Tag {asset_id}) registered successfully and synchronized with Inventory!",
             'is_new': True,
             'is_workstation': True,
-            'asset_id': allocated_tags[0],
-            'asset_tag_summary': tag_summary,
+            'asset_id': asset_id,
+            'asset_tag_summary': asset_id,
             'created_count': len(created_devices),
             'tags': allocated_tags,
-            'tag_url': f"/tag/?asset_id={urllib.parse.quote(allocated_tags[0])}",
+            'tag_url': f"/tag/?asset_id={urllib.parse.quote(asset_id)}",
             'device': {
                 'id': primary.dev_id,
                 'assetId': primary.asset_id,
@@ -2815,10 +2820,9 @@ def api_import_devices_excel(request):
         )
 
         if len(imported_components) > 1:
-            # Unpack into itemized components under custodian
-            allocated_import_tags = allocate_sequential_tags(asset_id, len(imported_components))
+            # Unpack into itemized components under custodian sharing the single asset tag
             for c_idx, comp_name in enumerate(imported_components):
-                c_tag = allocated_import_tags[c_idx]
+                c_tag = asset_id
                 c_upper = comp_name.upper()
                 c_sn = f"{serial_number}-{c_upper[:3]}" if serial_number else f"SN-PSM-{c_upper[:3]}-{c_tag.split('/')[-1]}"
                 c_brand = brand_name or ('Dell' if c_upper in ('CPU', 'DISPLAY', 'KEYBOARD', 'MOUSE') else 'HP' if c_upper == 'PRINTER' else 'APC' if c_upper == 'UPS' else 'Samsung' if c_upper == 'TABLET' else '')
@@ -2880,7 +2884,7 @@ def api_import_devices_excel(request):
                     c_ip = '-'
                     c_mac = '-'
 
-                c_dev = DeviceAsset.objects.filter(asset_id__iexact=c_tag).first()
+                c_dev = DeviceAsset.objects.filter(asset_id__iexact=c_tag, device_type__iexact=c_type).first()
                 if c_dev:
                     c_dev.device_type = c_type
                     if c_brand:

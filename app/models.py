@@ -79,7 +79,7 @@ class DeviceAsset(models.Model):
     ]
 
     dev_id = models.CharField(max_length=50, unique=True, help_text="e.g. dev-01")
-    asset_id = models.CharField(max_length=50, unique=True, help_text="e.g. IT-PC-00125")
+    asset_id = models.CharField(max_length=50, db_index=True, help_text="e.g. IT-PC-00125")
     device_type = models.CharField(max_length=100, blank=True, default='CPU', help_text="e.g. CPU, Display, Keyboard, Mouse, Printer")
     brand_name = models.CharField(max_length=100, blank=True, default="", help_text="e.g. Dell, HP, Lenovo, Logitech, Zebra, APC, Samsung")
     serial_number = models.CharField(max_length=100, blank=True)

@@ -2389,12 +2389,24 @@ async function handleSaveDevice(e) {
         });
         if (resp.ok) {
             const data = await resp.json();
-            if (data.success && data.device) {
-                const target = appState.devices.find(d => d.assetId === assetId);
-                if (target) {
-                    target.id = data.device.id;
-                    Object.assign(target, data.device);
+            if (data.success) {
+                if (data.devices && data.devices.length > 1) {
+                    // Replace temporary single device with all returned workstation component items
+                    appState.devices = (appState.devices || []).filter(d => d.id !== (editId || (typeof newDevice !== 'undefined' ? newDevice.id : '')));
+                    data.devices.forEach(devItem => {
+                        if (!appState.devices.some(existing => existing.id === devItem.id)) {
+                            appState.devices.unshift(devItem);
+                        }
+                    });
                     saveAppState();
+                    renderAll();
+                } else if (data.device) {
+                    const target = appState.devices.find(d => d.id === (editId || data.device.id) || d.assetId === assetId);
+                    if (target) {
+                        target.id = data.device.id;
+                        Object.assign(target, data.device);
+                        saveAppState();
+                    }
                 }
             }
         }
