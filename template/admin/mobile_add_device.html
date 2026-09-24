@@ -941,25 +941,36 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Device Type <span class="text-rose-400">*</span></label>
-                            <select id="select-other-type" onchange="handleOtherTypeChange(this.value)" class="mobile-input text-xs font-semibold">
-                                <option value="Scanner">Scanner (Document / Flatbed)</option>
-                                <option value="Barcode Scanner">Barcode Scanner (Handheld / 2D)</option>
-                                <option value="Biometric Scanner">Biometric / Fingerprint Device</option>
-                                <option value="Projector">Projector / Smart Display</option>
-                                <option value="Webcam">Webcam / Conference Camera</option>
-                                <option value="Network Switch">Network Switch / Router</option>
-                                <option value="External Storage">External Storage / NAS Unit</option>
-                                <option value="CUSTOM">Custom Device Type (Specify below)...</option>
-                            </select>
-                            <input type="text" id="input-other-custom-type" placeholder="Type custom device type (e.g. Card Reader)..." class="mobile-input text-xs font-medium mt-1.5 hidden">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[11px] font-bold text-slate-400">Device Type <span class="text-rose-400">*</span></label>
+                                <span class="text-[10px] text-cyan-400 font-semibold flex items-center gap-1">
+                                    <i data-lucide="edit-3" class="w-3 h-3"></i> Fully Editable
+                                </span>
+                            </div>
+                            <div class="space-y-1.5">
+                                <select id="select-other-type" onchange="handleOtherTypeDropdown(this.value)" class="mobile-input text-xs font-semibold">
+                                    <option value="Scanner" selected>Scanner</option>
+                                    <option value="Biometric Machine">Biometric Machine</option>
+                                    <option value="Eye Scanner">Eye Scanner</option>
+                                    <option value="Barcode Printer">Barcode Printer</option>
+                                    <option value="CUSTOM">Custom / Other Device Type...</option>
+                                </select>
+                                <div class="relative">
+                                    <input type="text" id="input-other-type" name="other_device_type"
+                                        value="Scanner"
+                                        placeholder="Type or edit device type directly..."
+                                        class="mobile-input text-xs font-bold text-white bg-slate-950/70 border-slate-700/80 focus:border-cyan-500"
+                                        oninput="handleOtherTypeTextInput(this.value)">
+                                    <span class="absolute right-2.5 top-2 text-[10px] text-cyan-400/80 pointer-events-none font-semibold">Edit in-place</span>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
                             <input type="text" id="input-other-brand" name="other_brand"
                                 value="Honeywell"
                                 class="mobile-input text-xs font-medium"
-                                placeholder="e.g. Honeywell / Epson / Canon / Mantra / Sony / Cisco">
+                                placeholder="e.g. Honeywell / Mantra / IrisID / Zebra / Epson">
                         </div>
                     </div>
 
@@ -1140,14 +1151,48 @@
             if (navigator.vibrate) navigator.vibrate(20);
         }
 
-        function handleOtherTypeChange(val) {
-            const customInput = document.getElementById('input-other-custom-type');
-            if (customInput) {
-                if (val === 'CUSTOM') {
-                    customInput.classList.remove('hidden');
-                    customInput.focus();
-                } else {
-                    customInput.classList.add('hidden');
+        function handleOtherTypeDropdown(val) {
+            const input = document.getElementById('input-other-type');
+            const brandInput = document.getElementById('input-other-brand');
+            const modelInput = document.getElementById('input-other-model');
+
+            if (val === 'CUSTOM') {
+                if (input) {
+                    input.value = '';
+                    input.placeholder = 'Type custom device type name...';
+                    input.focus();
+                }
+            } else {
+                if (input) {
+                    input.value = val;
+                }
+                const presets = {
+                    'Scanner': { brand: 'Honeywell', model: 'Xenon 1900g HD Handheld Scanner' },
+                    'Biometric Machine': { brand: 'Mantra', model: 'MFS100 Optical Fingerprint Machine' },
+                    'Eye Scanner': { brand: 'IrisID', model: 'iCAM7S Iris Biometric Recognition Scanner' },
+                    'Barcode Printer': { brand: 'Zebra', model: 'ZD230 Direct Thermal Barcode Printer' }
+                };
+                if (presets[val]) {
+                    if (brandInput && (!brandInput.value || Object.values(presets).some(p => p.brand === brandInput.value))) {
+                        brandInput.value = presets[val].brand;
+                    }
+                    if (modelInput && (!modelInput.value || Object.values(presets).some(p => p.model === modelInput.value))) {
+                        modelInput.value = presets[val].model;
+                    }
+                }
+            }
+            updateSelectedComponentsUI();
+            saveDraft();
+        }
+
+        function handleOtherTypeTextInput(val) {
+            const sel = document.getElementById('select-other-type');
+            if (sel) {
+                const matchedOpt = Array.from(sel.options).find(opt => opt.value.toLowerCase() === val.trim().toLowerCase());
+                if (matchedOpt) {
+                    sel.value = matchedOpt.value;
+                } else if (val.trim()) {
+                    sel.value = 'CUSTOM';
                 }
             }
             updateSelectedComponentsUI();
@@ -1155,12 +1200,15 @@
         }
 
         function getEffectiveOtherType() {
+            const input = document.getElementById('input-other-type');
             const sel = document.getElementById('select-other-type');
-            const custom = document.getElementById('input-other-custom-type');
-            if (sel && sel.value === 'CUSTOM' && custom && custom.value.trim()) {
-                return custom.value.trim();
+            if (input && input.value.trim()) {
+                return input.value.trim();
             }
-            return sel ? (sel.value === 'CUSTOM' ? 'Other Device' : sel.value) : 'Other Device';
+            if (sel && sel.value && sel.value !== 'CUSTOM') {
+                return sel.value;
+            }
+            return 'Other Device';
         }
 
         function getCompositeDeviceTypeName() {
@@ -1761,8 +1809,7 @@
                 tablet_device_id: document.getElementById('input-tablet-device-id')?.value || '',
                 tablet_anydesk_id: document.getElementById('input-tablet-anydesk-id')?.value || '',
                 tablet_mac: document.getElementById('input-tablet-mac')?.value || '',
-                other_type: document.getElementById('select-other-type')?.value || 'Scanner',
-                other_custom_type: document.getElementById('input-other-custom-type')?.value || '',
+                other_type: document.getElementById('input-other-type')?.value || document.getElementById('select-other-type')?.value || 'Scanner',
                 other_brand: document.getElementById('input-other-brand')?.value || '',
                 other_model: document.getElementById('input-other-model')?.value || '',
                 other_sn: document.getElementById('input-other-sn')?.value || '',
@@ -1844,12 +1891,15 @@
                     if (draft.tablet_device_id && document.getElementById('input-tablet-device-id')) document.getElementById('input-tablet-device-id').value = draft.tablet_device_id;
                     if (draft.tablet_anydesk_id && document.getElementById('input-tablet-anydesk-id')) document.getElementById('input-tablet-anydesk-id').value = draft.tablet_anydesk_id;
                     if (draft.tablet_mac && document.getElementById('input-tablet-mac')) document.getElementById('input-tablet-mac').value = draft.tablet_mac;
-                    if (draft.other_type && document.getElementById('select-other-type')) {
-                        document.getElementById('select-other-type').value = draft.other_type;
-                        handleOtherTypeChange(draft.other_type);
-                    }
-                    if (draft.other_custom_type && document.getElementById('input-other-custom-type')) {
-                        document.getElementById('input-other-custom-type').value = draft.other_custom_type;
+                    if (draft.other_type) {
+                        if (document.getElementById('input-other-type')) {
+                            document.getElementById('input-other-type').value = draft.other_type;
+                        }
+                        if (document.getElementById('select-other-type')) {
+                            const sel = document.getElementById('select-other-type');
+                            const matchedOpt = Array.from(sel.options).find(opt => opt.value.toLowerCase() === draft.other_type.toLowerCase());
+                            sel.value = matchedOpt ? matchedOpt.value : 'CUSTOM';
+                        }
                     }
                     if (draft.other_brand && document.getElementById('input-other-brand')) {
                         document.getElementById('input-other-brand').value = draft.other_brand;
@@ -1883,12 +1933,12 @@
             if (contactInput) contactInput.value = '';
             const emailInput = document.getElementById('input-email');
             if (emailInput) emailInput.value = '';
-            ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn', 'input-tablet-device-id', 'input-tablet-anydesk-id', 'input-tablet-mac', 'input-other-sn', 'input-other-model', 'input-other-brand', 'input-other-custom-type'].forEach(id => {
+            ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn', 'input-tablet-device-id', 'input-tablet-anydesk-id', 'input-tablet-mac', 'input-other-sn', 'input-other-model', 'input-other-brand'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
             if (document.getElementById('select-other-type')) document.getElementById('select-other-type').value = 'Scanner';
-            if (document.getElementById('input-other-custom-type')) document.getElementById('input-other-custom-type').classList.add('hidden');
+            if (document.getElementById('input-other-type')) document.getElementById('input-other-type').value = 'Scanner';
             selectedComponents = new Set(['CPU']);
             updateSelectedComponentsUI();
             updateCustodianStatusUI();
@@ -2081,10 +2131,12 @@
                 if (contactEl) contactEl.value = "";
                 const emailEl = document.getElementById('input-email');
                 if (emailEl) emailEl.value = "";
-                ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn', 'input-tablet-device-id', 'input-tablet-anydesk-id', 'input-tablet-mac', 'input-other-sn', 'input-other-model', 'input-other-brand', 'input-other-custom-type'].forEach(id => {
+                ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn', 'input-tablet-device-id', 'input-tablet-anydesk-id', 'input-tablet-mac', 'input-other-sn', 'input-other-model', 'input-other-brand'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = '';
                 });
+                if (document.getElementById('select-other-type')) document.getElementById('select-other-type').value = 'Scanner';
+                if (document.getElementById('input-other-type')) document.getElementById('input-other-type').value = 'Scanner';
                 selectFloor('2nd Floor');
                 selectedComponents = new Set(['CPU']);
                 updateSelectedComponentsUI();

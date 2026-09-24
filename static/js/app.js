@@ -399,6 +399,21 @@ function getDeviceTypeBadge(dev) {
             <i data-lucide="zap" class="w-5 h-5 text-orange-600 shrink-0"></i>
             <span>UPS</span>
         </span>`;
+    } else if (t.includes('BIOMETRIC') || t.includes('FINGERPRINT')) {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-teal-800">
+            <i data-lucide="fingerprint" class="w-5 h-5 text-teal-600 shrink-0"></i>
+            <span>${rawType || 'Biometric Machine'}</span>
+        </span>`;
+    } else if (t.includes('EYE') || t.includes('IRIS') || t.includes('RETINA')) {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-cyan-800">
+            <i data-lucide="eye" class="w-5 h-5 text-cyan-600 shrink-0"></i>
+            <span>${rawType || 'Eye Scanner'}</span>
+        </span>`;
+    } else if (t.includes('BARCODE PRINTER') || t.includes('LABEL PRINTER')) {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-amber-800">
+            <i data-lucide="printer" class="w-5 h-5 text-amber-600 shrink-0"></i>
+            <span>${rawType || 'Barcode Printer'}</span>
+        </span>`;
     } else if (t.includes('SCANNER') || t.includes('BARCODE')) {
         typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-rose-800">
             <i data-lucide="scan-barcode" class="w-5 h-5 text-rose-600 shrink-0"></i>
@@ -591,6 +606,42 @@ function getWorkstationRoleBadge(dev, displayName) {
             <div class="space-y-0.5">
                 <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200 shadow-3xs whitespace-nowrap">
                     <i data-lucide="tablet" class="w-3.5 h-3.5 text-teal-600"></i> Mobile Terminal
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('BIOMETRIC') || raw.includes('FINGERPRINT')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="fingerprint" class="w-3.5 h-3.5 text-teal-600"></i> Biometric Machine
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('EYE') || raw.includes('IRIS') || raw.includes('RETINA')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-cyan-50 text-cyan-800 border border-cyan-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="eye" class="w-3.5 h-3.5 text-cyan-600"></i> Eye Scanner
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('BARCODE PRINTER') || raw.includes('LABEL PRINTER')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-600"></i> Barcode Printer
                 </span>
                 <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
                     <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}

@@ -89,6 +89,8 @@ def parse_and_normalize_components(components_input, device_type_str='', monitor
             canonical.append('Mouse')
         elif 'TABLET' in u or 'TAB' in u or 'IPAD' in u:
             canonical.append('Tablet')
+        elif 'BARCODE PRINTER' in u or 'LABEL PRINTER' in u:
+            canonical.append(other_type or 'Barcode Printer')
         elif 'PRINTER' in u or 'PRT' in u:
             canonical.append('Printer')
         elif 'UPS' in u or 'POWER' in u or 'INVERTER' in u:
@@ -477,6 +479,10 @@ def api_save_device(request):
             'UPS': 'UPS',
             'OTHER': 'OTH',
             'SCANNER': 'SCN',
+            'BIOMETRIC MACHINE': 'BIO',
+            'BIOMETRIC': 'BIO',
+            'EYE SCANNER': 'EYE',
+            'BARCODE PRINTER': 'BPR',
             'BARCODE SCANNER': 'BCS',
             'PROJECTOR': 'PRJ',
             'WEBCAM': 'CAM'
@@ -504,8 +510,16 @@ def api_save_device(request):
                     comp_sn = printer_serial or (f"{serial_number}-PRT" if serial_number else f"SN-PSM-PRT-{comp_tag.split('/')[-1]}")
                 elif comp_upper == 'UPS':
                     comp_sn = ups_serial or (f"{serial_number}-UPS" if serial_number else f"SN-PSM-UPS-{comp_tag.split('/')[-1]}")
-                elif comp_upper in ('OTHER', 'CUSTOM') or 'OTHER' in comp_upper or (other_device_type and comp_upper == other_device_type.upper()):
-                    comp_sn = other_serial or (f"{serial_number}-OTH" if serial_number else f"SN-PSM-OTH-{comp_tag.split('/')[-1]}")
+                elif (
+                    comp_upper in ('OTHER', 'CUSTOM', 'SCANNER', 'BIOMETRIC MACHINE', 'BIOMETRIC', 'EYE SCANNER', 'BARCODE PRINTER')
+                    or 'OTHER' in comp_upper
+                    or 'SCANNER' in comp_upper
+                    or 'BIOMETRIC' in comp_upper
+                    or 'EYE' in comp_upper
+                    or 'BARCODE' in comp_upper
+                    or (other_device_type and comp_upper == other_device_type.upper())
+                ):
+                    comp_sn = other_serial or (f"{serial_number}-{comp_abbr}" if serial_number else f"SN-PSM-{comp_abbr}-{comp_tag.split('/')[-1]}")
                 else:
                     comp_sn = f"{serial_number}-{comp_abbr}" if serial_number else f"SN-PSM-{comp_abbr}-{comp_tag.split('/')[-1]}"
 
@@ -566,8 +580,16 @@ def api_save_device(request):
                     item_os = 'Power Unit'
                     item_ip = '-'
                     item_mac = '-'
-                elif comp_upper in ('OTHER', 'CUSTOM') or 'OTHER' in comp_upper or (other_device_type and comp_upper == other_device_type.upper()):
-                    item_dev_type = other_device_type or 'Other Device'
+                elif (
+                    comp_upper in ('OTHER', 'CUSTOM', 'SCANNER', 'BIOMETRIC MACHINE', 'BIOMETRIC', 'EYE SCANNER', 'BARCODE PRINTER')
+                    or 'OTHER' in comp_upper
+                    or 'SCANNER' in comp_upper
+                    or 'BIOMETRIC' in comp_upper
+                    or 'EYE' in comp_upper
+                    or 'BARCODE' in comp_upper
+                    or (other_device_type and comp_upper == other_device_type.upper())
+                ):
+                    item_dev_type = other_device_type or comp
                     item_brand = other_brand or brand_name or ''
                     item_cpu = other_model or f'{item_dev_type} Hardware Unit'
                     item_ram = 'Hardware Accessory / Peripheral'
