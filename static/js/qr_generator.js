@@ -103,11 +103,87 @@ function generateQRSVG(dataString, size = 84) {
     </svg>`;
 }
 
+function groupDevicesByAssetId(devices) {
+    if (!devices || !Array.isArray(devices) || devices.length === 0) return [];
+
+    const order = ['CPU', 'Display', 'Keyboard', 'Mouse', 'Printer', 'UPS', 'Tablet', 'Other'];
+    const groups = new Map();
+
+    devices.forEach(dev => {
+        const rawTag = (dev.assetId || dev.id || '').trim();
+        if (!rawTag) return;
+        const key = rawTag.toUpperCase();
+
+        if (!groups.has(key)) {
+            groups.set(key, {
+                primary: dev,
+                all: [],
+                components: []
+            });
+        }
+
+        const entry = groups.get(key);
+        entry.all.push(dev);
+
+        // Normalize and collect component name
+        const rawType = (dev.deviceType || '').trim();
+        if (rawType) {
+            if (rawType.includes('(') && rawType.includes(')')) {
+                const inner = rawType.substring(rawType.indexOf('(') + 1, rawType.lastIndexOf(')'));
+                inner.split(',').map(s => s.trim()).forEach(x => {
+                    if (x && !entry.components.includes(x)) entry.components.push(x);
+                });
+            } else if (!entry.components.includes(rawType)) {
+                entry.components.push(rawType);
+            }
+        }
+    });
+
+    const result = [];
+    groups.forEach(entry => {
+        // Prefer CPU or primary item as base
+        const cpuDev = entry.all.find(d => (d.deviceType || '').toUpperCase().includes('CPU'));
+        const primary = { ...(cpuDev || entry.primary) };
+
+        // Sort components according to canonical order
+        const comps = entry.components.sort((a, b) => {
+            const idxA = order.indexOf(a) !== -1 ? order.indexOf(a) : 99;
+            const idxB = order.indexOf(b) !== -1 ? order.indexOf(b) : 99;
+            return idxA - idxB;
+        });
+
+        if (comps.length > 1) {
+            const standardWorkstation = ['CPU', 'Display', 'Keyboard', 'Mouse'];
+            const isStandard = standardWorkstation.every(c => comps.includes(c)) && comps.length === 4;
+            if (isStandard) {
+                primary.deviceType = 'Workstation (CPU, Display, Keyboard, Mouse)';
+            } else {
+                primary.deviceType = `Workstation (${comps.join(', ')})`;
+            }
+        } else if (comps.length === 1) {
+            primary.deviceType = comps[0];
+        }
+
+        // If primary has no serial, find first available serial in group
+        if (!primary.serialNumber || primary.serialNumber === 'N/A') {
+            const snDev = entry.all.find(d => d.serialNumber && d.serialNumber !== 'N/A');
+            if (snDev) primary.serialNumber = snDev.serialNumber;
+        }
+
+        result.push(primary);
+    });
+
+    return result;
+}
+
 function renderStickerCards(devices) {
     const container = document.getElementById("qr-stickers-grid");
     if (!container) return;
 
-    if (!devices || devices.length === 0) {
+    // Group devices by unique asset tag so multiple components sharing an asset ID render as ONE single tag card
+    const uniqueDevices = groupDevicesByAssetId(devices);
+
+    if (!uniqueDevices || uniqueDevices.length === 0) {
         container.innerHTML = `
             <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-2xs p-8">
                 <i data-lucide="inbox" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
@@ -133,7 +209,7 @@ function renderStickerCards(devices) {
         'L': 'bg-indigo-50 text-indigo-700 border-indigo-200'
     };
 
-    container.innerHTML = devices.map(dev => {
+    container.innerHTML = uniqueDevices.map(dev => {
         // 1. Resolve Location text cleanly from device directly or appState
         const room = (appState && appState.rooms) ? appState.rooms.find(r => r.id === dev.roomId) : null;
         const floor = (room && appState && appState.floors) ? appState.floors.find(f => f.id === room.floorId) : null;
@@ -149,7 +225,10 @@ function renderStickerCards(devices) {
         let typeLabel = 'CPU';
         if (dev.deviceType) {
             const dtUpper = String(dev.deviceType).toUpperCase();
-            if (dtUpper.includes('WORKSTATION')) { typeCode = 'C'; typeLabel = 'Workstation'; }
+            if (dtUpper.includes('WORKSTATION')) { 
+                typeCode = 'C'; 
+                typeLabel = dev.deviceType; 
+            }
             else if (dtUpper.includes('DISP') || dtUpper.includes('MONITOR') || dtUpper === 'D') { typeCode = 'D'; typeLabel = 'Display'; }
             else if (dtUpper.includes('KEYB') || dtUpper === 'K') { typeCode = 'K'; typeLabel = 'Keyboard'; }
             else if (dtUpper.includes('MOUS') || dtUpper === 'M') { typeCode = 'M'; typeLabel = 'Mouse'; }
@@ -157,7 +236,10 @@ function renderStickerCards(devices) {
             else if (dtUpper.includes('TAB') || dtUpper === 'T') { typeCode = 'T'; typeLabel = 'Tablet'; }
             else if (dtUpper.includes('UPS') || dtUpper === 'U') { typeCode = 'U'; typeLabel = 'UPS'; }
             else if (dtUpper.includes('LAP') || dtUpper === 'L') { typeCode = 'L'; typeLabel = 'Laptop'; }
-            else { typeCode = 'C'; typeLabel = 'CPU'; }
+            else { 
+                typeCode = 'C'; 
+                typeLabel = dev.deviceType; 
+            }
         } else {
             const aid = (dev.assetId || '').toUpperCase();
             const typeMatch = aid.match(/\/([CDKMPTU])(?:\/|-|\.)/);
@@ -265,9 +347,9 @@ function renderStickerCards(devices) {
                         <div class="text-sm sm:text-[15px] font-black text-slate-950 truncate leading-tight" title="${userName}">
                             ${userName}
                         </div>
-                        <div class="flex items-center gap-1.5 pt-0.5">
-                            <span class="text-[11px] font-bold text-slate-700">Device Type:</span>
-                            <span class="text-xs sm:text-[13px] font-extrabold text-slate-950">${typeLabel}</span>
+                        <div class="flex items-center gap-1.5 pt-0.5 min-w-0">
+                            <span class="text-[11px] font-bold text-slate-700 shrink-0">Device Type:</span>
+                            <span class="text-xs sm:text-[13px] font-extrabold text-slate-950 truncate" title="${typeLabel}">${typeLabel}</span>
                         </div>
                     </div>
 
