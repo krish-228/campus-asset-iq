@@ -214,127 +214,285 @@
         </div>
     </div>
 
-    <!-- MODAL 0B: DEDICATED POPUP DEVICE SPECS & ACTIONS (Clean Hardware Detail Popup) -->
-    <div id="modal-device-detail" onclick="if(event.target === this) closeDeviceDetailPopup()" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden animate-scale-up my-8">
-            <!-- Modal Header (Admin Theme) -->
-            <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-indigo-700/50">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-xl bg-blue-700/60 border border-blue-500/50 flex items-center justify-center text-blue-200">
-                        <i data-lucide="cpu" class="w-4 h-4"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold tracking-tight">Medical System Specifications</h3>
-                        <p class="text-[11px] text-blue-200">PSM Hospital Hardware & Operating Profile</p>
-                    </div>
-                </div>
-                <button onclick="closeDeviceDetailPopup()" class="text-blue-200 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-
-            <!-- Modal Body -->
-            <div class="p-6 space-y-5 text-xs">
-                <!-- System Header Summary Banner -->
-                <div class="flex items-start justify-between gap-4 p-4 rounded-2xl bg-blue-50/70 border border-blue-200/80">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-md border-2 border-white shrink-0">
-                            <i data-lucide="monitor" class="w-6 h-6"></i>
+    <!-- MODAL 0B: DEDICATED FULL HARDWARE SPECS & CUSTODIAN INTELLIGENCE -->
+    <div id="modal-device-detail" onclick="if(event.target === this) closeDeviceDetailPopup()"
+        class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-5 overflow-y-auto no-print">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-scale-up my-auto">
+            
+            <!-- Modal Sticky Header: Cyber Command Obsidian & Deep Indigo -->
+            <div class="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white px-6 py-4.5 flex items-center justify-between border-b border-indigo-900/60 shrink-0">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 p-0.5 shadow-md shadow-cyan-900/40 shrink-0 flex items-center justify-center text-white">
+                        <div class="w-full h-full rounded-[14px] bg-slate-950/40 backdrop-blur-xs flex items-center justify-center">
+                            <i id="devmodal-header-icon" data-lucide="cpu" class="w-5 h-5 text-cyan-300"></i>
                         </div>
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2">
-                                <h4 id="devmodal-asset-id" class="font-mono text-base font-black text-slate-900 leading-tight">HOSP-ICU-00042</h4>
-                                <span id="devmodal-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Active</span>
-                            </div>
-                            <div id="devmodal-system-name" class="hidden"></div>
-                            <div id="devmodal-serial-tag" class="text-[10px] font-mono text-slate-500">SN: SN-SIEMENS-0042</div>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                            <h3 class="text-base font-black tracking-tight text-white">Hardware Specs & Workstation Profile</h3>
+                            <span id="devmodal-header-status-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Active Duty</span>
+                        </div>
+                        <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-300">
+                            <span>Asset Tag:</span>
+                            <span id="devmodal-header-asset-id" class="font-mono font-bold text-cyan-300">PSM/IT/0926/080</span>
+                            <button type="button" id="devmodal-btn-copy-asset" onclick="copyModalAssetId(this)" title="Copy Asset Tag" class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-white px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 transition-colors cursor-pointer">
+                                <i data-lucide="copy" class="w-3 h-3"></i>
+                                <span>Copy</span>
+                            </button>
                         </div>
                     </div>
                 </div>
-
-                <!-- Hardware Specifications Grid -->
-                <div>
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
-                        <i data-lucide="sliders" class="w-3.5 h-3.5 text-blue-600"></i> Hardware & Processing
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Processor (CPU)</div>
-                            <div id="devmodal-cpu" class="text-xs font-semibold text-slate-900 mt-0.5">Intel Core i5-12500E</div>
-                        </div>
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Storage & RAM</div>
-                            <div id="devmodal-ram" class="text-xs font-mono font-semibold text-slate-900 mt-0.5">512GB SSD / 16GB RAM</div>
-                        </div>
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operating System</div>
-                            <div id="devmodal-os" class="text-xs font-semibold text-slate-900 mt-0.5">Windows 11 Pro Medical Edition</div>
-                        </div>
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Display / Monitor</div>
-                            <div id="devmodal-display" class="text-xs font-medium text-slate-900 mt-0.5">24-inch Cleanable Touch</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Network Connectivity Grid -->
-                <div>
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
-                        <i data-lucide="network" class="w-3.5 h-3.5 text-blue-600"></i> Clinical Network Telemetry
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">IP Address</div>
-                            <div id="devmodal-ip" class="text-xs font-mono font-bold text-blue-700 mt-0.5">10.20.10.42</div>
-                        </div>
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">MAC Address</div>
-                            <div id="devmodal-mac" class="text-xs font-mono font-semibold text-slate-900 mt-0.5">00-1A-2B-3C-4D-5E</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Assigned Clinical Location & Custodian -->
-                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-600"></i> Current Deployed Location
-                        </div>
-                        <span id="devmodal-room-badge" class="font-mono text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md">Rm 201</span>
-                    </div>
-                    <div class="flex items-center justify-between text-xs">
-                        <div>
-                            <div id="devmodal-location-text" class="font-bold text-slate-900">2nd Floor &bull; ICU Bedside Monitoring Pod A</div>
-                            <div class="text-[11px] text-slate-500 mt-0.5">PSM Main Hospital Complex</div>
-                        </div>
-                    </div>
-
-                    <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                        <div>
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Responsible Clinical Staff</div>
-                            <div id="devmodal-custodian-info" class="text-xs font-bold text-slate-900 mt-0.5">Dr. Vikram Sharma (MED-00042)</div>
-                        </div>
-                        <button id="devmodal-view-custodian-btn" class="text-blue-600 hover:text-blue-800 text-[11px] font-bold hover:underline cursor-pointer">
-                            View Staff Profile &gt;
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Action Buttons: Move Location & Reassign Custodian -->
-                <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                    <div class="flex items-center gap-2">
-                        <button id="devmodal-move-btn" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5">
-                            <i data-lucide="move" class="w-3.5 h-3.5"></i> Move Location
-                        </button>
-                        <button id="devmodal-reassign-btn" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5">
-                            <i data-lucide="repeat" class="w-3.5 h-3.5"></i> Reassign
-                        </button>
-                    </div>
-                    <button onclick="closeDeviceDetailPopup()" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold cursor-pointer transition-colors">
-                        Close
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="closeDeviceDetailPopup()" title="Close (Esc)" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer">
+                        <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
             </div>
+
+            <!-- Modal Scrollable Body -->
+            <div class="p-5 sm:p-6 space-y-5 overflow-y-auto max-h-[calc(92vh-140px)] text-slate-800 bg-slate-50/50">
+                
+                <!-- SECTION 1: ASSIGNED EMPLOYEE / CUSTODIAN PROFILE CARD -->
+                <div class="bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/40 rounded-2xl border border-indigo-100/90 p-5 shadow-xs transition-all">
+                    <div class="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-indigo-100/70">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-2xs">
+                                <i data-lucide="user-check" class="w-4 h-4"></i>
+                            </div>
+                            <span class="text-xs font-black uppercase tracking-wider text-indigo-950">Assigned Employee & Custodian Intelligence</span>
+                        </div>
+                        <span id="devmodal-user-status-pill" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Active Custodian
+                        </span>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-start gap-4">
+                        <!-- User Dynamic Avatar -->
+                        <div class="flex flex-col items-center gap-1.5 shrink-0 mx-auto sm:mx-0">
+                            <div id="devmodal-user-avatar" class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-700 via-indigo-600 to-blue-500 text-white font-black text-xl flex items-center justify-center shadow-md shadow-indigo-500/20 border-2 border-white select-none">
+                                SR
+                            </div>
+                            <span id="devmodal-user-badge-role" class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
+                                Staff
+                            </span>
+                        </div>
+
+                        <!-- User Information Grid -->
+                        <div class="flex-1 min-w-0 w-full space-y-3">
+                            <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+                                <div>
+                                    <h4 id="devmodal-user-fullname" class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight">
+                                        Sahil Rathod
+                                    </h4>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-xs text-slate-500 font-medium">Employee ID:</span>
+                                        <span id="devmodal-user-empid" class="font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-indigo-700 shadow-3xs">
+                                            EMP-00125
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button type="button" id="devmodal-btn-transfer-custody" onclick="triggerReassignFromDetailModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer self-start">
+                                    <i data-lucide="repeat" class="w-3.5 h-3.5"></i>
+                                    <span>Transfer Custody</span>
+                                </button>
+                            </div>
+
+                            <!-- 4-Box Key Metadata Grid -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs">
+                                <div class="p-2.5 rounded-xl bg-white/90 border border-slate-200/80 flex items-start gap-2.5">
+                                    <div class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                                        <i data-lucide="briefcase" class="w-3.5 h-3.5"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Designation</div>
+                                        <div id="devmodal-user-designation" class="font-bold text-slate-800 truncate">Systems Administrator</div>
+                                    </div>
+                                </div>
+
+                                <div class="p-2.5 rounded-xl bg-white/90 border border-slate-200/80 flex items-start gap-2.5">
+                                    <div class="w-6 h-6 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 mt-0.5">
+                                        <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Department</div>
+                                        <div id="devmodal-user-department" class="font-bold text-slate-800 truncate">IT Infrastructure & Systems</div>
+                                    </div>
+                                </div>
+
+                                <div class="p-2.5 rounded-xl bg-white/90 border border-slate-200/80 flex items-start gap-2.5">
+                                    <div class="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                                        <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Official Email</div>
+                                        <a id="devmodal-user-email" href="mailto:support@campus.edu" class="font-semibold text-indigo-600 hover:underline truncate block">sahil.rathod@hospital.org</a>
+                                    </div>
+                                </div>
+
+                                <div class="p-2.5 rounded-xl bg-white/90 border border-slate-200/80 flex items-start gap-2.5">
+                                    <div class="w-6 h-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                                        <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone / Ext</div>
+                                        <a id="devmodal-user-phone" href="tel:—" class="font-mono font-bold text-slate-800 hover:text-indigo-600 truncate block">9811223344</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Location Strip -->
+                            <div class="p-2.5 rounded-xl bg-indigo-50/50 border border-indigo-100 flex items-center gap-2 text-xs">
+                                <i data-lucide="map-pin" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+                                <span class="text-slate-500 font-medium">Assigned Location:</span>
+                                <span id="devmodal-user-location" class="font-bold text-indigo-950 truncate">PSM Hospital &bull; 2nd Floor &bull; Room 201 (ICU Bedside Pod A)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: HARDWARE TECHNICAL SPECIFICATIONS (SELECTED ITEM) -->
+                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
+                    <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-2xs">
+                                <i data-lucide="sliders" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-black uppercase tracking-wider text-slate-900">Hardware Specifications</span>
+                                <span id="devmodal-target-spec-name" class="text-xs font-bold text-blue-600 ml-1.5">(CPU Workstation)</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span id="devmodal-spec-brand-badge" class="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                Dell OptiPlex
+                            </span>
+                            <span id="devmodal-spec-serial-badge" class="font-mono text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                SN: 4424
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 6-Metric High Contrast Spec Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                        <!-- CPU -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
+                                <i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-600"></i> Processor (CPU)
+                            </div>
+                            <div id="devmodal-cpu" class="font-extrabold text-slate-900 text-xs">Intel Core i5-12500E (Fanless)</div>
+                        </div>
+
+                        <!-- RAM & Storage -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
+                                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-indigo-600"></i> Storage & RAM Memory
+                            </div>
+                            <div id="devmodal-ram" class="font-mono font-bold text-slate-900 text-xs">512GB M.2 SSD / 16GB RAM</div>
+                        </div>
+
+                        <!-- OS -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
+                                <i data-lucide="terminal" class="w-3.5 h-3.5 text-teal-600"></i> Operating System
+                            </div>
+                            <div id="devmodal-os" class="font-bold text-slate-900 text-xs">Windows 11 Pro Medical Edition</div>
+                        </div>
+
+                        <!-- Monitor / Display Specs -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
+                                <i data-lucide="monitor" class="w-3.5 h-3.5 text-purple-600"></i> Monitor / Screen Spec
+                            </div>
+                            <div id="devmodal-display" class="font-medium text-slate-900 text-xs">24-inch Cleanable Touch FHD</div>
+                        </div>
+
+                        <!-- IP Address -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <i data-lucide="network" class="w-3.5 h-3.5 text-emerald-600"></i> Network IP Address
+                            </div>
+                            <div id="devmodal-ip" class="font-mono font-black text-blue-700 text-xs">10.20.10.42</div>
+                        </div>
+
+                        <!-- MAC Address -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
+                                <i data-lucide="binary" class="w-3.5 h-3.5 text-slate-500"></i> MAC Address
+                            </div>
+                            <div id="devmodal-mac" class="font-mono font-bold text-slate-700 text-xs">E4-54-E8-71-22-31</div>
+                        </div>
+
+                        <!-- AnyDesk ID -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
+                                <i data-lucide="monitor-dot" class="w-3.5 h-3.5 text-rose-500"></i> AnyDesk Remote ID
+                            </div>
+                            <div id="devmodal-anydesk" class="font-mono font-bold text-slate-800 text-xs">928 341 552</div>
+                        </div>
+
+                        <!-- Facility Location -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors sm:col-span-2">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-600"></i> Physical Campus Location
+                            </div>
+                            <div id="devmodal-location-text" class="font-bold text-slate-900 text-xs">2nd Floor &bull; ICU Bedside Monitoring Pod A</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: WORKSTATION LINKED DEVICES / ALL HARDWARE IN USE -->
+                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-3.5">
+                    <div class="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-200/80">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-2xs">
+                                    <i data-lucide="layers" class="w-4 h-4"></i>
+                                </div>
+                                <h4 class="text-xs font-black uppercase tracking-wider text-slate-900">
+                                    Connected Workstation Hardware Ecosystem
+                                </h4>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                All physical hardware devices currently linked and in active use by this custodian:
+                            </p>
+                        </div>
+
+                        <span id="devmodal-workstation-count-pill" class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-indigo-100 text-indigo-800 border border-indigo-200 whitespace-nowrap">
+                            5 Devices Linked
+                        </span>
+                    </div>
+
+                    <!-- Dynamic Linked Devices Cards Container -->
+                    <div id="devmodal-linked-devices-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Sticky Footer Actions -->
+            <div class="px-6 py-4 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button type="button" id="devmodal-btn-move-loc" onclick="triggerMoveLocationFromDetailModal()" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/90 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-2xs">
+                        <i data-lucide="truck" class="w-3.5 h-3.5"></i>
+                        <span>Change Location</span>
+                    </button>
+                    <button type="button" id="devmodal-btn-reassign-custody" onclick="triggerReassignFromDetailModal()" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/90 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-2xs">
+                        <i data-lucide="repeat" class="w-3.5 h-3.5"></i>
+                        <span>Reassign Custody</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button type="button" onclick="closeDeviceDetailPopup()" class="w-full sm:w-auto px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95">
+                        Close Details
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 

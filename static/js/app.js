@@ -2213,40 +2213,6 @@ function triggerChangeLocationFromUserPopup() {
     }
 }
 
-function openDeviceDetailPopup(deviceId) {
-    const dev = appState.devices.find(d => d.id === deviceId);
-    if (!dev) return;
-
-    currentPopupDeviceId = dev.id;
-    const user = appState.users.find(u => u.id === dev.assignedUserId) || {
-        id: null,
-        empId: "UNASSIGNED",
-        fullName: "Unassigned Hardware Pool",
-        department: "IT Spares & Inventory",
-        designation: "Ready for Deployment",
-        email: "support@campus.edu",
-        phone: "—",
-        status: "Available"
-    };
-
-    currentPopupUser = user;
-    populateUserPopupWithDevice(user, dev);
-
-    // Update modal title to reflect device specs inspection
-    const modalTitle = document.getElementById("modal-search-user-title");
-    if (modalTitle) {
-        modalTitle.textContent = `FULL HARDWARE SPECIFICATIONS: ${dev.assetId}`;
-    }
-    const modalIcon = document.getElementById("modal-search-user-icon");
-    if (modalIcon) {
-        modalIcon.setAttribute("data-lucide", "cpu");
-    }
-
-    const modal = document.getElementById("modal-search-user");
-    if (modal) modal.classList.remove("hidden");
-    lucide.createIcons();
-}
-
 function closeSearchUserModal() {
     const modal = document.getElementById("modal-search-user");
     if (modal) modal.classList.add("hidden");
@@ -3526,116 +3492,391 @@ function closeUserDetailModal() {
     if (modal) modal.classList.add("hidden");
 }
 
-// Device Detail & Specs Popup Modal Controller
+// ============================================================================
+// MODAL: DEDICATED FULL HARDWARE SPECS & CUSTODIAN PROFILE CONTROLLER
+// ============================================================================
+let activeDetailDeviceId = null;
+let activeDetailLinkedDevices = [];
+
 function openDeviceDetailPopup(deviceId) {
-    const dev = appState.devices.find(d => d.id === deviceId);
+    if (!deviceId && typeof activeDropdownDeviceId !== 'undefined' && activeDropdownDeviceId) {
+        deviceId = activeDropdownDeviceId;
+    }
+    let dev = (appState.devices || []).find(d => d.id === deviceId || d.assetId === deviceId);
     if (!dev) return;
 
     const modal = document.getElementById("modal-device-detail");
     if (!modal) return;
 
-    const user = appState.users.find(u => u.id === dev.assignedUserId);
-    const room = appState.rooms.find(r => r.id === dev.roomId);
-    const floor = room ? appState.floors.find(f => f.id === room.floorId) : null;
+    activeDetailDeviceId = dev.id;
 
-    // Set fields
-    const assetEl = document.getElementById("devmodal-asset-id");
-    if (assetEl) assetEl.textContent = dev.assetId;
+    // 1. Gather User / Custodian Profile
+    let user = (appState.users || []).find(u => 
+        (u.id && dev.assignedUserId && u.id === dev.assignedUserId) ||
+        (u.empId && (u.empId === dev.empId || u.empId === dev.assignedEmpId))
+    );
 
-    const nameEl = document.getElementById("devmodal-system-name");
-    if (nameEl) nameEl.textContent = dev.assetId;
+    const isUnassigned = !dev.assignedUserName || 
+                         dev.assignedUserName.toLowerCase() === 'unassigned' || 
+                         dev.assignedUserName.toLowerCase().includes('hardware pool');
 
-    const serialEl = document.getElementById("devmodal-serial-tag");
-    if (serialEl) serialEl.textContent = `SN: ${dev.serialNumber || 'N/A'}`;
+    if (!user && !isUnassigned) {
+        user = {
+            id: dev.assignedUserId || 'synth-' + dev.id,
+            empId: dev.empId || dev.assignedEmpId || 'EMP-STAFF',
+            fullName: dev.assignedUserName,
+            department: dev.department || dev.assignedDepartment || 'General Facility',
+            designation: dev.designation || dev.assignedDesignation || 'Assigned Custodian',
+            email: dev.email || dev.assignedEmail || 'support@psm.hospital',
+            phone: dev.phone || dev.assignedPhone || '—',
+            status: 'Active'
+        };
+    }
 
-    const statusBadge = document.getElementById("devmodal-status-badge");
-    if (statusBadge) {
-        if (dev.status === "Active") {
-            statusBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200";
-            statusBadge.textContent = "Active Duty";
+    // 2. Gather All Connected Workstation Hardware (Full using device detail)
+    let linked = [];
+    if (typeof isCompositeWorkstation === 'function' && isCompositeWorkstation(dev)) {
+        linked = expandCompositeWorkstation(dev);
+    } else {
+        if (dev.assetId) {
+            linked = (appState.devices || []).filter(d => d.assetId === dev.assetId);
+        }
+        if (linked.length <= 1 && user && user.fullName) {
+            const userDevices = (appState.devices || []).filter(d => 
+                (d.assignedUserId && user.id && d.assignedUserId === user.id) ||
+                (d.assignedUserName && d.assignedUserName.toLowerCase() === user.fullName.toLowerCase())
+            );
+            if (userDevices.length > linked.length) {
+                linked = userDevices;
+            }
+        }
+    }
+    if (!linked || linked.length === 0) {
+        linked = [dev];
+    }
+
+    // Sort linked devices: CPU -> Display -> Keyboard -> Mouse -> Printer -> UPS -> Others
+    if (typeof getWorkstationDevicePriority === 'function') {
+        linked.sort((a, b) => getWorkstationDevicePriority(a) - getWorkstationDevicePriority(b));
+    }
+    activeDetailLinkedDevices = linked;
+
+    // 3. Populate Header
+    const headerAssetEl = document.getElementById("devmodal-header-asset-id");
+    if (headerAssetEl) headerAssetEl.textContent = dev.assetId || 'N/A';
+
+    const headerStatusBadge = document.getElementById("devmodal-header-status-badge");
+    if (headerStatusBadge) {
+        const status = dev.status || 'Active';
+        if (status === 'Active') {
+            headerStatusBadge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+            headerStatusBadge.textContent = "Active Duty";
+        } else if (status === 'In Maintenance') {
+            headerStatusBadge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40";
+            headerStatusBadge.textContent = "In Maintenance";
         } else {
-            statusBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200";
-            statusBadge.textContent = dev.status || "Maintenance";
+            headerStatusBadge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/20 text-slate-300 border border-slate-500/40";
+            headerStatusBadge.textContent = status;
         }
     }
 
+    const headerIcon = document.getElementById("devmodal-header-icon");
+    if (headerIcon) {
+        headerIcon.setAttribute("data-lucide", getDeviceLucideIconName(dev.deviceType || ''));
+    }
+
+    // 4. Populate Custodian Card (Section 1)
+    populateDetailModalCustodian(user, dev, isUnassigned);
+
+    // 5. Populate Active Device Specs (Section 2)
+    renderDetailModalActiveSpecs(dev);
+
+    // 6. Populate Workstation Linked Devices (Section 3)
+    renderDetailModalLinkedDevices(linked, dev.id);
+
+    // 7. Backward Compatibility
+    const legacyAsset = document.getElementById("devmodal-asset-id");
+    if (legacyAsset) legacyAsset.textContent = dev.assetId;
+    const legacySys = document.getElementById("devmodal-system-name");
+    if (legacySys) legacySys.textContent = dev.assetId;
+    const legacySerial = document.getElementById("devmodal-serial-tag");
+    if (legacySerial) legacySerial.textContent = `SN: ${dev.serialNumber || 'N/A'}`;
+    const legacyCust = document.getElementById("devmodal-custodian-info");
+    if (legacyCust) {
+        legacyCust.textContent = user ? `${user.fullName} (${user.empId || 'Staff'})` : "Unassigned (Clinical IT Pool)";
+    }
+
+    // Show modal & init Lucide icons
+    modal.classList.remove("hidden");
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+    }
+}
+
+function populateDetailModalCustodian(user, dev, isUnassigned) {
+    const avatarEl = document.getElementById("devmodal-user-avatar");
+    const roleBadgeEl = document.getElementById("devmodal-user-badge-role");
+    const fullNameEl = document.getElementById("devmodal-user-fullname");
+    const empIdEl = document.getElementById("devmodal-user-empid");
+    const desigEl = document.getElementById("devmodal-user-designation");
+    const deptEl = document.getElementById("devmodal-user-department");
+    const emailEl = document.getElementById("devmodal-user-email");
+    const phoneEl = document.getElementById("devmodal-user-phone");
+    const locEl = document.getElementById("devmodal-user-location");
+    const statusPillEl = document.getElementById("devmodal-user-status-pill");
+
+    const room = appState.rooms ? appState.rooms.find(r => r.id === dev.roomId) : null;
+    const floor = room && appState.floors ? appState.floors.find(f => f.id === room.floorId) : null;
+    const bldg = dev.buildingName || 'PSM Hospital';
+    const floorStr = dev.floorName || (floor ? floor.name : 'Clinical Floor');
+    const roomStr = dev.roomName || (room ? `${room.roomNumber ? `Rm ${room.roomNumber} - ` : ''}${room.name}` : 'Main Facility Desk');
+
+    if (isUnassigned || !user) {
+        if (avatarEl) {
+            avatarEl.textContent = "IT";
+            avatarEl.className = "w-16 h-16 rounded-2xl bg-gradient-to-tr from-slate-700 via-slate-600 to-slate-500 text-white font-black text-xl flex items-center justify-center shadow-md border-2 border-white select-none";
+        }
+        if (roleBadgeEl) {
+            roleBadgeEl.textContent = "Spare";
+            roleBadgeEl.className = "text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200";
+        }
+        if (fullNameEl) fullNameEl.textContent = "Unassigned Hardware Pool";
+        if (empIdEl) empIdEl.textContent = "POOL-SPARE";
+        if (desigEl) desigEl.textContent = "Ready for Deployment";
+        if (deptEl) deptEl.textContent = "IT Spares & Inventory Depot";
+        if (emailEl) {
+            emailEl.textContent = "it-support@hospital.org";
+            emailEl.href = "mailto:it-support@hospital.org";
+        }
+        if (phoneEl) {
+            phoneEl.textContent = "Ext: 1000 (Central IT)";
+            phoneEl.href = "tel:1000";
+        }
+        if (locEl) locEl.textContent = `${bldg} • ${floorStr} • IT Central Depot`;
+        if (statusPillEl) {
+            statusPillEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200";
+            statusPillEl.textContent = "Available in Pool";
+        }
+    } else {
+        const initials = user.fullName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'CU';
+        if (avatarEl) {
+            avatarEl.textContent = initials;
+            avatarEl.className = "w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-700 via-indigo-600 to-blue-500 text-white font-black text-xl flex items-center justify-center shadow-md shadow-indigo-500/20 border-2 border-white select-none";
+        }
+        if (roleBadgeEl) {
+            roleBadgeEl.textContent = user.designation ? user.designation.substring(0, 16) : 'Custodian';
+            roleBadgeEl.className = "text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200";
+        }
+        if (fullNameEl) fullNameEl.textContent = user.fullName;
+        if (empIdEl) empIdEl.textContent = user.empId || 'EMP-STAFF';
+        if (desigEl) desigEl.textContent = user.designation || 'Staff Custodian';
+        if (deptEl) deptEl.textContent = user.department || 'Clinical Healthcare Unit';
+        if (emailEl) {
+            const emailVal = user.email || `${user.fullName.toLowerCase().replace(/[^a-z]/g, '.')}@psm.hospital`;
+            emailEl.textContent = emailVal;
+            emailEl.href = `mailto:${emailVal}`;
+        }
+        if (phoneEl) {
+            const phoneVal = user.phone && user.phone !== '—' ? user.phone : 'Ext. 2401';
+            phoneEl.textContent = phoneVal;
+            phoneEl.href = `tel:${phoneVal}`;
+        }
+        if (locEl) locEl.textContent = `${bldg} • ${floorStr} • ${roomStr}`;
+        if (statusPillEl) {
+            statusPillEl.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200";
+            statusPillEl.textContent = "Active Custodian";
+        }
+    }
+}
+
+function renderDetailModalActiveSpecs(dev) {
+    const rawType = (dev.deviceType || '').trim() || 'Workstation Component';
+    const specNameEl = document.getElementById("devmodal-target-spec-name");
+    if (specNameEl) specNameEl.textContent = `(${rawType})`;
+
+    const brandEl = document.getElementById("devmodal-spec-brand-badge");
+    if (brandEl) brandEl.textContent = dev.brandName || dev.brand || 'Enterprise Medical Grade';
+
+    const serialEl = document.getElementById("devmodal-spec-serial-badge");
+    if (serialEl) serialEl.textContent = dev.serialNumber ? `SN: ${dev.serialNumber}` : 'SN: —';
+
     const cpuEl = document.getElementById("devmodal-cpu");
-    if (cpuEl) cpuEl.textContent = dev.cpuProcessor || "Intel Core i5 (Clinical Spec)";
+    if (cpuEl) cpuEl.textContent = dev.cpuProcessor || 'Workstation Processing Unit';
 
     const ramEl = document.getElementById("devmodal-ram");
-    if (ramEl) ramEl.textContent = `${dev.storageCapacity || '512GB SSD'} / ${dev.ramMemory || '16GB RAM'}`;
+    if (ramEl) ramEl.textContent = dev.storageRam || 'Standard Memory Configuration';
 
     const osEl = document.getElementById("devmodal-os");
-    if (osEl) osEl.textContent = dev.operatingSystem || "Windows 11 Pro Medical Edition";
+    if (osEl) osEl.textContent = dev.operatingSystem || 'Windows 11 Pro Medical Edition';
 
     const displayEl = document.getElementById("devmodal-display");
-    if (displayEl) displayEl.textContent = dev.monitorModel || "24-inch Cleanable Touch";
+    if (displayEl) {
+        if (dev.deviceType === 'Display') {
+            displayEl.textContent = dev.monitorSpec || dev.cpuProcessor || '24-inch Cleanable Touch FHD';
+        } else {
+            displayEl.textContent = dev.monitorSpec || 'Connected Video Display Stream';
+        }
+    }
 
     const ipEl = document.getElementById("devmodal-ip");
-    if (ipEl) ipEl.textContent = dev.ipAddress || "DHCP Assigned";
+    if (ipEl) ipEl.textContent = dev.ipAddress || '—';
 
     const macEl = document.getElementById("devmodal-mac");
-    if (macEl) macEl.textContent = dev.macAddress || "00-1A-2B-3C-4D-5E";
+    if (macEl) macEl.textContent = dev.macAddress || '—';
 
-    const roomBadge = document.getElementById("devmodal-room-badge");
-    if (roomBadge) roomBadge.textContent = room && room.roomNumber ? `Rm ${room.roomNumber}` : 'Room —';
+    const anydeskEl = document.getElementById("devmodal-anydesk");
+    if (anydeskEl) anydeskEl.textContent = dev.anydeskId || 'Direct Physical Console';
 
     const locEl = document.getElementById("devmodal-location-text");
     if (locEl) {
-        locEl.textContent = `${floor ? floor.name : 'Unknown Floor'} • ${room ? room.name : 'Unassigned Room'}`;
+        const room = appState.rooms ? appState.rooms.find(r => r.id === dev.roomId) : null;
+        const floor = room && appState.floors ? appState.floors.find(f => f.id === room.floorId) : null;
+        const floorStr = dev.floorName || (floor ? floor.name : 'Floor Level');
+        const roomStr = dev.roomName || (room ? `${room.roomNumber ? `Rm ${room.roomNumber} - ` : ''}${room.name}` : 'Clinical Room');
+        locEl.textContent = `${floorStr} • ${roomStr}`;
     }
+}
 
-    const custInfo = document.getElementById("devmodal-custodian-info");
-    if (custInfo) {
-        custInfo.textContent = user ? `${user.fullName} (${user.empId || 'Staff'})` : "Unassigned (Clinical IT Pool)";
+function renderDetailModalLinkedDevices(linkedDevices, currentDevId) {
+    const container = document.getElementById("devmodal-linked-devices-container");
+    const countPill = document.getElementById("devmodal-workstation-count-pill");
+    if (countPill) {
+        countPill.textContent = `${linkedDevices.length} ${linkedDevices.length === 1 ? 'Device' : 'Devices'} Linked`;
     }
+    if (!container) return;
 
-    const viewCustBtn = document.getElementById("devmodal-view-custodian-btn");
-    if (viewCustBtn) {
-        if (user) {
-            viewCustBtn.style.display = "inline-block";
-            viewCustBtn.onclick = () => {
-                closeDeviceDetailPopup();
-                openUserDetailModal(user.id);
-            };
-        } else {
-            viewCustBtn.style.display = "none";
+    let html = '';
+    linkedDevices.forEach(item => {
+        const isCurrent = item.id === currentDevId;
+        const type = (item.deviceType || 'Device').trim();
+        const iconName = getDeviceLucideIconName(type);
+        const isActive = (item.status || 'Active') === 'Active';
+
+        let specSnippet = item.cpuProcessor || item.storageRam || item.monitorSpec || 'Hardware Unit';
+        if (type === 'Display') specSnippet = item.monitorSpec || item.cpuProcessor || '24" Display Stream';
+        else if (type === 'Keyboard') specSnippet = item.keyboardSpec || item.cpuProcessor || 'Spill-Proof Keyboard';
+        else if (type === 'Mouse') specSnippet = item.mouseSpec || item.cpuProcessor || 'USB Cleanable Optical';
+        else if (type === 'Printer') specSnippet = item.printerSpec || item.cpuProcessor || 'Medical Document Printer';
+
+        html += `
+            <div onclick="selectDetailModalDevice('${item.id}')" 
+                class="group relative rounded-2xl p-3.5 transition-all cursor-pointer border ${isCurrent ? 'bg-indigo-50/80 border-indigo-500 shadow-md ring-2 ring-indigo-500/20' : 'bg-slate-50/70 border-slate-200/90 hover:bg-white hover:border-indigo-300 hover:shadow-xs'}">
+                <div class="flex items-center justify-between gap-1.5 mb-2">
+                    <div class="w-8 h-8 rounded-xl ${isCurrent ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-600 border border-slate-200 group-hover:bg-indigo-50'} flex items-center justify-center shadow-3xs transition-colors shrink-0">
+                        <i data-lucide="${iconName}" class="w-4 h-4"></i>
+                    </div>
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                        <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
+                        <span>${item.status || 'Active'}</span>
+                    </span>
+                </div>
+                <div>
+                    <div class="font-extrabold text-xs text-slate-900 group-hover:text-indigo-700 transition-colors truncate">
+                        ${type}
+                    </div>
+                    <div class="text-[11px] text-slate-500 truncate mt-0.5" title="${specSnippet}">
+                        ${specSnippet}
+                    </div>
+                    <div class="text-[10px] font-mono text-slate-400 mt-1 font-semibold truncate">
+                        SN: ${item.serialNumber || '—'}
+                    </div>
+                </div>
+                ${isCurrent ? `
+                    <div class="mt-2 pt-1.5 border-t border-indigo-200/60 flex items-center justify-between text-[10px] font-bold text-indigo-700">
+                        <span class="flex items-center gap-1"><i data-lucide="eye" class="w-3 h-3"></i> Viewing</span>
+                        <i data-lucide="check" class="w-3.5 h-3.5 text-indigo-600"></i>
+                    </div>
+                ` : `
+                    <div class="mt-2 pt-1.5 border-t border-slate-200/60 text-[10px] font-semibold text-slate-400 group-hover:text-indigo-600 flex items-center justify-between">
+                        <span>Click to view</span>
+                        <i data-lucide="chevron-right" class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                    </div>
+                `}
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function selectDetailModalDevice(deviceId) {
+    const targetDev = activeDetailLinkedDevices.find(d => d.id === deviceId);
+    if (!targetDev) return;
+
+    activeDetailDeviceId = targetDev.id;
+    renderDetailModalActiveSpecs(targetDev);
+    renderDetailModalLinkedDevices(activeDetailLinkedDevices, targetDev.id);
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+    }
+}
+
+function getDeviceLucideIconName(rawType) {
+    const t = (rawType || '').toUpperCase().trim();
+    if (t === 'C' || t === 'CPU' || t === 'DESKTOP' || t === 'PC' || t === 'COMPUTER') return 'cpu';
+    if (t === 'D' || t === 'DISPLAY' || t === 'MONITOR' || t === 'SCREEN') return 'monitor';
+    if (t === 'K' || t === 'KB' || t === 'KEYBOARD') return 'keyboard';
+    if (t === 'M' || t === 'MOUSE') return 'mouse';
+    if (t === 'P' || t === 'PRT' || t === 'PRINTER' || t.includes('PRINT')) return 'printer';
+    if (t === 'T' || t === 'TABLET' || t === 'TAB' || t === 'IPAD') return 'tablet';
+    if (t === 'U' || t === 'UPS' || t === 'POWER' || t === 'INVERTER') return 'zap';
+    if (t.includes('SCANNER') || t.includes('BIOMETRIC')) return 'fingerprint';
+    return 'hard-drive';
+}
+
+function copyModalAssetId(btnEl) {
+    const assetEl = document.getElementById("devmodal-header-asset-id");
+    if (!assetEl) return;
+    const text = assetEl.textContent.trim();
+    if (!text) return;
+
+    navigator.clipboard.writeText(text).then(() => {
+        if (btnEl) {
+            const orig = btnEl.innerHTML;
+            btnEl.innerHTML = '<i data-lucide="check" class="w-3 h-3 text-emerald-400"></i><span class="text-emerald-300">Copied!</span>';
+            if (window.lucide) window.lucide.createIcons();
+            setTimeout(() => {
+                btnEl.innerHTML = orig;
+                if (window.lucide) window.lucide.createIcons();
+            }, 1800);
         }
-    }
+    }).catch(() => {});
+}
 
-    const moveBtn = document.getElementById("devmodal-move-btn");
-    if (moveBtn) {
-        moveBtn.onclick = () => {
-            closeDeviceDetailPopup();
-            openChangeLocationModal(dev.id);
-        };
+function triggerMoveLocationFromDetailModal() {
+    const devId = activeDetailDeviceId || (typeof activeDropdownDeviceId !== 'undefined' ? activeDropdownDeviceId : null);
+    closeDeviceDetailPopup();
+    if (devId && typeof openChangeLocationModal === 'function') {
+        openChangeLocationModal(devId);
     }
+}
 
-    const reassignBtn = document.getElementById("devmodal-reassign-btn");
-    if (reassignBtn) {
-        reassignBtn.onclick = () => {
-            closeDeviceDetailPopup();
-            openReassignModal(dev.id);
-        };
+function triggerReassignFromDetailModal() {
+    const devId = activeDetailDeviceId || (typeof activeDropdownDeviceId !== 'undefined' ? activeDropdownDeviceId : null);
+    closeDeviceDetailPopup();
+    if (devId && typeof openReassignModal === 'function') {
+        openReassignModal(devId);
     }
-
-    modal.classList.remove("hidden");
-    lucide.createIcons();
 }
 
 function closeDeviceDetailPopup() {
     const modal = document.getElementById("modal-device-detail");
     if (modal) modal.classList.add("hidden");
+    activeDetailDeviceId = null;
 }
 
 window.openDeviceDetailPopup = openDeviceDetailPopup;
 window.closeDeviceDetailPopup = closeDeviceDetailPopup;
+window.selectDetailModalDevice = selectDetailModalDevice;
+window.copyModalAssetId = copyModalAssetId;
+window.triggerMoveLocationFromDetailModal = triggerMoveLocationFromDetailModal;
+window.triggerReassignFromDetailModal = triggerReassignFromDetailModal;
 window.openUserDetailModal = openUserDetailModal;
 window.closeUserDetailModal = closeUserDetailModal;
 
 window.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
-        closeUserDetailModal();
+        if (typeof closeUserDetailModal === 'function') closeUserDetailModal();
         closeDeviceDetailPopup();
     }
 });
