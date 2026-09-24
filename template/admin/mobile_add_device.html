@@ -412,8 +412,8 @@
                     </span>
                 </div>
 
-                <!-- 7 Hardware Component Checkbox Cards -->
-                <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-2.5" id="component-checkbox-grid">
+                <!-- 8 Hardware Component Checkbox Cards -->
+                <div class="grid grid-cols-4 sm:grid-cols-8 gap-2 sm:gap-2.5" id="component-checkbox-grid">
                     <!-- CPU -->
                     <label class="component-card relative min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-cyan-500 bg-cyan-950/40 text-cyan-300 shadow-glow ring-1 ring-cyan-500/30" data-comp="CPU">
                         <input type="checkbox" value="CPU" checked onchange="toggleComponent('CPU', this.checked)" class="component-checkbox sr-only">
@@ -470,6 +470,14 @@
                         <span class="comp-badge absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
                         <i data-lucide="tablet" class="comp-icon w-6 h-6 text-slate-400 shrink-0"></i>
                         <span class="comp-label text-xs font-medium text-slate-400 tracking-tight text-center">Tablet</span>
+                    </label>
+
+                    <!-- Other Device -->
+                    <label class="component-card relative min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Other">
+                        <input type="checkbox" value="Other" onchange="toggleComponent('Other', this.checked)" class="component-checkbox sr-only">
+                        <span class="comp-badge absolute top-1.5 right-1.5 w-4 h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
+                        <i data-lucide="package-plus" class="comp-icon w-6 h-6 text-slate-400 shrink-0"></i>
+                        <span class="comp-label text-xs font-medium text-slate-400 tracking-tight text-center">Other</span>
                     </label>
                 </div>
 
@@ -919,6 +927,62 @@
                     </div>
                 </div>
 
+                <!-- Dynamic Sub-panel for Other Device -->
+                <div id="specs-other-panel" class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 transition-all duration-300 hidden">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                                <i data-lucide="package-plus" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-white tracking-wide">Other Hardware Specifications</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/60 font-bold">Other Box</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Device Type <span class="text-rose-400">*</span></label>
+                            <select id="select-other-type" onchange="handleOtherTypeChange(this.value)" class="mobile-input text-xs font-semibold">
+                                <option value="Scanner">Scanner (Document / Flatbed)</option>
+                                <option value="Barcode Scanner">Barcode Scanner (Handheld / 2D)</option>
+                                <option value="Biometric Scanner">Biometric / Fingerprint Device</option>
+                                <option value="Projector">Projector / Smart Display</option>
+                                <option value="Webcam">Webcam / Conference Camera</option>
+                                <option value="Network Switch">Network Switch / Router</option>
+                                <option value="External Storage">External Storage / NAS Unit</option>
+                                <option value="CUSTOM">Custom Device Type (Specify below)...</option>
+                            </select>
+                            <input type="text" id="input-other-custom-type" placeholder="Type custom device type (e.g. Card Reader)..." class="mobile-input text-xs font-medium mt-1.5 hidden">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
+                            <input type="text" id="input-other-brand" name="other_brand"
+                                value="Honeywell"
+                                class="mobile-input text-xs font-medium"
+                                placeholder="e.g. Honeywell / Epson / Canon / Mantra / Sony / Cisco">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Model & Hardware Specifications</label>
+                            <input type="text" id="input-other-model" name="other_model"
+                                value="Xenon 1900g High-Density USB Scanner"
+                                placeholder="e.g. Honeywell Xenon 1900 / Epson Perfection V39 / Mantra MFS100"
+                                class="mobile-input text-xs font-medium">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                                <i data-lucide="barcode" class="w-3 h-3 text-indigo-400"></i>
+                                <span>Serial Number (S/N)</span>
+                            </label>
+                            <input type="text" id="input-other-sn" name="other_serial"
+                                class="mobile-input text-xs font-mono uppercase"
+                                placeholder="e.g. SN-DEV-88412">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Empty State Alert when No Component is Selected -->
                 <div id="specs-empty-panel" class="p-5 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-center space-y-1.5 hidden">
                     <i data-lucide="sliders" class="w-5 h-5 text-slate-500 mx-auto"></i>
@@ -1067,13 +1131,36 @@
             } else if (preset === 'display' || preset === 'monitor') {
                 selectedComponents = new Set(['Display']);
             } else if (preset === 'all') {
-                selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse', 'Printer', 'UPS', 'Tablet']);
+                selectedComponents = new Set(['CPU', 'Display', 'Keyboard', 'Mouse', 'Printer', 'UPS', 'Tablet', 'Other']);
             } else if (preset === 'clear') {
                 selectedComponents = new Set();
             }
             updateSelectedComponentsUI();
             saveDraft();
             if (navigator.vibrate) navigator.vibrate(20);
+        }
+
+        function handleOtherTypeChange(val) {
+            const customInput = document.getElementById('input-other-custom-type');
+            if (customInput) {
+                if (val === 'CUSTOM') {
+                    customInput.classList.remove('hidden');
+                    customInput.focus();
+                } else {
+                    customInput.classList.add('hidden');
+                }
+            }
+            updateSelectedComponentsUI();
+            saveDraft();
+        }
+
+        function getEffectiveOtherType() {
+            const sel = document.getElementById('select-other-type');
+            const custom = document.getElementById('input-other-custom-type');
+            if (sel && sel.value === 'CUSTOM' && custom && custom.value.trim()) {
+                return custom.value.trim();
+            }
+            return sel ? (sel.value === 'CUSTOM' ? 'Other Device' : sel.value) : 'Other Device';
         }
 
         function getCompositeDeviceTypeName() {
@@ -1084,11 +1171,12 @@
                 return 'Workstation (CPU, Display, Keyboard, Mouse)';
             }
             if (selectedComponents.size > 1) {
-                const order = ['CPU', 'Display', 'Keyboard', 'Mouse', 'Printer', 'UPS', 'Tablet'];
+                const order = ['CPU', 'Display', 'Keyboard', 'Mouse', 'Printer', 'UPS', 'Tablet', 'Other'];
                 const sorted = Array.from(selectedComponents).sort((a, b) => order.indexOf(a) - order.indexOf(b));
-                return `Workstation (${sorted.join(', ')})`;
+                return `Workstation (${sorted.map(s => s === 'Other' ? getEffectiveOtherType() : s).join(', ')})`;
             }
-            return Array.from(selectedComponents)[0] || 'CPU';
+            const single = Array.from(selectedComponents)[0] || 'CPU';
+            return single === 'Other' ? getEffectiveOtherType() : single;
         }
 
         function updateSelectedComponentsUI() {
@@ -1152,6 +1240,7 @@
             const printerPanel = document.getElementById('specs-printer-panel');
             const upsPanel = document.getElementById('specs-ups-panel');
             const tabletPanel = document.getElementById('specs-tablet-panel');
+            const otherPanel = document.getElementById('specs-other-panel');
             const emptyPanel = document.getElementById('specs-empty-panel');
             const subTitle = document.getElementById('specs-subtitle');
 
@@ -1162,6 +1251,7 @@
             if (printerPanel) printerPanel.classList.toggle('hidden', !selectedComponents.has('Printer'));
             if (upsPanel) upsPanel.classList.toggle('hidden', !selectedComponents.has('UPS'));
             if (tabletPanel) tabletPanel.classList.toggle('hidden', !selectedComponents.has('Tablet'));
+            if (otherPanel) otherPanel.classList.toggle('hidden', !selectedComponents.has('Other'));
             if (emptyPanel) emptyPanel.classList.toggle('hidden', selectedComponents.size > 0);
 
             if (subTitle) {
@@ -1671,6 +1761,11 @@
                 tablet_device_id: document.getElementById('input-tablet-device-id')?.value || '',
                 tablet_anydesk_id: document.getElementById('input-tablet-anydesk-id')?.value || '',
                 tablet_mac: document.getElementById('input-tablet-mac')?.value || '',
+                other_type: document.getElementById('select-other-type')?.value || 'Scanner',
+                other_custom_type: document.getElementById('input-other-custom-type')?.value || '',
+                other_brand: document.getElementById('input-other-brand')?.value || '',
+                other_model: document.getElementById('input-other-model')?.value || '',
+                other_sn: document.getElementById('input-other-sn')?.value || '',
                 purchase: document.getElementById('input-purchase-date').value,
                 warranty: document.getElementById('input-warranty-date').value,
             };
@@ -1749,6 +1844,22 @@
                     if (draft.tablet_device_id && document.getElementById('input-tablet-device-id')) document.getElementById('input-tablet-device-id').value = draft.tablet_device_id;
                     if (draft.tablet_anydesk_id && document.getElementById('input-tablet-anydesk-id')) document.getElementById('input-tablet-anydesk-id').value = draft.tablet_anydesk_id;
                     if (draft.tablet_mac && document.getElementById('input-tablet-mac')) document.getElementById('input-tablet-mac').value = draft.tablet_mac;
+                    if (draft.other_type && document.getElementById('select-other-type')) {
+                        document.getElementById('select-other-type').value = draft.other_type;
+                        handleOtherTypeChange(draft.other_type);
+                    }
+                    if (draft.other_custom_type && document.getElementById('input-other-custom-type')) {
+                        document.getElementById('input-other-custom-type').value = draft.other_custom_type;
+                    }
+                    if (draft.other_brand && document.getElementById('input-other-brand')) {
+                        document.getElementById('input-other-brand').value = draft.other_brand;
+                    }
+                    if (draft.other_model && document.getElementById('input-other-model')) {
+                        document.getElementById('input-other-model').value = draft.other_model;
+                    }
+                    if (draft.other_sn && document.getElementById('input-other-sn')) {
+                        document.getElementById('input-other-sn').value = draft.other_sn;
+                    }
                     if (draft.purchase) document.getElementById('input-purchase-date').value = draft.purchase;
                     if (draft.warranty) document.getElementById('input-warranty-date').value = draft.warranty;
                     updateCustodianStatusUI();
@@ -1772,10 +1883,12 @@
             if (contactInput) contactInput.value = '';
             const emailInput = document.getElementById('input-email');
             if (emailInput) emailInput.value = '';
-            ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn', 'input-tablet-device-id', 'input-tablet-anydesk-id', 'input-tablet-mac'].forEach(id => {
+            ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn', 'input-tablet-device-id', 'input-tablet-anydesk-id', 'input-tablet-mac', 'input-other-sn', 'input-other-model', 'input-other-brand', 'input-other-custom-type'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
+            if (document.getElementById('select-other-type')) document.getElementById('select-other-type').value = 'Scanner';
+            if (document.getElementById('input-other-custom-type')) document.getElementById('input-other-custom-type').classList.add('hidden');
             selectedComponents = new Set(['CPU']);
             updateSelectedComponentsUI();
             updateCustodianStatusUI();
@@ -1887,6 +2000,10 @@
                 tablet_device_id: (document.getElementById('input-tablet-device-id')?.value || '').trim(),
                 tablet_anydesk_id: (document.getElementById('input-tablet-anydesk-id')?.value || '').trim(),
                 tablet_mac_address: (document.getElementById('input-tablet-mac')?.value || '').trim(),
+                other_device_type: getEffectiveOtherType(),
+                other_brand: (document.getElementById('input-other-brand')?.value || '').trim(),
+                other_model: (document.getElementById('input-other-model')?.value || '').trim(),
+                other_serial: (document.getElementById('input-other-sn')?.value || '').trim(),
                 device_id: (document.getElementById('input-tablet-device-id')?.value || '').trim(),
                 anydesk_id: (document.getElementById('input-tablet-anydesk-id')?.value || '').trim(),
                 operating_system: document.getElementById('input-os').value,
@@ -1964,7 +2081,7 @@
                 if (contactEl) contactEl.value = "";
                 const emailEl = document.getElementById('input-email');
                 if (emailEl) emailEl.value = "";
-                ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn', 'input-tablet-device-id', 'input-tablet-anydesk-id', 'input-tablet-mac'].forEach(id => {
+                ['input-cpu-sn', 'input-monitor-sn', 'input-keyboard-sn', 'input-mouse-sn', 'input-printer-sn', 'input-ups-sn', 'input-tablet-sn', 'input-tablet-device-id', 'input-tablet-anydesk-id', 'input-tablet-mac', 'input-other-sn', 'input-other-model', 'input-other-brand', 'input-other-custom-type'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = '';
                 });

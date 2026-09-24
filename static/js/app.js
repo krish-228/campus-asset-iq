@@ -399,6 +399,36 @@ function getDeviceTypeBadge(dev) {
             <i data-lucide="zap" class="w-5 h-5 text-orange-600 shrink-0"></i>
             <span>UPS</span>
         </span>`;
+    } else if (t.includes('SCANNER') || t.includes('BARCODE')) {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-rose-800">
+            <i data-lucide="scan-barcode" class="w-5 h-5 text-rose-600 shrink-0"></i>
+            <span>${rawType || 'Scanner'}</span>
+        </span>`;
+    } else if (t.includes('PROJECTOR')) {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-cyan-800">
+            <i data-lucide="projector" class="w-5 h-5 text-cyan-600 shrink-0"></i>
+            <span>Projector</span>
+        </span>`;
+    } else if (t.includes('WEBCAM') || t.includes('CAMERA')) {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-violet-800">
+            <i data-lucide="video" class="w-5 h-5 text-violet-600 shrink-0"></i>
+            <span>Webcam</span>
+        </span>`;
+    } else if (t.includes('SWITCH') || t.includes('ROUTER') || t.includes('NETWORK')) {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-blue-800">
+            <i data-lucide="network" class="w-5 h-5 text-blue-600 shrink-0"></i>
+            <span>Network Switch</span>
+        </span>`;
+    } else if (t.includes('STORAGE') || t.includes('DRIVE') || t.includes('NAS')) {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-slate-800">
+            <i data-lucide="hard-drive" class="w-5 h-5 text-slate-600 shrink-0"></i>
+            <span>External Storage</span>
+        </span>`;
+    } else if (t === 'OTHER' || t.includes('OTHER') || t.includes('ACCESSORY')) {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-slate-800">
+            <i data-lucide="package-plus" class="w-5 h-5 text-slate-600 shrink-0"></i>
+            <span>${rawType || 'Other Device'}</span>
+        </span>`;
     } else {
         const label = rawType || 'Device';
         typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-slate-800">
@@ -467,7 +497,11 @@ const WORKSTATION_DEVICE_PRIORITY = {
     'MOUSE': 4,
     'PRINTER': 5, 'PRT': 5,
     'UPS': 6, 'INVERTER': 6, 'POWER': 6,
-    'TABLET': 7, 'TAB': 7, 'IPAD': 7
+    'TABLET': 7, 'TAB': 7, 'IPAD': 7,
+    'SCANNER': 8, 'BARCODE': 8,
+    'PROJECTOR': 9,
+    'WEBCAM': 10, 'CAMERA': 10,
+    'OTHER': 11
 };
 
 function getWorkstationDevicePriority(dev) {
@@ -557,6 +591,54 @@ function getWorkstationRoleBadge(dev, displayName) {
             <div class="space-y-0.5">
                 <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200 shadow-3xs whitespace-nowrap">
                     <i data-lucide="tablet" class="w-3.5 h-3.5 text-teal-600"></i> Mobile Terminal
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('SCANNER') || raw.includes('BARCODE')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="scan-barcode" class="w-3.5 h-3.5 text-rose-600"></i> Scanner
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('PROJECTOR')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-cyan-50 text-cyan-800 border border-cyan-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="projector" class="w-3.5 h-3.5 text-cyan-600"></i> Projector
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('WEBCAM') || raw.includes('CAMERA')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-violet-50 text-violet-800 border border-violet-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="video" class="w-3.5 h-3.5 text-violet-600"></i> Webcam
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
+    if (raw.includes('OTHER')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="package-plus" class="w-3.5 h-3.5 text-slate-500"></i> Accessory
                 </span>
                 <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
                     <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
@@ -817,6 +899,7 @@ function expandCompositeWorkstation(dev, group) {
         else if (u.includes('TABLET') || u.includes('TAB') || u.includes('IPAD')) normalized.push('Tablet');
         else if (u.includes('PRINTER') || u.includes('PRT')) normalized.push('Printer');
         else if (u.includes('UPS') || u.includes('POWER') || u.includes('INVERTER')) normalized.push('UPS');
+        else if (u.includes('OTHER')) normalized.push('Other');
         else normalized.push(c);
     });
     
@@ -877,6 +960,13 @@ function expandCompositeWorkstation(dev, group) {
             sub.ipAddress = '—';
             sub.macAddress = '—';
             sub.brandName = dev.upsBrand || dev.brandName || dev.brand || 'APC';
+        } else if (compUpper === 'OTHER' || compUpper === 'CUSTOM') {
+            sub.cpuProcessor = dev.otherSpec || dev.other_spec || dev.otherModel || 'Hardware Accessory / Peripheral';
+            sub.storageRam = 'Hardware Accessory / Peripheral';
+            sub.operatingSystem = 'Hardware Firmware';
+            sub.ipAddress = '—';
+            sub.macAddress = '—';
+            sub.brandName = dev.otherBrand || dev.other_brand || '';
         }
         return sub;
     });

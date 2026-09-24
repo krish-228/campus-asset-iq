@@ -46,10 +46,10 @@ def normalize_device_type(code, asset_id=''):
     if '/U/' in aid or '/U-' in aid: return 'UPS'
     return code or 'CPU'
 
-def parse_and_normalize_components(components_input, device_type_str='', monitor_spec='', keyboard_spec='', mouse_spec='', tablet_spec='', printer_spec='', ups_spec=''):
+def parse_and_normalize_components(components_input, device_type_str='', monitor_spec='', keyboard_spec='', mouse_spec='', tablet_spec='', printer_spec='', ups_spec='', other_spec='', other_type=''):
     """
     Parses and normalizes a list of hardware components selected for a workstation.
-    Returns an ordered list of canonical component types, e.g. ['CPU', 'Display', 'Keyboard', 'Mouse', 'Tablet'].
+    Returns an ordered list of canonical component types, e.g. ['CPU', 'Display', 'Keyboard', 'Mouse', 'Tablet', 'Other'].
     """
     import re
     comps = []
@@ -70,6 +70,7 @@ def parse_and_normalize_components(components_input, device_type_str='', monitor
             if tablet_spec: comps.append('Tablet')
             if printer_spec: comps.append('Printer')
             if ups_spec: comps.append('UPS')
+            if other_spec or other_type: comps.append(other_type or 'Other')
             if len(comps) == 1:
                 comps = ['CPU', 'Display', 'Keyboard', 'Mouse']
         elif ',' in dt:
@@ -92,10 +93,12 @@ def parse_and_normalize_components(components_input, device_type_str='', monitor
             canonical.append('Printer')
         elif 'UPS' in u or 'POWER' in u or 'INVERTER' in u:
             canonical.append('UPS')
+        elif 'OTHER' in u or 'CUSTOM' in u:
+            canonical.append(other_type or 'Other')
         else:
             canonical.append(c)
 
-    order = ['CPU', 'Display', 'Keyboard', 'Mouse', 'Tablet', 'Printer', 'UPS']
+    order = ['CPU', 'Display', 'Keyboard', 'Mouse', 'Tablet', 'Printer', 'UPS', 'Other']
     unique_comps = []
     for o in order:
         if o in canonical and o not in unique_comps:
@@ -398,6 +401,11 @@ def api_save_device(request):
     tablet_device_id = (data.get('tablet_device_id') or data.get('device_id') or '').strip().upper()
     tablet_anydesk_id = (data.get('tablet_anydesk_id') or data.get('anydesk_id') or '').strip()
     tablet_mac = (data.get('tablet_mac_address') or data.get('tablet_mac') or '').strip().upper()
+    other_device_type = (data.get('other_device_type') or data.get('other_type') or '').strip()
+    other_brand = (data.get('other_brand') or '').strip()
+    other_model = (data.get('other_model') or data.get('other_spec') or '').strip()
+    other_serial = (data.get('other_serial') or data.get('other_sn') or '').strip().upper()
+    other_spec = other_model
     device_id = (data.get('device_id') or tablet_device_id or '').strip()
     anydesk_id = (data.get('anydesk_id') or tablet_anydesk_id or '').strip()
 
@@ -416,6 +424,11 @@ def api_save_device(request):
             cpu_processor = ups_spec
         elif 'tablet' in device_type.lower() and tablet_spec:
             cpu_processor = tablet_spec
+        elif other_model or other_spec:
+            cpu_processor = other_model or other_spec
+
+    if device_type.upper() in ('OTHER', 'OTHER DEVICE') and other_device_type:
+        device_type = other_device_type
 
     edit_id = (data.get('editId') or data.get('edit_id') or data.get('id') or '').strip()
     is_edit_request = bool(data.get('is_edit') or edit_id or data.get('allow_overwrite'))
@@ -440,7 +453,9 @@ def api_save_device(request):
         mouse_spec=mouse_spec,
         tablet_spec=tablet_spec,
         printer_spec=printer_spec,
-        ups_spec=ups_spec
+        ups_spec=ups_spec,
+        other_spec=other_spec,
+        other_type=other_device_type
     )
 
     # =========================================================================
@@ -459,7 +474,12 @@ def api_save_device(request):
             'MOUSE': 'MS',
             'TABLET': 'TAB',
             'PRINTER': 'PRT',
-            'UPS': 'UPS'
+            'UPS': 'UPS',
+            'OTHER': 'OTH',
+            'SCANNER': 'SCN',
+            'BARCODE SCANNER': 'BCS',
+            'PROJECTOR': 'PRJ',
+            'WEBCAM': 'CAM'
         }
 
         with transaction.atomic():
@@ -484,6 +504,8 @@ def api_save_device(request):
                     comp_sn = printer_serial or (f"{serial_number}-PRT" if serial_number else f"SN-PSM-PRT-{comp_tag.split('/')[-1]}")
                 elif comp_upper == 'UPS':
                     comp_sn = ups_serial or (f"{serial_number}-UPS" if serial_number else f"SN-PSM-UPS-{comp_tag.split('/')[-1]}")
+                elif comp_upper in ('OTHER', 'CUSTOM') or 'OTHER' in comp_upper or (other_device_type and comp_upper == other_device_type.upper()):
+                    comp_sn = other_serial or (f"{serial_number}-OTH" if serial_number else f"SN-PSM-OTH-{comp_tag.split('/')[-1]}")
                 else:
                     comp_sn = f"{serial_number}-{comp_abbr}" if serial_number else f"SN-PSM-{comp_abbr}-{comp_tag.split('/')[-1]}"
 
@@ -542,6 +564,14 @@ def api_save_device(request):
                     item_cpu = ups_spec or 'Line-Interactive Battery Backup Unit'
                     item_ram = 'AC Power Protection'
                     item_os = 'Power Unit'
+                    item_ip = '-'
+                    item_mac = '-'
+                elif comp_upper in ('OTHER', 'CUSTOM') or 'OTHER' in comp_upper or (other_device_type and comp_upper == other_device_type.upper()):
+                    item_dev_type = other_device_type or 'Other Device'
+                    item_brand = other_brand or brand_name or ''
+                    item_cpu = other_model or f'{item_dev_type} Hardware Unit'
+                    item_ram = 'Hardware Accessory / Peripheral'
+                    item_os = 'Hardware Firmware'
                     item_ip = '-'
                     item_mac = '-'
                 else:
@@ -712,6 +742,8 @@ def api_save_device(request):
             single_brand = ups_brand or 'APC'
         elif 'TABLET' in dtype_up:
             single_brand = tablet_brand or 'Samsung'
+        elif other_brand:
+            single_brand = other_brand
         else:
             single_brand = ''
 
@@ -731,6 +763,8 @@ def api_save_device(request):
             serial_number = ups_serial
         elif 'TABLET' in dtype_up:
             serial_number = tablet_serial
+        elif other_serial:
+            serial_number = other_serial
 
     is_new = False
     if dev:
