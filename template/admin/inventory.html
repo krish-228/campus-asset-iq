@@ -1105,7 +1105,37 @@
             </div>
 
             <!-- ------------------------------------------------------------- -->
-            <!-- SECTION 2: HARDWARE TECHNICAL SPECIFICATIONS (SELECTED ITEM)  -->
+            <!-- SECTION 2: WORKSTATION LINKED DEVICES / ALL HARDWARE IN USE   -->
+            <!-- ------------------------------------------------------------- -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-3.5">
+                <div class="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-200/80">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-2xs">
+                                <i data-lucide="layers" class="w-4 h-4"></i>
+                            </div>
+                            <h4 class="text-xs font-black uppercase tracking-wider text-slate-900">
+                                Connected Workstation Hardware Ecosystem
+                            </h4>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-0.5">
+                            All physical hardware devices currently linked and in active use by this custodian:
+                        </p>
+                    </div>
+
+                    <span id="devmodal-workstation-count-pill" class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-indigo-100 text-indigo-800 border border-indigo-200 whitespace-nowrap">
+                        5 Devices Linked
+                    </span>
+                </div>
+
+                <!-- Dynamic Linked Devices Cards Container -->
+                <div id="devmodal-linked-devices-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- ------------------------------------------------------------- -->
+            <!-- SECTION 3: HARDWARE TECHNICAL SPECIFICATIONS (SELECTED ITEM)  -->
             <!-- ------------------------------------------------------------- -->
             <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
                 <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
@@ -1195,36 +1225,6 @@
                         </div>
                         <div id="devmodal-location-text" class="font-bold text-slate-900 text-xs">2nd Floor &bull; ICU Bedside Monitoring Pod A</div>
                     </div>
-                </div>
-            </div>
-
-            <!-- ------------------------------------------------------------- -->
-            <!-- SECTION 3: WORKSTATION LINKED DEVICES / ALL HARDWARE IN USE   -->
-            <!-- ------------------------------------------------------------- -->
-            <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-3.5">
-                <div class="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-200/80">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-2xs">
-                                <i data-lucide="layers" class="w-4 h-4"></i>
-                            </div>
-                            <h4 class="text-xs font-black uppercase tracking-wider text-slate-900">
-                                Connected Workstation Hardware Ecosystem
-                            </h4>
-                        </div>
-                        <p class="text-[11px] text-slate-500 mt-0.5">
-                            All physical hardware devices currently linked and in active use by this custodian:
-                        </p>
-                    </div>
-
-                    <span id="devmodal-workstation-count-pill" class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-indigo-100 text-indigo-800 border border-indigo-200 whitespace-nowrap">
-                        5 Devices Linked
-                    </span>
-                </div>
-
-                <!-- Dynamic Linked Devices Cards Container -->
-                <div id="devmodal-linked-devices-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
-                    <!-- Populated dynamically via JS -->
                 </div>
             </div>
 
