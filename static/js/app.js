@@ -709,28 +709,164 @@ function getWorkstationRoleBadge(dev, displayName) {
     `;
 }
 
-function getOsDisplayHtml(dev) {
-    let osBadge = '';
-    const osLower = (dev.operatingSystem || '').toLowerCase();
-    if (osLower.includes('windows')) {
-        osBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-bold text-sm whitespace-nowrap shadow-2xs">
-            <i data-lucide="app-window" class="w-4 h-4 text-blue-600 shrink-0"></i> ${dev.operatingSystem}
-        </span>`;
-    } else if (osLower.includes('ubuntu') || osLower.includes('linux')) {
-        osBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-orange-50 text-orange-700 border border-orange-200 font-bold text-sm whitespace-nowrap shadow-2xs">
-            <i data-lucide="terminal" class="w-4 h-4 text-orange-600 shrink-0"></i> ${dev.operatingSystem}
-        </span>`;
-    } else {
-        osBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-bold text-sm whitespace-nowrap shadow-2xs">
-            <i data-lucide="disc" class="w-4 h-4 text-slate-500 shrink-0"></i> ${dev.operatingSystem}
-        </span>`;
+function getDeviceSpecificationsHtml(dev) {
+    const rawType = (dev.deviceType || dev.device_type || '').toUpperCase();
+    const model = (dev.cpuProcessor || '').trim();
+    const secondary = (dev.storageRam || '').trim();
+
+    // 1. CPU / Workstation / Desktop / Laptop
+    if (rawType.includes('CPU') || rawType.includes('WORKSTATION') || rawType.includes('DESKTOP') || rawType.includes('PC') || rawType.includes('COMPUTER') || rawType.includes('LAPTOP')) {
+        let osPill = '';
+        if (dev.operatingSystem && !dev.operatingSystem.toUpperCase().includes('HID') && !dev.operatingSystem.toUpperCase().includes('PERIPHERAL')) {
+            osPill = `<span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-3xs whitespace-nowrap">
+                <i data-lucide="app-window" class="w-3 h-3 text-blue-600"></i> ${dev.operatingSystem}
+            </span>`;
+        }
+        return `
+            <div class="space-y-1">
+                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${model}">
+                    <i data-lucide="cpu" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+                    <span class="truncate max-w-[260px]">${model || 'Standard Workstation Core'}</span>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap text-xs text-slate-600 font-medium">
+                    <span class="flex items-center gap-1 font-mono text-[11px] text-slate-700 font-semibold" title="${secondary}">
+                        <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                        <span class="truncate max-w-[170px]">${secondary || '16GB RAM / 512GB SSD'}</span>
+                    </span>
+                    ${osPill}
+                </div>
+            </div>
+        `;
     }
+
+    // 2. Display / Monitor
+    if (rawType.includes('DISPLAY') || rawType.includes('MONITOR') || rawType.includes('SCREEN') || rawType === 'D') {
+        const dispName = dev.monitorSpec || model || '24" FHD IPS Medical Display';
+        return `
+            <div class="space-y-1">
+                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${dispName}">
+                    <i data-lucide="monitor" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+                    <span class="truncate max-w-[260px]">${dispName}</span>
+                </div>
+                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                    <i data-lucide="sparkles" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                    <span>IPS Medical Panel &bull; Direct Video Stream</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // 3. Keyboard
+    if (rawType.includes('KEYBOARD') || rawType.includes('KB') || rawType === 'K') {
+        const kbName = model || dev.keyboardSpec || 'Dell KB216 USB Wired Keyboard';
+        return `
+            <div class="space-y-1">
+                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${kbName}">
+                    <i data-lucide="keyboard" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                    <span class="truncate max-w-[260px]">${kbName}</span>
+                </div>
+                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                    <i data-lucide="usb" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                    <span>USB Wired Interface &bull; Spill-Resistant Membrane</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // 4. Mouse
+    if (rawType.includes('MOUSE') || rawType === 'M') {
+        const msName = model || dev.mouseSpec || 'Dell MS116 Optical USB Mouse';
+        return `
+            <div class="space-y-1">
+                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${msName}">
+                    <i data-lucide="mouse" class="w-4 h-4 text-purple-600 shrink-0"></i>
+                    <span class="truncate max-w-[260px]">${msName}</span>
+                </div>
+                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                    <i data-lucide="crosshair" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                    <span>Optical Precision Sensor &bull; USB Cleanable</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // 5. Printer
+    if (rawType.includes('PRINTER') || rawType.includes('PRT') || rawType === 'P') {
+        const prtName = model || dev.printerSpec || 'High-Speed Laser / Barcode Printer';
+        return `
+            <div class="space-y-1">
+                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${prtName}">
+                    <i data-lucide="printer" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                    <span class="truncate max-w-[260px]">${prtName}</span>
+                </div>
+                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                    <i data-lucide="file-text" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                    <span>Direct Print Laser Unit &bull; Healthcare Document Grade</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // 6. UPS / Power Backup
+    if (rawType.includes('UPS') || rawType.includes('POWER') || rawType.includes('INVERTER') || rawType === 'U') {
+        const upsName = model || dev.upsSpec || 'APC Back-UPS 650VA / 360W';
+        return `
+            <div class="space-y-1">
+                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${upsName}">
+                    <i data-lucide="zap" class="w-4 h-4 text-orange-600 shrink-0"></i>
+                    <span class="truncate max-w-[260px]">${upsName}</span>
+                </div>
+                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                    <i data-lucide="shield-check" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                    <span>230V AC Surge Protection &bull; Continuous Power Backup</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // 7. Tablet
+    if (rawType.includes('TABLET') || rawType.includes('TAB') || rawType.includes('IPAD') || rawType === 'T') {
+        const tabName = model || dev.tabletSpec || 'Samsung Galaxy Tab Active4 Pro';
+        return `
+            <div class="space-y-1">
+                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${tabName}">
+                    <i data-lucide="tablet" class="w-4 h-4 text-teal-600 shrink-0"></i>
+                    <span class="truncate max-w-[260px]">${tabName}</span>
+                </div>
+                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                    <i data-lucide="wifi" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                    <span>Touchscreen Clinical Terminal &bull; Mobile Wireless Unit</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // 8. Scanner / Biometric
+    if (rawType.includes('SCANNER') || rawType.includes('BARCODE') || rawType.includes('BIOMETRIC') || rawType.includes('EYE')) {
+        const scName = model || 'High-Precision Optical Scanner';
+        return `
+            <div class="space-y-1">
+                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${scName}">
+                    <i data-lucide="scan-barcode" class="w-4 h-4 text-rose-600 shrink-0"></i>
+                    <span class="truncate max-w-[260px]">${scName}</span>
+                </div>
+                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                    <i data-lucide="check-circle-2" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                    <span>Optical 1D/2D Reader &bull; Instant Identification</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // 9. Generic / Other Hardware
     return `
         <div class="space-y-1">
-            <div>${osBadge}</div>
-            <div class="text-sm text-slate-600 font-medium flex items-center gap-1.5" title="${dev.monitorSpec}">
-                <i data-lucide="tv" class="w-4 h-4 text-slate-400 shrink-0"></i>
-                <span class="truncate max-w-[170px]">${dev.monitorSpec}</span>
+            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${model || 'Hardware Asset'}">
+                <i data-lucide="package" class="w-4 h-4 text-slate-600 shrink-0"></i>
+                <span class="truncate max-w-[260px]">${model || 'Standard Hardware Peripheral'}</span>
+            </div>
+            <div class="text-[11px] text-slate-500 font-medium">
+                <span>${secondary && !secondary.toUpperCase().includes('HID') ? secondary : 'Campus Clinical Hardware Unit'}</span>
             </div>
         </div>
     `;
@@ -867,8 +1003,7 @@ function renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMultiDevice
                     ` : ''}
                 </div>
             </td>
-            <td class="py-3 px-3.5">${computeDisplay}</td>
-            <td class="py-3 px-3.5">${getOsDisplayHtml(dev)}</td>
+            <td class="py-3 px-3.5">${getDeviceSpecificationsHtml(dev)}</td>
             <td class="py-3 px-3.5">
                 <div class="space-y-0.5">
                     <div class="flex items-center gap-1.5 font-mono text-sm font-bold text-slate-900 whitespace-nowrap">
@@ -1055,7 +1190,7 @@ function renderInventoryTable() {
     if (devices.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-12 text-slate-400">
+                <td colspan="5" class="text-center py-12 text-slate-400">
                     <div class="flex flex-col items-center justify-center gap-2">
                         <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                         <span class="font-semibold text-xs">No matching devices found in inventory.</span>
@@ -1191,7 +1326,7 @@ function renderInventoryTable() {
 
             html += `
                 <tr class="bg-gradient-to-r from-indigo-50/95 via-slate-50 to-indigo-50/50 border-t-2 border-indigo-500/80 shadow-2xs group-header-row cursor-pointer select-none" onclick="toggleWorkstationCollapse('${group.key}')">
-                    <td colspan="6" class="py-3 px-5">
+                    <td colspan="5" class="py-3 px-5">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
                             <!-- Left: Workstation Title, Custodian Details & Location -->
                             <div class="flex items-center gap-3.5 min-w-0">
@@ -1297,8 +1432,7 @@ function renderInventoryTable() {
                                     </div>
                                 </div>
                             </td>
-                            <td class="py-3 px-3.5">${computeDisplay}</td>
-                            <td class="py-3 px-3.5">${getOsDisplayHtml(dev)}</td>
+                            <td class="py-3 px-3.5">${getDeviceSpecificationsHtml(dev)}</td>
                             <td class="py-3 px-3.5">
                                 <div class="space-y-0.5">
                                     <div class="flex items-center gap-1.5 font-mono text-sm font-bold text-slate-900 whitespace-nowrap">
@@ -1338,7 +1472,7 @@ function renderInventoryTable() {
         if (unassignedDevices.length > 0) {
             html += `
                 <tr class="bg-slate-100/90 border-t-2 border-slate-300/80 shadow-2xs">
-                    <td colspan="6" class="py-2.5 px-5">
+                    <td colspan="5" class="py-2.5 px-5">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2.5">
                                 <span class="w-7 h-7 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs shadow-2xs shrink-0">
