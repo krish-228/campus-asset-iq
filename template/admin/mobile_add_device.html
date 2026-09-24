@@ -412,10 +412,10 @@
                     </span>
                 </div>
 
-                <!-- 8 Hardware Component Checkbox Cards: 2 Symmetrical Lines (4 on Row 1, 4 on Row 2) -->
-                <div class="grid grid-cols-4 gap-2 sm:gap-2.5" id="component-checkbox-grid">
+                <!-- 8 Hardware Component Checkbox Cards: 2 Symmetrical Lines (4 on Row 1, 4 on Row 2) Spread Over Container -->
+                <div class="grid grid-cols-4 gap-2.5 sm:gap-3 w-full" id="component-checkbox-grid">
                     <!-- CPU -->
-                    <label class="component-card relative min-h-[72px] sm:min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-cyan-500 bg-cyan-950/40 text-cyan-300 shadow-glow ring-1 ring-cyan-500/30" data-comp="CPU">
+                    <label class="component-card w-full relative min-h-[74px] sm:min-h-[80px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-cyan-500 bg-cyan-950/40 text-cyan-300 shadow-glow ring-1 ring-cyan-500/30" data-comp="CPU">
                         <input type="checkbox" value="CPU" checked onchange="toggleComponent('CPU', this.checked)" class="component-checkbox sr-only">
                         <span class="comp-badge absolute top-1.5 right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center shadow-sm">
                             <i data-lucide="check" class="w-2.5 h-2.5 stroke-[3]"></i>
@@ -425,7 +425,7 @@
                     </label>
 
                     <!-- Monitor (Display) -->
-                    <label class="component-card relative min-h-[72px] sm:min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Display">
+                    <label class="component-card w-full relative min-h-[74px] sm:min-h-[80px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Display">
                         <input type="checkbox" value="Display" onchange="toggleComponent('Display', this.checked)" class="component-checkbox sr-only">
                         <span class="comp-badge absolute top-1.5 right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
                         <i data-lucide="monitor" class="comp-icon w-5 h-5 sm:w-6 sm:h-6 text-slate-400 shrink-0"></i>
@@ -433,7 +433,7 @@
                     </label>
 
                     <!-- Keyboard -->
-                    <label class="component-card relative min-h-[72px] sm:min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Keyboard">
+                    <label class="component-card w-full relative min-h-[74px] sm:min-h-[80px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Keyboard">
                         <input type="checkbox" value="Keyboard" onchange="toggleComponent('Keyboard', this.checked)" class="component-checkbox sr-only">
                         <span class="comp-badge absolute top-1.5 right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
                         <i data-lucide="keyboard" class="comp-icon w-5 h-5 sm:w-6 sm:h-6 text-slate-400 shrink-0"></i>
@@ -441,7 +441,7 @@
                     </label>
 
                     <!-- Mouse -->
-                    <label class="component-card relative min-h-[72px] sm:min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Mouse">
+                    <label class="component-card w-full relative min-h-[74px] sm:min-h-[80px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Mouse">
                         <input type="checkbox" value="Mouse" onchange="toggleComponent('Mouse', this.checked)" class="component-checkbox sr-only">
                         <span class="comp-badge absolute top-1.5 right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
                         <i data-lucide="mouse" class="comp-icon w-5 h-5 sm:w-6 sm:h-6 text-slate-400 shrink-0"></i>
@@ -449,7 +449,7 @@
                     </label>
 
                     <!-- Printer -->
-                    <label class="component-card relative min-h-[72px] sm:min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Printer">
+                    <label class="component-card w-full relative min-h-[74px] sm:min-h-[80px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Printer">
                         <input type="checkbox" value="Printer" onchange="toggleComponent('Printer', this.checked)" class="component-checkbox sr-only">
                         <span class="comp-badge absolute top-1.5 right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
                         <i data-lucide="printer" class="comp-icon w-5 h-5 sm:w-6 sm:h-6 text-slate-400 shrink-0"></i>
@@ -457,7 +457,7 @@
                     </label>
 
                     <!-- UPS -->
-                    <label class="component-card relative min-h-[72px] sm:min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="UPS">
+                    <label class="component-card w-full relative min-h-[74px] sm:min-h-[80px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="UPS">
                         <input type="checkbox" value="UPS" onchange="toggleComponent('UPS', this.checked)" class="component-checkbox sr-only">
                         <span class="comp-badge absolute top-1.5 right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
                         <i data-lucide="zap" class="comp-icon w-5 h-5 sm:w-6 sm:h-6 text-slate-400 shrink-0"></i>
@@ -465,7 +465,7 @@
                     </label>
 
                     <!-- Tablet -->
-                    <label class="component-card relative min-h-[72px] sm:min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Tablet">
+                    <label class="component-card w-full relative min-h-[74px] sm:min-h-[80px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Tablet">
                         <input type="checkbox" value="Tablet" onchange="toggleComponent('Tablet', this.checked)" class="component-checkbox sr-only">
                         <span class="comp-badge absolute top-1.5 right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
                         <i data-lucide="tablet" class="comp-icon w-5 h-5 sm:w-6 sm:h-6 text-slate-400 shrink-0"></i>
@@ -473,7 +473,7 @@
                     </label>
 
                     <!-- Other Device -->
-                    <label class="component-card relative min-h-[72px] sm:min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Other">
+                    <label class="component-card w-full relative min-h-[74px] sm:min-h-[80px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200" data-comp="Other">
                         <input type="checkbox" value="Other" onchange="toggleComponent('Other', this.checked)" class="component-checkbox sr-only">
                         <span class="comp-badge absolute top-1.5 right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center"></span>
                         <i data-lucide="package-plus" class="comp-icon w-5 h-5 sm:w-6 sm:h-6 text-slate-400 shrink-0"></i>
@@ -1299,7 +1299,7 @@
                 if (chk) chk.checked = isChecked;
 
                 if (isChecked) {
-                    card.className = "component-card relative min-h-[72px] sm:min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-cyan-500 bg-cyan-950/40 text-cyan-300 shadow-glow ring-1 ring-cyan-500/30";
+                    card.className = "component-card w-full relative min-h-[74px] sm:min-h-[80px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-cyan-500 bg-cyan-950/40 text-cyan-300 shadow-glow ring-1 ring-cyan-500/30";
                     if (badge) {
                         badge.className = "comp-badge absolute top-1.5 right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center shadow-sm";
                         badge.innerHTML = `<i data-lucide="check" class="w-2.5 h-2.5 stroke-[3]"></i>`;
@@ -1307,7 +1307,7 @@
                     if (icon) icon.className = "comp-icon w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 shrink-0";
                     if (label) label.className = "comp-label text-[11px] sm:text-xs font-bold text-white tracking-tight text-center leading-tight";
                 } else {
-                    card.className = "component-card relative min-h-[72px] sm:min-h-[76px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200";
+                    card.className = "component-card w-full relative min-h-[74px] sm:min-h-[80px] p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200";
                     if (badge) {
                         badge.className = "comp-badge absolute top-1.5 right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-slate-700 bg-slate-800/80 text-transparent flex items-center justify-center";
                         badge.innerHTML = ``;
