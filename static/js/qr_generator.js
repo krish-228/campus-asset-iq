@@ -125,15 +125,16 @@ function groupDevicesByAssetId(devices) {
         const entry = groups.get(key);
         entry.all.push(dev);
 
-        // Normalize and collect component name
-        const rawType = (dev.deviceType || '').trim();
+        // Normalize and collect component name (strip any "Workstation" wording)
+        let rawType = (dev.deviceType || '').trim();
         if (rawType) {
+            rawType = rawType.replace(/workstation/gi, '').trim();
             if (rawType.includes('(') && rawType.includes(')')) {
                 const inner = rawType.substring(rawType.indexOf('(') + 1, rawType.lastIndexOf(')'));
                 inner.split(',').map(s => s.trim()).forEach(x => {
                     if (x && !entry.components.includes(x)) entry.components.push(x);
                 });
-            } else if (!entry.components.includes(rawType)) {
+            } else if (rawType && !entry.components.includes(rawType)) {
                 entry.components.push(rawType);
             }
         }
@@ -153,15 +154,11 @@ function groupDevicesByAssetId(devices) {
         });
 
         if (comps.length > 1) {
-            const standardWorkstation = ['CPU', 'Display', 'Keyboard', 'Mouse'];
-            const isStandard = standardWorkstation.every(c => comps.includes(c)) && comps.length === 4;
-            if (isStandard) {
-                primary.deviceType = 'Workstation (CPU, Display, Keyboard, Mouse)';
-            } else {
-                primary.deviceType = `Workstation (${comps.join(', ')})`;
-            }
+            primary.deviceType = comps.join(', ');
         } else if (comps.length === 1) {
             primary.deviceType = comps[0];
+        } else {
+            primary.deviceType = 'CPU';
         }
 
         // If primary has no serial, find first available serial in group
@@ -224,10 +221,17 @@ function renderStickerCards(devices) {
         let typeCode = 'C';
         let typeLabel = 'CPU';
         if (dev.deviceType) {
-            const dtUpper = String(dev.deviceType).toUpperCase();
-            if (dtUpper.includes('WORKSTATION')) { 
-                typeCode = 'C'; 
-                typeLabel = dev.deviceType; 
+            let cleanType = String(dev.deviceType)
+                .replace(/workstation\s*\(/gi, '')
+                .replace(/workstation/gi, '')
+                .replace(/^\s*\(+|\)+\s*$/g, '')
+                .trim();
+            if (!cleanType) cleanType = 'CPU';
+
+            const dtUpper = cleanType.toUpperCase();
+            if (dtUpper.includes(',') || (dtUpper.includes('CPU') && dtUpper.includes('DISPLAY'))) {
+                typeCode = 'C';
+                typeLabel = cleanType;
             }
             else if (dtUpper.includes('DISP') || dtUpper.includes('MONITOR') || dtUpper === 'D') { typeCode = 'D'; typeLabel = 'Display'; }
             else if (dtUpper.includes('KEYB') || dtUpper === 'K') { typeCode = 'K'; typeLabel = 'Keyboard'; }
@@ -238,7 +242,7 @@ function renderStickerCards(devices) {
             else if (dtUpper.includes('LAP') || dtUpper === 'L') { typeCode = 'L'; typeLabel = 'Laptop'; }
             else { 
                 typeCode = 'C'; 
-                typeLabel = dev.deviceType; 
+                typeLabel = cleanType; 
             }
         } else {
             const aid = (dev.assetId || '').toUpperCase();
