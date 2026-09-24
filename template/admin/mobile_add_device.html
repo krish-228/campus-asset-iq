@@ -941,12 +941,7 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="text-[11px] font-bold text-slate-400">Device Type <span class="text-rose-400">*</span></label>
-                                <span class="text-[10px] text-cyan-400 font-semibold flex items-center gap-1">
-                                    <i data-lucide="edit-3" class="w-3 h-3"></i> Editable with Suggestions
-                                </span>
-                            </div>
+                            <label class="text-[11px] font-bold text-slate-400 block mb-1">Device Type <span class="text-rose-400">*</span></label>
                             <div class="relative" id="other-type-combobox-container">
                                 <div class="relative flex items-center">
                                     <input type="text" id="input-other-type" name="other_device_type"
@@ -961,49 +956,29 @@
                                         onclick="toggleOtherTypeDropdown(event)"
                                         class="absolute right-0 top-0 bottom-0 px-3 flex items-center justify-center text-slate-400 hover:text-cyan-400 transition-colors focus:outline-none cursor-pointer"
                                         tabindex="-1"
-                                        title="Show suggestions">
+                                        title="Show options">
                                         <i data-lucide="chevron-down" id="other-type-chevron-icon" class="w-4 h-4 transition-transform duration-200"></i>
                                     </button>
                                 </div>
 
-                                <!-- Floating Suggestions Dropdown -->
+                                <!-- Simple Clean Dropdown -->
                                 <div id="other-type-dropdown-menu"
-                                    class="hidden absolute left-0 right-0 top-full mt-1.5 z-50 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden py-1 max-h-60 overflow-y-auto">
-                                    <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800/80 flex items-center justify-between">
-                                        <span>Suggested Device Types</span>
-                                        <span class="text-cyan-400/90 font-normal">Click to apply</span>
-                                    </div>
+                                    class="hidden absolute left-0 right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden py-1">
                                     <button type="button" onclick="selectOtherTypeSuggestion('Scanner')"
-                                        class="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-rose-300 flex items-center justify-between transition-colors border-b border-slate-800/40 cursor-pointer">
-                                        <span class="flex items-center gap-2">
-                                            <i data-lucide="scan-barcode" class="w-4 h-4 text-rose-400"></i>
-                                            <span>Scanner</span>
-                                        </span>
-                                        <span class="text-[10px] text-slate-400 font-mono">Document / Flatbed</span>
-                                    </button>
-                                    <button type="button" onclick="selectOtherTypeSuggestion('Biometric Machine')"
-                                        class="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-teal-300 flex items-center justify-between transition-colors border-b border-slate-800/40 cursor-pointer">
-                                        <span class="flex items-center gap-2">
-                                            <i data-lucide="fingerprint" class="w-4 h-4 text-teal-400"></i>
-                                            <span>Biometric Machine</span>
-                                        </span>
-                                        <span class="text-[10px] text-slate-400 font-mono">Fingerprint / Time</span>
-                                    </button>
-                                    <button type="button" onclick="selectOtherTypeSuggestion('Eye Scanner')"
-                                        class="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-cyan-300 flex items-center justify-between transition-colors border-b border-slate-800/40 cursor-pointer">
-                                        <span class="flex items-center gap-2">
-                                            <i data-lucide="eye" class="w-4 h-4 text-cyan-400"></i>
-                                            <span>Eye Scanner</span>
-                                        </span>
-                                        <span class="text-[10px] text-slate-400 font-mono">Retina / Iris Recognition</span>
+                                        class="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-b border-slate-800/60">
+                                        Scanner
                                     </button>
                                     <button type="button" onclick="selectOtherTypeSuggestion('Barcode Printer')"
-                                        class="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-amber-300 flex items-center justify-between transition-colors cursor-pointer">
-                                        <span class="flex items-center gap-2">
-                                            <i data-lucide="printer" class="w-4 h-4 text-amber-400"></i>
-                                            <span>Barcode Printer</span>
-                                        </span>
-                                        <span class="text-[10px] text-slate-400 font-mono">Thermal Label Printer</span>
+                                        class="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-b border-slate-800/60">
+                                        Barcode Printer
+                                    </button>
+                                    <button type="button" onclick="selectOtherTypeSuggestion('Biometric Machine')"
+                                        class="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-b border-slate-800/60">
+                                        Biometric Machine
+                                    </button>
+                                    <button type="button" onclick="selectOtherTypeSuggestion('Eye Scanner Machine')"
+                                        class="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer">
+                                        Eye Scanner Machine
                                     </button>
                                 </div>
                             </div>
@@ -1204,9 +1179,10 @@
 
         const OTHER_TYPE_PRESETS = {
             'Scanner': { brand: 'Honeywell', model: 'Xenon 1900g HD Handheld Scanner' },
+            'Barcode Printer': { brand: 'Zebra', model: 'ZD230 Direct Thermal Barcode Printer' },
             'Biometric Machine': { brand: 'Mantra', model: 'MFS100 Optical Fingerprint Machine' },
-            'Eye Scanner': { brand: 'IrisID', model: 'iCAM7S Iris Biometric Recognition Scanner' },
-            'Barcode Printer': { brand: 'Zebra', model: 'ZD230 Direct Thermal Barcode Printer' }
+            'Eye Scanner Machine': { brand: 'IrisID', model: 'iCAM7S Iris Biometric Recognition Scanner' },
+            'Eye Scanner': { brand: 'IrisID', model: 'iCAM7S Iris Biometric Recognition Scanner' }
         };
 
         function toggleOtherTypeDropdown(e) {
@@ -1218,7 +1194,6 @@
             if (isHidden) {
                 menu.classList.remove('hidden');
                 if (icon) icon.classList.add('rotate-180');
-                if (typeof lucide !== 'undefined') lucide.createIcons();
             } else {
                 menu.classList.add('hidden');
                 if (icon) icon.classList.remove('rotate-180');
@@ -1260,8 +1235,9 @@
             const brandInput = document.getElementById('input-other-brand');
             const modelInput = document.getElementById('input-other-model');
 
-            if (OTHER_TYPE_PRESETS[val]) {
-                const preset = OTHER_TYPE_PRESETS[val];
+            const matchedKey = Object.keys(OTHER_TYPE_PRESETS).find(k => k.toLowerCase() === val.trim().toLowerCase());
+            if (matchedKey) {
+                const preset = OTHER_TYPE_PRESETS[matchedKey];
                 if (brandInput && (!brandInput.value || Object.values(OTHER_TYPE_PRESETS).some(p => p.brand === brandInput.value))) {
                     brandInput.value = preset.brand;
                 }
