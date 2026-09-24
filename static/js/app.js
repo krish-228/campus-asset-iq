@@ -847,19 +847,20 @@ function renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMultiDevice
 
     return `
         <tr class="hover:bg-indigo-50/40 transition-colors divide-x divide-slate-100 text-slate-800" ${custKey ? `data-custodian-key="${custKey}"` : ''}>
-            <td class="py-3.5 pl-5 pr-3">
+            <td class="py-3.5 pl-5 pr-3.5 whitespace-nowrap">
                 <div class="space-y-1">
-                    <div>
-                        <span class="font-mono font-black text-sm px-2.5 py-1 rounded-md border ${assetBadgeClass} shadow-3xs whitespace-nowrap inline-block">
+                    <div>${getDeviceTypeBadge(dev)}</div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-mono font-black text-xs px-2 py-0.5 rounded-md border ${assetBadgeClass} shadow-3xs whitespace-nowrap inline-block">
                             ${dev.assetId}
                         </span>
-                    </div>
-                    <div class="text-xs text-slate-500 font-mono font-medium whitespace-nowrap flex items-center gap-1.5">
-                        <span><span class="text-slate-400 font-semibold">SN:</span> ${dev.serialNumber}</span>
+                        <span class="text-xs text-slate-500 font-mono font-medium whitespace-nowrap flex items-center gap-1">
+                            <span class="text-slate-400 font-semibold">SN:</span>
+                            <span class="text-slate-700 font-semibold">${dev.serialNumber || '—'}</span>
+                        </span>
                     </div>
                 </div>
             </td>
-            <td class="py-3.5 px-3.5 whitespace-nowrap">${getDeviceTypeBadge(dev)}</td>
             <td class="py-3 px-3.5">${locationDisplay}</td>
             <td class="py-3 px-3.5">${computeDisplay}</td>
             <td class="py-3 px-3.5">${getOsDisplayHtml(dev)}</td>
@@ -924,7 +925,7 @@ function isCompositeWorkstation(dev) {
 function expandCompositeWorkstation(dev, group) {
     const rawType = (dev.deviceType || dev.device_type || '').trim();
     let components = [];
-    
+
     // Extract anything between parentheses e.g. "Workstation (CPU, Display, Keyboard, Mouse, Tablet)"
     const match = rawType.match(/\(([^)]+)\)/);
     if (match) {
@@ -938,7 +939,7 @@ function expandCompositeWorkstation(dev, group) {
         if (dev.printerSpec) components.push('Printer');
         if (dev.upsSpec) components.push('UPS');
     }
-    
+
     // Normalize component names
     const normalized = [];
     components.forEach(c => {
@@ -953,7 +954,7 @@ function expandCompositeWorkstation(dev, group) {
         else if (u.includes('OTHER')) normalized.push('Other');
         else normalized.push(c);
     });
-    
+
     const uniqueComps = [...new Set(normalized)];
     if (uniqueComps.length === 0) uniqueComps.push('CPU');
 
@@ -1049,7 +1050,7 @@ function renderInventoryTable() {
     if (devices.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-12 text-slate-400">
+                <td colspan="7" class="text-center py-12 text-slate-400">
                     <div class="flex flex-col items-center justify-center gap-2">
                         <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                         <span class="font-semibold text-xs">No matching devices found in inventory.</span>
@@ -1179,9 +1180,13 @@ function renderInventoryTable() {
                 </span>`;
             }).join(' ');
 
+            const primaryAssetId = group.devices[0]?.assetId || '—';
+            const isGroupHosp = group.devices[0]?.orgId === 'HOSP';
+            const groupAssetBadgeClass = isGroupHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
+
             html += `
                 <tr class="bg-gradient-to-r from-indigo-50/95 via-slate-50 to-indigo-50/50 border-t-2 border-indigo-500/80 shadow-2xs group-header-row cursor-pointer select-none" onclick="toggleWorkstationCollapse('${group.key}')">
-                    <td colspan="8" class="py-3 px-5">
+                    <td colspan="7" class="py-3 px-5">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
                             <!-- Left: Workstation Title, Custodian Details & Location -->
                             <div class="flex items-center gap-3.5 min-w-0">
@@ -1196,6 +1201,10 @@ function renderInventoryTable() {
                                         <span class="font-extrabold text-slate-900 text-sm truncate hover:text-indigo-600 transition-colors" title="Click to collapse/expand">${group.displayName}</span>
                                         ${group.displayEmp ? `<span class="text-xs font-mono text-slate-500 font-semibold">(${group.displayEmp})</span>` : ''}
                                         <span class="text-xs font-bold text-indigo-600 px-2 py-0.5 rounded-md bg-white border border-indigo-200/60 shadow-3xs">${group.desigText}</span>
+                                        <span class="font-mono font-black text-xs px-2.5 py-0.5 rounded-md border ${groupAssetBadgeClass} shadow-3xs whitespace-nowrap inline-flex items-center gap-1.5 bg-white" title="Workstation Shared Asset Tag">
+                                            <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-600"></i>
+                                            <span>${primaryAssetId}</span>
+                                        </span>
                                     </div>
                                     <div class="flex items-center gap-2 text-xs text-slate-600 font-medium mt-1 flex-wrap">
                                         <span class="flex items-center gap-1">
@@ -1267,24 +1276,22 @@ function renderInventoryTable() {
 
                     html += `
                         <tr class="hover:bg-indigo-50/50 transition-colors divide-x divide-slate-100 text-slate-800 border-l-4 border-indigo-500/80 bg-slate-50/20" data-custodian-key="${group.key}">
-                            <td class="py-3.5 pl-5 pr-3">
+                            <td class="py-3.5 pl-5 pr-3.5 whitespace-nowrap">
                                 <div class="space-y-1">
-                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                        <span class="font-mono font-black text-sm px-2.5 py-1 rounded-md border ${assetBadgeClass} shadow-3xs whitespace-nowrap inline-block">
-                                            ${dev.assetId}
-                                        </span>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        ${getDeviceTypeBadge(dev)}
                                         ${dev._isCompositeSubItem ? `
                                             <span class="text-[10px] font-bold px-1.5 py-0.5 rounded shadow-3xs ${dev.deviceType === 'CPU' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}">
-                                                ${dev.deviceType === 'CPU' ? 'Workstation Core' : 'Linked Component'}
+                                                ${dev.deviceType === 'CPU' ? 'Core' : 'Linked'}
                                             </span>
                                         ` : ''}
                                     </div>
-                                    <div class="text-xs text-slate-500 font-mono font-medium whitespace-nowrap flex items-center gap-1.5">
-                                        <span><span class="text-slate-400 font-semibold">SN:</span> ${dev.serialNumber || (dev._isCompositeSubItem ? 'Bundled with Workstation' : '—')}</span>
+                                    <div class="text-xs text-slate-500 font-mono font-medium whitespace-nowrap flex items-center gap-1">
+                                        <span class="text-slate-400 font-semibold">SN:</span>
+                                        <span class="text-slate-700 font-semibold">${dev.serialNumber || (dev._isCompositeSubItem ? 'Bundled with Workstation' : '—')}</span>
                                     </div>
                                 </div>
                             </td>
-                            <td class="py-3.5 px-3.5 whitespace-nowrap">${getDeviceTypeBadge(dev)}</td>
                             <td class="py-3 px-3.5">${locationDisplay}</td>
                             <td class="py-3 px-3.5">${computeDisplay}</td>
                             <td class="py-3 px-3.5">${getOsDisplayHtml(dev)}</td>
@@ -1327,7 +1334,7 @@ function renderInventoryTable() {
         if (unassignedDevices.length > 0) {
             html += `
                 <tr class="bg-slate-100/90 border-t-2 border-slate-300/80 shadow-2xs">
-                    <td colspan="8" class="py-2.5 px-5">
+                    <td colspan="7" class="py-2.5 px-5">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2.5">
                                 <span class="w-7 h-7 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs shadow-2xs shrink-0">
@@ -4424,7 +4431,7 @@ function initCampusTrackerApp() {
     if (window.lucide && typeof window.lucide.createIcons === 'function') {
         lucide.createIcons();
     }
-    
+
     // Check if server-side data was already provided in the HTML payload
     const hasServerPayload = document.getElementById('server-devices-payload');
     if (!hasServerPayload) {
@@ -4449,4 +4456,4 @@ if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initCampusTrackerApp, { once: true });
 } else {
     initCampusTrackerApp();
-}
+}
