@@ -859,9 +859,14 @@ function renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMultiDevice
                             <span class="text-slate-700 font-semibold">${dev.serialNumber || '—'}</span>
                         </span>
                     </div>
+                    ${meta.roomName ? `
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1">
+                            <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i>
+                            <span>${meta.floorName} &bull; ${meta.roomName}</span>
+                        </div>
+                    ` : ''}
                 </div>
             </td>
-            <td class="py-3 px-3.5">${locationDisplay}</td>
             <td class="py-3 px-3.5">${computeDisplay}</td>
             <td class="py-3 px-3.5">${getOsDisplayHtml(dev)}</td>
             <td class="py-3 px-3.5">
@@ -1050,7 +1055,7 @@ function renderInventoryTable() {
     if (devices.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-12 text-slate-400">
+                <td colspan="6" class="text-center py-12 text-slate-400">
                     <div class="flex flex-col items-center justify-center gap-2">
                         <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                         <span class="font-semibold text-xs">No matching devices found in inventory.</span>
@@ -1186,7 +1191,7 @@ function renderInventoryTable() {
 
             html += `
                 <tr class="bg-gradient-to-r from-indigo-50/95 via-slate-50 to-indigo-50/50 border-t-2 border-indigo-500/80 shadow-2xs group-header-row cursor-pointer select-none" onclick="toggleWorkstationCollapse('${group.key}')">
-                    <td colspan="7" class="py-3 px-5">
+                    <td colspan="6" class="py-3 px-5">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
                             <!-- Left: Workstation Title, Custodian Details & Location -->
                             <div class="flex items-center gap-3.5 min-w-0">
@@ -1292,7 +1297,6 @@ function renderInventoryTable() {
                                     </div>
                                 </div>
                             </td>
-                            <td class="py-3 px-3.5">${locationDisplay}</td>
                             <td class="py-3 px-3.5">${computeDisplay}</td>
                             <td class="py-3 px-3.5">${getOsDisplayHtml(dev)}</td>
                             <td class="py-3 px-3.5">
@@ -1334,7 +1338,7 @@ function renderInventoryTable() {
         if (unassignedDevices.length > 0) {
             html += `
                 <tr class="bg-slate-100/90 border-t-2 border-slate-300/80 shadow-2xs">
-                    <td colspan="7" class="py-2.5 px-5">
+                    <td colspan="6" class="py-2.5 px-5">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2.5">
                                 <span class="w-7 h-7 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs shadow-2xs shrink-0">
