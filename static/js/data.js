@@ -13,75 +13,75 @@ const INITIAL_SAMPLE_DATA = {
 
     floors: [
         // 7 Facility Levels: Basement (-1), Ground (0), 1st to 5th Floors (1..5)
-        { 
-            id: "fl-basement", 
-            buildingId: "bldg-hosp-main", 
-            name: "Basement Floor (Biomedical & IT Server Hub)", 
-            shortName: "Basement", 
-            code: "B", 
-            number: -1, 
-            icon: "server", 
-            dept: "Biomedical Engineering Workshop, Telemetry Hub & Central Stores" 
+        {
+            id: "fl-basement",
+            buildingId: "bldg-hosp-main",
+            name: "Basement Floor (Biomedical & IT Server Hub)",
+            shortName: "Basement",
+            code: "B",
+            number: -1,
+            icon: "server",
+            dept: "Biomedical Engineering Workshop, Telemetry Hub & Central Stores"
         },
-        { 
-            id: "fl-gf", 
-            buildingId: "bldg-hosp-main", 
-            name: "Ground Floor (Emergency, Triage & Radiology)", 
-            shortName: "Ground Floor", 
-            code: "GF", 
-            number: 0, 
-            icon: "ambulance", 
-            dept: "Emergency & Trauma Triage, Registration, Billing & Radiology Imaging" 
+        {
+            id: "fl-gf",
+            buildingId: "bldg-hosp-main",
+            name: "Ground Floor (Emergency, Triage & Radiology)",
+            shortName: "Ground Floor",
+            code: "GF",
+            number: 0,
+            icon: "ambulance",
+            dept: "Emergency & Trauma Triage, Registration, Billing & Radiology Imaging"
         },
-        { 
-            id: "fl-1", 
-            buildingId: "bldg-hosp-main", 
-            name: "1st Floor (Outpatient Department - OPD)", 
-            shortName: "1st Floor", 
-            code: "1F", 
-            number: 1, 
-            icon: "stethoscope", 
-            dept: "Specialist Consultation Clinics, Doctor Cabins & Central Pharmacy" 
+        {
+            id: "fl-1",
+            buildingId: "bldg-hosp-main",
+            name: "1st Floor (Outpatient Department - OPD)",
+            shortName: "1st Floor",
+            code: "1F",
+            number: 1,
+            icon: "stethoscope",
+            dept: "Specialist Consultation Clinics, Doctor Cabins & Central Pharmacy"
         },
-        { 
-            id: "fl-2", 
-            buildingId: "bldg-hosp-main", 
-            name: "2nd Floor (ICU Complex & Critical Care)", 
-            shortName: "2nd Floor", 
-            code: "2F", 
-            number: 2, 
-            icon: "heart-pulse", 
-            dept: "Intensive Care Units (ICU/CCU), Bedside Monitoring & Central Nursing Hub" 
+        {
+            id: "fl-2",
+            buildingId: "bldg-hosp-main",
+            name: "2nd Floor (ICU Complex & Critical Care)",
+            shortName: "2nd Floor",
+            code: "2F",
+            number: 2,
+            icon: "heart-pulse",
+            dept: "Intensive Care Units (ICU/CCU), Bedside Monitoring & Central Nursing Hub"
         },
-        { 
-            id: "fl-3", 
-            buildingId: "bldg-hosp-main", 
-            name: "3rd Floor (Operation Theatres & PACU)", 
-            shortName: "3rd Floor", 
-            code: "3F", 
-            number: 3, 
-            icon: "scissors", 
-            dept: "Modular Surgical Theatres (OT-1, OT-2) & Post-Anesthesia Recovery (PACU)" 
+        {
+            id: "fl-3",
+            buildingId: "bldg-hosp-main",
+            name: "3rd Floor (Operation Theatres & PACU)",
+            shortName: "3rd Floor",
+            code: "3F",
+            number: 3,
+            icon: "scissors",
+            dept: "Modular Surgical Theatres (OT-1, OT-2) & Post-Anesthesia Recovery (PACU)"
         },
-        { 
-            id: "fl-4", 
-            buildingId: "bldg-hosp-main", 
-            name: "4th Floor (Inpatient Deluxe & Medical Wards)", 
-            shortName: "4th Floor", 
-            code: "4F", 
-            number: 4, 
-            icon: "bed", 
-            dept: "Inpatient Care Suites, Deluxe Recovery Rooms & Step-Down Telemetry" 
+        {
+            id: "fl-4",
+            buildingId: "bldg-hosp-main",
+            name: "4th Floor (Inpatient Deluxe & Medical Wards)",
+            shortName: "4th Floor",
+            code: "4F",
+            number: 4,
+            icon: "bed",
+            dept: "Inpatient Care Suites, Deluxe Recovery Rooms & Step-Down Telemetry"
         },
-        { 
-            id: "fl-5", 
-            buildingId: "bldg-hosp-main", 
-            name: "5th Floor (Pathology Labs & Blood Bank)", 
-            shortName: "5th Floor", 
-            code: "5F", 
-            number: 5, 
-            icon: "microscope", 
-            dept: "Clinical Biochemistry, Automated Hematology, Blood Bank & Medical Admin" 
+        {
+            id: "fl-5",
+            buildingId: "bldg-hosp-main",
+            name: "5th Floor (Pathology Labs & Blood Bank)",
+            shortName: "5th Floor",
+            code: "5F",
+            number: 5,
+            icon: "microscope",
+            dept: "Clinical Biochemistry, Automated Hematology, Blood Bank & Medical Admin"
         }
     ],
 
