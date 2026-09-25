@@ -905,7 +905,7 @@
             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
                 <div>
                     <h4 class="font-bold text-slate-800 text-xs">Need an Excel inventory template?</h4>
-                    <p class="text-[11px] text-slate-500 mt-0.5">Download pre-formatted 14-column sheet with standard hardware asset headers & sample rows.</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Download pre-formatted 24-column template aligned with Hardware Specs & Custodian Profile standards.</p>
                 </div>
                 <button type="button" onclick="downloadInventoryExcelTemplate()" class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-bold transition-all shadow-2xs hover:border-emerald-400 active:scale-95 cursor-pointer">
                     <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-600"></i>
@@ -943,9 +943,10 @@
                             <tr>
                                 <th class="p-1.5">Asset Tag</th>
                                 <th class="p-1.5">Device Type</th>
+                                <th class="p-1.5">Brand</th>
+                                <th class="p-1.5">Model & Specs</th>
                                 <th class="p-1.5">Location / Room</th>
                                 <th class="p-1.5">Custodian</th>
-                                <th class="p-1.5">Compute Hardware</th>
                                 <th class="p-1.5">Status</th>
                             </tr>
                         </thead>
@@ -1417,12 +1418,13 @@
                 return fallback || '-';
             };
 
-            const asset = getVal(['asset id', 'asset_id', 'it asset id', 'asset tag', 'asset tag / id', 'asset number', 'asset no', 'tag id', 'tag', 'device asset id'], 'Auto-assign');
+            const asset = getVal(['asset tag', 'asset id', 'asset_id', 'it asset id', 'asset tag / id', 'asset number', 'asset no', 'tag id', 'tag', 'device asset id'], 'Auto-assign');
             const deviceType = getVal(['device type', 'device_type', 'type', 'device category', 'category', 'device', 'equipment type'], 'CPU');
+            const brand = getVal(['brand / make', 'brand', 'brand_name', 'make', 'manufacturer', 'company'], 'Dell');
+            const modelSpecs = getVal(['hardware model & specs', 'hardware model & specifications', 'hardware model', 'model & specs', 'model', 'specs', 'compute hardware', 'cpu / processor', 'cpu processor', 'cpu'], 'Hardware Unit');
             const location = getVal(['room / location', 'room name', 'room', 'location', 'lab', 'department / room', 'ward'], 'PSM Campus');
-            const user = getVal(['custodian / user', 'custodian', 'assigned user', 'user', 'staff name', 'employee name', 'doctor / staff'], 'Unassigned');
-            const specs = getVal(['compute hardware', 'cpu / processor', 'cpu processor', 'cpu', 'processor', 'ram & storage'], 'Standard Compute');
-            const status = getVal(['status & health', 'status', 'health'], 'Active');
+            const user = getVal(['assigned custodian', 'custodian / user', 'custodian', 'assigned user', 'user', 'staff name', 'employee name', 'doctor / staff'], 'Unassigned');
+            const status = getVal(['hardware status', 'status & health', 'status', 'health'], 'Active');
 
             let statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
             if (String(status).toLowerCase().includes('maint')) {
@@ -1434,9 +1436,10 @@
             tr.innerHTML = `
                 <td class="p-1.5 font-bold font-mono text-slate-800">${asset}</td>
                 <td class="p-1.5 font-bold text-slate-700">${deviceType}</td>
+                <td class="p-1.5 text-slate-700 font-semibold">${brand}</td>
+                <td class="p-1.5 text-slate-600 truncate max-w-[140px]" title="${modelSpecs}">${modelSpecs}</td>
                 <td class="p-1.5 text-slate-600 truncate max-w-[120px]">${location}</td>
                 <td class="p-1.5 text-slate-600 truncate max-w-[110px]">${user}</td>
-                <td class="p-1.5 text-slate-600 font-mono text-[10px] truncate max-w-[130px]">${specs}</td>
                 <td class="p-1.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold border ${statusColor}">${status}</span></td>
             `;
             tbody.appendChild(tr);
@@ -1503,123 +1506,186 @@
         const headers = [
             "Asset Tag",
             "Device Type",
+            "Brand / Make",
+            "Hardware Model & Specs",
             "Serial Number",
-            "Building",
-            "Floor",
-            "Room / Location",
-            "Custodian / User",
-            "Emp ID",
-            "CPU / Processor",
+            "Processor (CPU)",
             "RAM & Storage",
-            "Monitor Specs",
+            "Monitor / Screen",
             "Operating System",
             "IP Address",
             "MAC Address",
-            "Status"
+            "AnyDesk Remote ID",
+            "Campus Organization",
+            "Building",
+            "Floor",
+            "Room / Location",
+            "Assigned Custodian",
+            "Employee ID",
+            "Department",
+            "Designation",
+            "Custodian Contact",
+            "Hardware Status",
+            "Purchase Date",
+            "Warranty Expiry"
         ];
 
         const sampleRows = [
             [
                 "PSM/IT/0926/001",
                 "CPU",
-                "SN-PHILIPS-MX800-01",
+                "Dell",
+                "Dell OptiPlex 7000 (Tower PC)",
+                "SN-DELL-OPT-7001",
+                "Intel Core i7-13700 (16 cores, 2.10 GHz)",
+                "16GB DDR4 RAM / 512GB NVMe SSD",
+                "24\" FHD IPS Medical Display",
+                "Windows 11 Pro Medical Edition",
+                "10.20.10.42",
+                "B4-2E-99-2F-01-FA",
+                "928 341 552",
                 "PSM Hospital",
+                "PSM Hospital Main Complex",
                 "2nd Floor",
                 "ICU Bedside Monitoring Pod A",
                 "Dr. Vikram Sharma",
                 "MED-00042",
-                "Intel Core i7-13700 (16 cores)",
-                "16GB RAM / 512GB NVMe SSD",
-                '24" Medical Grade FHD Touch',
-                "Windows 11 Pro",
-                "10.20.20.11",
-                "B4-2E-99-2F-01-FA",
-                "Active"
+                "Intensive Care Unit (ICU)",
+                "Chief Intensivist",
+                "dr.vikram@psm.hospital",
+                "Active",
+                "15-10-2023",
+                "23-Sep-2029"
+            ],
+            [
+                "PSM/IT/0926/001",
+                "Display",
+                "Dell",
+                "24\" FHD IPS Medical Grade Cleanable Display",
+                "SN-DELL-DISP-7001",
+                "—",
+                "—",
+                "24\" FHD IPS (1920x1080) Touchscreen",
+                "—",
+                "—",
+                "—",
+                "—",
+                "PSM Hospital",
+                "PSM Hospital Main Complex",
+                "2nd Floor",
+                "ICU Bedside Monitoring Pod A",
+                "Dr. Vikram Sharma",
+                "MED-00042",
+                "Intensive Care Unit (ICU)",
+                "Chief Intensivist",
+                "dr.vikram@psm.hospital",
+                "Active",
+                "15-10-2023",
+                "23-Sep-2029"
+            ],
+            [
+                "PSM/IT/0926/001",
+                "Keyboard",
+                "Dell",
+                "Dell KB216 USB Wired Antimicrobial Keyboard",
+                "SN-DELL-KB-7001",
+                "—",
+                "—",
+                "—",
+                "—",
+                "—",
+                "—",
+                "—",
+                "PSM Hospital",
+                "PSM Hospital Main Complex",
+                "2nd Floor",
+                "ICU Bedside Monitoring Pod A",
+                "Dr. Vikram Sharma",
+                "MED-00042",
+                "Intensive Care Unit (ICU)",
+                "Chief Intensivist",
+                "dr.vikram@psm.hospital",
+                "Active",
+                "15-10-2023",
+                "23-Sep-2029"
+            ],
+            [
+                "PSM/IT/0926/001",
+                "Mouse",
+                "Dell",
+                "Dell MS116 Cleanable Optical Clinic Mouse",
+                "SN-DELL-MS-7001",
+                "—",
+                "—",
+                "—",
+                "—",
+                "—",
+                "—",
+                "—",
+                "PSM Hospital",
+                "PSM Hospital Main Complex",
+                "2nd Floor",
+                "ICU Bedside Monitoring Pod A",
+                "Dr. Vikram Sharma",
+                "MED-00042",
+                "Intensive Care Unit (ICU)",
+                "Chief Intensivist",
+                "dr.vikram@psm.hospital",
+                "Active",
+                "15-10-2023",
+                "23-Sep-2029"
             ],
             [
                 "PSM/IT/0926/002",
-                "CPU",
-                "SN-DELL-OPTIPLEX-5090",
+                "Printer",
+                "HP",
+                "HP LaserJet Pro M404dn (38 ppm Duplex Network)",
+                "SN-HP-PRT-4040",
+                "—",
+                "—",
+                "—",
+                "HP Jetdirect Embedded Firmware",
+                "10.20.10.80",
+                "B4-2E-99-44-66-80",
+                "—",
                 "PSM Hospital",
+                "PSM Hospital Main Complex",
                 "Ground Floor",
-                "Emergency & Trauma Triage Desk 01",
+                "OPD Registration & Billing 02",
                 "Staff Nurse Rekha",
                 "MED-00142",
-                "Intel Core i5-12500 (6 cores)",
-                "16GB RAM / 512GB SSD",
-                'Dell 24" UltraSharp FHD',
-                "Windows 11 Pro",
-                "10.20.10.45",
-                "B4-2E-99-GF-04-FA",
-                "Active"
+                "Emergency & Triage",
+                "Billing Supervisor",
+                "nurse.rekha@psm.hospital",
+                "Active",
+                "20-11-2023",
+                "20-Nov-2026"
             ],
             [
                 "PSM/IT/0926/003",
-                "Display",
-                "SN-EIZO-RADIFORCE-4K",
+                "UPS",
+                "APC",
+                "APC Back-UPS Pro 1100VA (Line-Interactive)",
+                "SN-APC-UPS-1100",
+                "—",
+                "—",
+                "—",
+                "Microcontroller Power Firmware",
+                "—",
+                "—",
+                "—",
                 "PSM Hospital",
-                "Ground Floor",
-                "CT / MRI Diagnostic Console 01",
-                "Dr. Aarti Mehta",
-                "MED-00078",
-                "Integrated 4K Display Controller",
-                "Direct Video Stream",
-                'Dual 27" Eizo RadiForce 4K Medical Display',
-                "Display Firmware v3.2",
-                "10.20.10.88",
-                "B4-2E-99-GF-08-FA",
-                "Active"
-            ],
-            [
-                "PSM/IT/0926/004",
-                "Keyboard",
-                "SN-HP-K100-401",
-                "PSM Hospital",
-                "4th Floor",
-                "Inpatient Deluxe Ward Station 4A",
-                "Sister Priya Nair",
-                "MED-00164",
-                "HP Healthcare Antimicrobial Controller",
-                "Spill-Resistant Membrane USB Keyboard",
-                "N/A - Peripherals",
-                "Hardware Peripheral (HID)",
-                "10.20.60.74",
-                "B4-2E-99-44-66-74",
-                "Active"
-            ],
-            [
-                "PSM/IT/0926/005",
-                "Mouse",
-                "SN-HP-M100-401",
-                "PSM Hospital",
-                "4th Floor",
-                "Inpatient Deluxe Ward Station 4A",
-                "Sister Priya Nair",
-                "MED-00164",
-                "HP Ergonomic Optical Tracking (1200 DPI)",
-                "USB Cleanable Clinic Mouse",
-                "N/A - Peripherals",
-                "Hardware Peripheral (HID)",
-                "10.20.60.73",
-                "B4-2E-99-44-66-73",
-                "Active"
-            ],
-            [
-                "PSM/IT/0926/006",
-                "Printer",
-                "SN-BR-L2350-401",
-                "PSM Hospital",
-                "4th Floor",
-                "Inpatient Deluxe Ward Station 4A",
-                "Sister Priya Nair",
-                "MED-00164",
-                "Brother High-Efficiency Laser Processor",
-                "32 ppm Duplex Ward Discharge Report Laser Printer",
-                "Status LED Indicator Panel",
-                "Brother Wireless Print Core",
-                "10.20.60.80",
-                "B4-2E-99-44-66-80",
-                "Active"
+                "PSM Hospital Main Complex",
+                "Basement Floor",
+                "Hospital IT Server & Telemetry Hub",
+                "Er. Amit Verma",
+                "EMP-IT-008",
+                "Biomedical Engineering & IT",
+                "Lead Biomedical Engineer",
+                "amit.verma@psm.hospital",
+                "Active",
+                "05-01-2024",
+                "05-Jan-2029"
             ]
         ];
 
@@ -1630,35 +1696,46 @@
 
             ws['!cols'] = [
                 { wch: 18 }, // Asset Tag
-                { wch: 15 }, // Device Type
-                { wch: 24 }, // Serial Number
-                { wch: 34 }, // Building
-                { wch: 15 }, // Floor
-                { wch: 34 }, // Room / Location
-                { wch: 20 }, // Custodian / User
-                { wch: 12 }, // Emp ID
-                { wch: 28 }, // CPU / Processor
-                { wch: 26 }, // RAM & Storage
-                { wch: 26 }, // Monitor Specs
-                { wch: 24 }, // Operating System
-                { wch: 15 }, // IP Address
+                { wch: 14 }, // Device Type
+                { wch: 15 }, // Brand / Make
+                { wch: 42 }, // Hardware Model & Specs
+                { wch: 20 }, // Serial Number
+                { wch: 36 }, // Processor (CPU)
+                { wch: 30 }, // RAM & Storage
+                { wch: 34 }, // Monitor / Screen
+                { wch: 30 }, // Operating System
+                { wch: 16 }, // IP Address
                 { wch: 20 }, // MAC Address
-                { wch: 15 }  // Status
+                { wch: 18 }, // AnyDesk Remote ID
+                { wch: 22 }, // Campus Organization
+                { wch: 28 }, // Building
+                { wch: 20 }, // Floor
+                { wch: 34 }, // Room / Location
+                { wch: 22 }, // Assigned Custodian
+                { wch: 15 }, // Employee ID
+                { wch: 26 }, // Department
+                { wch: 24 }, // Designation
+                { wch: 28 }, // Custodian Contact
+                { wch: 14 }, // Hardware Status
+                { wch: 16 }, // Purchase Date
+                { wch: 16 }  // Warranty Expiry
             ];
 
             XLSX.utils.book_append_sheet(wb, ws, "Device Inventory");
             XLSX.writeFile(wb, "PSM_Hospital_Device_Inventory_Template.xlsx");
         } else {
-            // Fallback CSV export
+            // Fallback CSV export with UTF-8 BOM
             const csv = [headers, ...sampleRows];
-            const csvContent = "data:text/csv;charset=utf-8," + csv.map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
-            const encodedUri = encodeURI(csvContent);
+            const csvContent = "\uFEFF" + csv.map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
+            link.setAttribute("href", url);
             link.setAttribute("download", `PSM_Hospital_Device_Inventory_Template_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
     }
 </script>

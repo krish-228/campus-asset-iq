@@ -4932,13 +4932,8 @@ async function syncDevicesFromDatabase() {
                         dbDev.roomId = appState.rooms[0].id;
                     }
                 }
-                const existing = appState.devices.find(d => d.id === dbDev.id || d.assetId === dbDev.assetId);
-                if (existing) {
-                    Object.assign(existing, dbDev);
-                } else {
-                    appState.devices.push(dbDev);
-                }
             });
+            appState.devices = data.devices;
             saveAppState();
             renderAll();
         }

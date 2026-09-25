@@ -75,8 +75,9 @@ This file defines the core architecture, technical stack, design conventions, an
 * **Single Source of Truth:** `asset_id` (e.g., `PSM/IT/2F/C-201`) is the sole hardware identifier for inventory tracking, transfers, complaints, breakdown records, and physical tags.
 
 ### Bulk Excel Import & Template Standards
-* **15-Column Standard Format:** Template download (`downloadInventoryExcelTemplate()`) and import parser (`api_import_devices_excel`) must strictly maintain Column 1 as `Asset Tag` and Column 2 as `Device Type`, followed by `Serial Number`, `Building`, `Floor`, `Room / Location`, `Custodian / User`, `Emp ID`, `CPU / Processor`, `RAM & Storage`, `Monitor Specs`, `Operating System`, `IP Address`, `MAC Address`, and `Status`.
-* **Sample Data Types:** The downloaded template must always supply clear examples for `CPU`, `Display`, `Keyboard`, `Mouse`, and `Printer`.
+* **24-Column Standard Format:** Template download (`downloadInventoryExcelTemplate()`), export functions (`exportToExcel()`, `exportToCSV()`), and backend import parser (`api_import_devices_excel`) strictly maintain the 24-column Hardware Specs & Workstation Profile format:
+  1. `Asset Tag`, 2. `Device Type`, 3. `Brand / Make`, 4. `Hardware Model & Specs`, 5. `Serial Number`, 6. `Processor (CPU)`, 7. `RAM & Storage`, 8. `Monitor / Screen`, 9. `Operating System`, 10. `IP Address`, 11. `MAC Address`, 12. `AnyDesk Remote ID`, 13. `Campus Organization`, 14. `Building`, 15. `Floor`, 16. `Room / Location`, 17. `Assigned Custodian`, 18. `Employee ID`, 19. `Department`, 20. `Designation`, 21. `Custodian Contact`, 22. `Hardware Status`, 23. `Purchase Date`, 24. `Warranty Expiry`.
+* **Sample Data Types:** The downloaded template and import parser actively support `CPU`, `Display`, `Keyboard`, `Mouse`, `Printer`, `UPS`, and `Tablet` with realistic hospital specifications, auto-provisioning `UserProfile` entries and preventing device collisions.
 
 ### JavaScript & Template Cleanliness
 * **Safe Template Data Ingestion:** Never write Django template loops (e.g. `{% for item in items %}`) directly inside `<script>` executable statements to avoid code editor syntax errors.

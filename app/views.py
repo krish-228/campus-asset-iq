@@ -2807,7 +2807,7 @@ def api_import_devices_excel(request):
             continue
 
         asset_id = find_val(r, [
-            'asset id', 'asset_id', 'it asset id', 'asset tag', 'asset tag / id',
+            'asset tag', 'asset id', 'asset_id', 'it asset id', 'asset tag / id',
             'asset number', 'asset no', 'tag id', 'tag', 'device asset id', 'device tag', 'asset'
         ])
         serial_number = find_val(r, [
@@ -2833,36 +2833,54 @@ def api_import_devices_excel(request):
                 next_n += 1
             asset_id = f"PSM/IT/{now_str}/{next_n:03d}"
 
-
         device_type_raw = find_val(r, [
             'device type', 'device_type', 'type', 'device category', 'category', 'device', 'equipment type'
         ], '')
         device_type = normalize_device_type(device_type_raw, asset_id)
 
         if not serial_number:
-            serial_number = f"SN-{random.randint(10000000, 99999999)}"
+            serial_number = f"SN-PSM-{device_type[:3].upper()}-{random.randint(1000, 9999)}"
 
-        building_name = find_val(r, ['building name', 'building', 'bldg', 'wing', 'facility'], 'PSM Hospital')
-        floor_name = find_val(r, ['floor name', 'floor', 'level'], '2nd Floor')
-        room_name = find_val(r, ['room / location', 'room name', 'room', 'location', 'lab', 'department / room', 'ward', 'dept'], 'ICU Complex')
+        brand_name = find_val(r, ['brand / make', 'brand', 'brand_name', 'make', 'manufacturer', 'company'], '')
+        model_specs = find_val(r, [
+            'hardware model & specs', 'hardware model & specifications', 'hardware model',
+            'model & specs', 'model', 'specs', 'hardware specs', 'compute hardware'
+        ], '')
+
+        building_name = find_val(r, ['building', 'building name', 'bldg', 'wing', 'facility'], 'PSM Hospital Main Complex')
+        floor_name = find_val(r, ['floor', 'floor name', 'level', 'floor level'], 'Ground Floor')
+        room_name = find_val(r, ['room / location', 'room name', 'room', 'location', 'lab', 'department / room', 'ward', 'dept'], 'General Clinical Area')
 
         assigned_user_name = find_val(r, [
-            'custodian / user', 'custodian', 'assigned user', 'assigned user name',
+            'assigned custodian', 'custodian / user', 'custodian', 'assigned user', 'assigned user name',
             'user', 'staff name', 'employee name', 'doctor / staff', 'doctor name', 'user name', 'custodian name'
         ], 'Unassigned')
-        assigned_emp_id = find_val(r, ['emp id', 'employee id', 'staff id', 'assigned emp id', 'emp_id'])
+        assigned_emp_id = find_val(r, ['employee id', 'emp id', 'staff id', 'assigned emp id', 'emp_id', 'custodian emp id'], '')
+        assigned_department = find_val(r, ['department', 'custodian dept', 'dept', 'custodian department', 'assigned department'], '')
+        assigned_designation = find_val(r, ['designation', 'custodian designation', 'role', 'title', 'assigned designation'], '')
+        assigned_contact = find_val(r, ['custodian contact', 'contact', 'email', 'phone', 'contact info', 'mobile', 'telephone'], '')
 
-        cpu_processor = find_val(r, ['compute hardware', 'cpu / processor', 'cpu processor', 'cpu', 'processor', 'hardware specs', 'processor / cpu'], 'Intel Core i7-13700 (16-Core)')
-        storage_ram = find_val(r, ['ram & storage', 'ram and storage', 'storage / ram', 'storage ram', 'ram', 'storage', 'memory', 'disk', 'ram/storage'], '16GB RAM / 512GB NVMe SSD')
-        monitor_spec = find_val(r, ['monitor specs', 'monitor spec', 'monitor', 'display', 'screen', 'monitor / display'], 'Dell 24" UltraSharp FHD')
-        operating_system = find_val(r, ['operating system', 'operating_system', 'os & display', 'os', 'system os'], 'Windows 11 Pro')
-        ip_address = find_val(r, ['network & ip', 'ip address', 'ip_address', 'ip', 'network ip', 'ip addr'], f"10.20.10.{random.randint(10, 240)}")
-        mac_address = find_val(r, ['mac address', 'mac_address', 'mac', 'physical address'], f"B4-2E-99-{random.randint(10,99)}-{random.randint(10,99)}-FA")
+        assigned_email = assigned_contact if '@' in (assigned_contact or '') else ''
+        assigned_phone = assigned_contact if '@' not in (assigned_contact or '') else ''
+
+        cpu_processor = find_val(r, ['processor (cpu)', 'processor', 'cpu / processor', 'cpu processor', 'cpu', 'processor / cpu'], '')
+        storage_ram = find_val(r, ['ram & storage', 'ram and storage', 'storage & ram', 'storage / ram', 'storage ram', 'ram', 'storage', 'memory', 'disk', 'ram/storage'], '')
+        monitor_spec = find_val(r, ['monitor / screen', 'monitor specs', 'monitor spec', 'monitor', 'display', 'screen', 'monitor / display'], '')
+        operating_system = find_val(r, ['operating system', 'operating_system', 'os & display', 'os', 'system os'], '')
+        
+        ip_raw = find_val(r, ['ip address', 'ip_address', 'ip', 'network & ip', 'network ip', 'ip addr'], '')
+        ip_address = '' if ip_raw in ('-', '—', 'N/A', 'n/a') else ip_raw
+
+        mac_raw = find_val(r, ['mac address', 'mac_address', 'mac', 'physical address'], '')
+        mac_address = '' if mac_raw in ('-', '—', 'N/A', 'n/a') else mac_raw
+
+        anydesk_raw = find_val(r, ['anydesk remote id', 'anydesk id', 'anydesk_id', 'anydesk', 'remote id'], '')
+        anydesk_id = '' if anydesk_raw in ('-', '—', 'N/A', 'n/a') else anydesk_raw
 
         purchase_date = find_val(r, ['purchase date', 'purchase_date', 'procurement date', 'date of purchase'], datetime.date.today().strftime('%d-%b-%Y'))
-        warranty_expiry_date = find_val(r, ['warranty expiry date', 'warranty expiry', 'warranty_expiry_date', 'warranty date', 'warranty'], (datetime.date.today() + datetime.timedelta(days=1095)).strftime('%d-%b-%Y'))
+        warranty_expiry_date = find_val(r, ['warranty expiry', 'warranty expiry date', 'warranty_expiry_date', 'warranty date', 'warranty upto', 'warranty'], (datetime.date.today() + datetime.timedelta(days=1095)).strftime('%d-%b-%Y'))
 
-        status_raw = find_val(r, ['status & health', 'status', 'health', 'state'], 'Active')
+        status_raw = find_val(r, ['hardware status', 'status & health', 'status', 'health', 'state'], 'Active')
         st_lower = status_raw.lower()
         if 'maint' in st_lower:
             status = 'In Maintenance'
@@ -2873,7 +2891,58 @@ def api_import_devices_excel(request):
         else:
             status = 'Active'
 
-        brand_name = find_val(r, ['brand', 'brand_name', 'make', 'manufacturer', 'company'], '')
+        # Default brand name if missing
+        type_upper = device_type.upper()
+        if not brand_name:
+            if type_upper in ('CPU', 'DISPLAY', 'KEYBOARD', 'MOUSE'):
+                brand_name = 'Dell'
+            elif 'PRINTER' in type_upper:
+                brand_name = 'HP'
+            elif 'UPS' in type_upper:
+                brand_name = 'APC'
+            elif 'TABLET' in type_upper:
+                brand_name = 'Samsung'
+            else:
+                brand_name = 'Standard OEM'
+
+        # Peripheral & component specific fields
+        keyboard_spec = ''
+        mouse_spec = ''
+        printer_spec = ''
+        ups_spec = ''
+        tablet_spec = ''
+
+        if type_upper == 'DISPLAY':
+            monitor_spec = monitor_spec if (monitor_spec and monitor_spec != '—') else (model_specs or '24" FHD IPS Medical Grade Display')
+            cpu_processor = model_specs or monitor_spec
+        elif type_upper == 'KEYBOARD':
+            keyboard_spec = model_specs or 'Dell KB216 USB Wired Antimicrobial Keyboard'
+            cpu_processor = keyboard_spec
+        elif type_upper == 'MOUSE':
+            mouse_spec = model_specs or 'Dell MS116 Cleanable Optical Clinic Mouse'
+            cpu_processor = mouse_spec
+        elif type_upper == 'PRINTER':
+            printer_spec = model_specs or 'HP LaserJet Pro Network Printer'
+            cpu_processor = printer_spec
+            if not operating_system or operating_system == '—':
+                operating_system = 'HP Jetdirect Embedded Firmware'
+        elif type_upper == 'UPS':
+            ups_spec = model_specs or 'APC Back-UPS 1100VA Surge Protected'
+            cpu_processor = ups_spec
+            if not operating_system or operating_system == '—':
+                operating_system = 'Microcontroller Power Firmware'
+        elif type_upper == 'TABLET':
+            tablet_spec = model_specs or 'Samsung Galaxy Tab Active Touch Terminal'
+            cpu_processor = tablet_spec
+            if not operating_system or operating_system == '—':
+                operating_system = 'Android / Windows 11 Tablet OS'
+        elif type_upper in ('CPU', 'DESKTOP', 'PC', 'TOWER'):
+            if not cpu_processor or cpu_processor == '—':
+                cpu_processor = model_specs or 'Intel Core i5-12500 (6 Cores, 3.0 GHz)'
+            if not storage_ram or storage_ram == '—':
+                storage_ram = '16GB RAM / 512GB NVMe SSD'
+            if not operating_system or operating_system == '—':
+                operating_system = 'Windows 11 Pro Medical Edition'
 
         # Check if imported row represents a multi-component Workstation
         imported_components = parse_and_normalize_components(
@@ -2888,82 +2957,103 @@ def api_import_devices_excel(request):
                 c_tag = asset_id
                 c_upper = comp_name.upper()
                 c_sn = f"{serial_number}-{c_upper[:3]}" if serial_number else f"SN-PSM-{c_upper[:3]}-{c_tag.split('/')[-1]}"
-                c_brand = brand_name or ('Dell' if c_upper in ('CPU', 'DISPLAY', 'KEYBOARD', 'MOUSE') else 'HP' if c_upper == 'PRINTER' else 'APC' if c_upper == 'UPS' else 'Samsung' if c_upper == 'TABLET' else '')
+                c_brand = brand_name or ('Dell' if c_upper in ('CPU', 'DISPLAY', 'KEYBOARD', 'MOUSE') else 'HP' if c_upper == 'PRINTER' else 'APC' if c_upper == 'UPS' else 'Samsung' if c_upper == 'TABLET' else 'Standard OEM')
+
+                c_kb = ''
+                c_ms = ''
+                c_prt = ''
+                c_ups = ''
+                c_tab = ''
+                c_anydesk = anydesk_id if c_upper == 'CPU' else ''
 
                 if c_upper == 'CPU':
                     c_type = 'CPU'
-                    c_cpu = cpu_processor
-                    c_ram = storage_ram
-                    c_os = operating_system
+                    c_cpu = cpu_processor or 'Intel Core i5-12500 (6 Cores)'
+                    c_ram = storage_ram or '16GB RAM / 512GB NVMe SSD'
+                    c_os = operating_system or 'Windows 11 Pro Medical Edition'
                     c_ip = ip_address
                     c_mac = mac_address
                 elif c_upper == 'DISPLAY':
                     c_type = 'Display'
-                    c_cpu = monitor_spec or '24" FHD IPS Medical / Office Grade Display'
+                    c_cpu = monitor_spec or '24" FHD IPS Medical Grade Display'
                     c_ram = 'Hardware Display Monitor'
                     c_os = 'Hardware Display'
-                    c_ip = '-'
-                    c_mac = '-'
+                    c_ip = ''
+                    c_mac = ''
                 elif c_upper == 'KEYBOARD':
                     c_type = 'Keyboard'
-                    c_cpu = 'Spill-Resistant Membrane USB Keyboard'
+                    c_kb = 'Dell KB216 USB Wired Antimicrobial Keyboard'
+                    c_cpu = c_kb
                     c_ram = 'Hardware Peripheral (HID)'
                     c_os = 'Hardware Peripheral (HID)'
-                    c_ip = '-'
-                    c_mac = '-'
+                    c_ip = ''
+                    c_mac = ''
                 elif c_upper == 'MOUSE':
                     c_type = 'Mouse'
-                    c_cpu = 'Ergonomic Optical Cleanable Clinic Mouse'
+                    c_ms = 'Dell MS116 Cleanable Optical Clinic Mouse'
+                    c_cpu = c_ms
                     c_ram = 'Hardware Peripheral (HID)'
                     c_os = 'Hardware Peripheral (HID)'
-                    c_ip = '-'
-                    c_mac = '-'
+                    c_ip = ''
+                    c_mac = ''
                 elif c_upper == 'TABLET':
                     c_type = 'Tablet'
-                    c_cpu = 'Mobile Diagnostic Tablet'
-                    c_ram = 'Mobile Workstation Unit'
-                    c_os = 'Mobile OS / Windows Tablet'
-                    c_ip = '-'
-                    c_mac = '-'
+                    c_tab = 'Samsung Galaxy Tab Active Touch Terminal'
+                    c_cpu = c_tab
+                    c_ram = 'Mobile Diagnostic Tablet'
+                    c_os = 'Android / Windows 11 Tablet OS'
+                    c_ip = ''
+                    c_mac = ''
                 elif c_upper == 'PRINTER':
                     c_type = 'Printer'
-                    c_cpu = 'Direct Thermal & Document Printer'
+                    c_prt = 'HP LaserJet Pro Network Printer'
+                    c_cpu = c_prt
                     c_ram = 'Direct Print Unit'
-                    c_os = 'Printer Firmware'
-                    c_ip = '-'
-                    c_mac = '-'
+                    c_os = 'HP Jetdirect Embedded Firmware'
+                    c_ip = ip_address
+                    c_mac = mac_address
                 elif c_upper == 'UPS':
                     c_type = 'UPS'
-                    c_cpu = 'Line-Interactive Battery Backup Unit'
+                    c_ups = 'APC Back-UPS 1100VA Surge Protected'
+                    c_cpu = c_ups
                     c_ram = 'AC Power Protection'
-                    c_os = 'Power Unit'
-                    c_ip = '-'
-                    c_mac = '-'
+                    c_os = 'Microcontroller Power Firmware'
+                    c_ip = ''
+                    c_mac = ''
                 else:
                     c_type = comp_name
                     c_cpu = f'{comp_name} Hardware Unit'
                     c_ram = 'Standard Hardware Component'
-                    c_os = operating_system
-                    c_ip = '-'
-                    c_mac = '-'
+                    c_os = operating_system or 'Firmware Embedded'
+                    c_ip = ''
+                    c_mac = ''
 
                 c_dev = DeviceAsset.objects.filter(asset_id__iexact=c_tag, device_type__iexact=c_type).first()
                 if c_dev:
                     c_dev.device_type = c_type
-                    if c_brand:
-                        c_dev.brand_name = c_brand
+                    c_dev.brand_name = c_brand
                     c_dev.serial_number = c_sn
                     c_dev.building_name = building_name
                     c_dev.floor_name = floor_name
                     c_dev.room_name = room_name
                     c_dev.assigned_user_name = assigned_user_name
                     c_dev.assigned_emp_id = assigned_emp_id
+                    c_dev.assigned_department = assigned_department
+                    c_dev.assigned_designation = assigned_designation
+                    c_dev.assigned_email = assigned_email
+                    c_dev.assigned_phone = assigned_phone
                     c_dev.cpu_processor = c_cpu
                     c_dev.storage_ram = c_ram
                     c_dev.monitor_spec = monitor_spec if c_upper in ('CPU', 'DISPLAY') else ''
+                    c_dev.keyboard_spec = c_kb
+                    c_dev.mouse_spec = c_ms
+                    c_dev.printer_spec = c_prt
+                    c_dev.ups_spec = c_ups
+                    c_dev.tablet_spec = c_tab
                     c_dev.operating_system = c_os
                     c_dev.ip_address = c_ip
                     c_dev.mac_address = c_mac
+                    c_dev.anydesk_id = c_anydesk
                     c_dev.purchase_date = purchase_date
                     c_dev.warranty_expiry_date = warranty_expiry_date
                     c_dev.status = status
@@ -2984,43 +3074,100 @@ def api_import_devices_excel(request):
                         assigned_user_id='',
                         assigned_user_name=assigned_user_name,
                         assigned_emp_id=assigned_emp_id,
+                        assigned_department=assigned_department,
+                        assigned_designation=assigned_designation,
+                        assigned_email=assigned_email,
+                        assigned_phone=assigned_phone,
                         cpu_processor=c_cpu,
                         storage_ram=c_ram,
                         monitor_spec=monitor_spec if c_upper in ('CPU', 'DISPLAY') else '',
+                        keyboard_spec=c_kb,
+                        mouse_spec=c_ms,
+                        printer_spec=c_prt,
+                        ups_spec=c_ups,
+                        tablet_spec=c_tab,
                         operating_system=c_os,
                         ip_address=c_ip,
                         mac_address=c_mac,
+                        anydesk_id=c_anydesk,
                         purchase_date=purchase_date,
                         warranty_expiry_date=warranty_expiry_date,
                         status=status
                     )
                     created_count += 1
                 saved_count += 1
+
+            # Sync user profile if assigned
+            if assigned_user_name and assigned_user_name.lower() != 'unassigned':
+                prof = None
+                if assigned_emp_id:
+                    prof = UserProfile.objects.filter(emp_id__iexact=assigned_emp_id).first()
+                if not prof:
+                    prof = UserProfile.objects.filter(full_name__iexact=assigned_user_name).first()
+                if prof:
+                    if assigned_department and not prof.department: prof.department = assigned_department
+                    if assigned_designation and not prof.designation: prof.designation = assigned_designation
+                    if assigned_phone and not prof.phone: prof.phone = assigned_phone
+                    if not prof.assigned_asset_id: prof.assigned_asset_id = asset_id
+                    prof.save()
+                else:
+                    clean_u = (assigned_emp_id or assigned_user_name.lower().replace(' ', '_')).replace('/', '_')
+                    base_u = clean_u
+                    cntr = 1
+                    while User.objects.filter(username=clean_u).exists():
+                        clean_u = f"{base_u}_{cntr}"
+                        cntr += 1
+                    em_val = assigned_email or f"{clean_u}@psm.hospital"
+                    new_u = User.objects.create_user(
+                        username=clean_u,
+                        email=em_val,
+                        first_name=assigned_user_name.split()[0] if assigned_user_name else 'Staff',
+                        last_name=" ".join(assigned_user_name.split()[1:]) if len(assigned_user_name.split()) > 1 else ''
+                    )
+                    UserProfile.objects.create(
+                        user=new_u,
+                        emp_id=assigned_emp_id or f"EMP-{uuid.uuid4().hex[:6].upper()}",
+                        full_name=assigned_user_name,
+                        org_id='HOSP',
+                        department=assigned_department or 'Clinical Healthcare Unit',
+                        designation=assigned_designation or 'Assigned Custodian',
+                        phone=assigned_phone or '',
+                        assigned_asset_id=asset_id
+                    )
             continue
 
-        # Look up existing record by asset_id (or serial_number)
-        dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
-        if not dev and serial_number:
+        # Look up existing record by asset_id + device_type OR serial_number
+        dev = None
+        if serial_number and not serial_number.startswith('SN-PSM-'):
             dev = DeviceAsset.objects.filter(serial_number__iexact=serial_number).first()
-
-        dev_brand = brand_name or ('Dell' if device_type.upper() in ('CPU', 'DISPLAY', 'KEYBOARD', 'MOUSE') else 'HP' if 'PRINTER' in device_type.upper() else 'APC' if 'UPS' in device_type.upper() else 'Samsung' if 'TABLET' in device_type.upper() else '')
+        if not dev:
+            dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id, device_type__iexact=device_type).first()
 
         if dev:
             dev.device_type = device_type
-            if dev_brand:
-                dev.brand_name = dev_brand
+            dev.brand_name = brand_name
             dev.serial_number = serial_number
             dev.building_name = building_name
             dev.floor_name = floor_name
             dev.room_name = room_name
             dev.assigned_user_name = assigned_user_name
             dev.assigned_emp_id = assigned_emp_id
+            dev.assigned_department = assigned_department
+            dev.assigned_designation = assigned_designation
+            dev.assigned_email = assigned_email
+            dev.assigned_phone = assigned_phone
             dev.cpu_processor = cpu_processor
             dev.storage_ram = storage_ram
             dev.monitor_spec = monitor_spec
+            dev.keyboard_spec = keyboard_spec
+            dev.mouse_spec = mouse_spec
+            dev.printer_spec = printer_spec
+            dev.ups_spec = ups_spec
+            dev.tablet_spec = tablet_spec
             dev.operating_system = operating_system
             dev.ip_address = ip_address
             dev.mac_address = mac_address
+            dev.anydesk_id = anydesk_id
             dev.purchase_date = purchase_date
             dev.warranty_expiry_date = warranty_expiry_date
             dev.status = status
@@ -3032,7 +3179,7 @@ def api_import_devices_excel(request):
                 dev_id=dev_id,
                 asset_id=asset_id,
                 device_type=device_type,
-                brand_name=dev_brand,
+                brand_name=brand_name,
                 serial_number=serial_number,
                 org_id='HOSP',
                 org_name='PSM Hospital',
@@ -3042,17 +3189,65 @@ def api_import_devices_excel(request):
                 assigned_user_id='',
                 assigned_user_name=assigned_user_name,
                 assigned_emp_id=assigned_emp_id,
+                assigned_department=assigned_department,
+                assigned_designation=assigned_designation,
+                assigned_email=assigned_email,
+                assigned_phone=assigned_phone,
                 cpu_processor=cpu_processor,
                 storage_ram=storage_ram,
                 monitor_spec=monitor_spec,
+                keyboard_spec=keyboard_spec,
+                mouse_spec=mouse_spec,
+                printer_spec=printer_spec,
+                ups_spec=ups_spec,
+                tablet_spec=tablet_spec,
                 operating_system=operating_system,
                 ip_address=ip_address,
                 mac_address=mac_address,
+                anydesk_id=anydesk_id,
                 purchase_date=purchase_date,
                 warranty_expiry_date=warranty_expiry_date,
                 status=status
             )
             created_count += 1
+
+        # Sync user profile if assigned
+        if assigned_user_name and assigned_user_name.lower() != 'unassigned':
+            prof = None
+            if assigned_emp_id:
+                prof = UserProfile.objects.filter(emp_id__iexact=assigned_emp_id).first()
+            if not prof:
+                prof = UserProfile.objects.filter(full_name__iexact=assigned_user_name).first()
+            if prof:
+                if assigned_department and not prof.department: prof.department = assigned_department
+                if assigned_designation and not prof.designation: prof.designation = assigned_designation
+                if assigned_phone and not prof.phone: prof.phone = assigned_phone
+                if not prof.assigned_asset_id: prof.assigned_asset_id = asset_id
+                prof.save()
+            else:
+                clean_u = (assigned_emp_id or assigned_user_name.lower().replace(' ', '_')).replace('/', '_')
+                base_u = clean_u
+                cntr = 1
+                while User.objects.filter(username=clean_u).exists():
+                    clean_u = f"{base_u}_{cntr}"
+                    cntr += 1
+                em_val = assigned_email or f"{clean_u}@psm.hospital"
+                new_u = User.objects.create_user(
+                    username=clean_u,
+                    email=em_val,
+                    first_name=assigned_user_name.split()[0] if assigned_user_name else 'Staff',
+                    last_name=" ".join(assigned_user_name.split()[1:]) if len(assigned_user_name.split()) > 1 else ''
+                )
+                UserProfile.objects.create(
+                    user=new_u,
+                    emp_id=assigned_emp_id or f"EMP-{uuid.uuid4().hex[:6].upper()}",
+                    full_name=assigned_user_name,
+                    org_id='HOSP',
+                    department=assigned_department or 'Clinical Healthcare Unit',
+                    designation=assigned_designation or 'Assigned Custodian',
+                    phone=assigned_phone or '',
+                    assigned_asset_id=asset_id
+                )
 
         saved_count += 1
 
