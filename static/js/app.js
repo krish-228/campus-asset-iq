@@ -28,7 +28,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & workstation sets
-    const CURRENT_CACHE_VERSION = "v7.1_workstations";
+    const CURRENT_CACHE_VERSION = "v8.0_clean_slate";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -1718,7 +1718,7 @@ function updateLandingCounts() {
 
     if (uniDev) uniDev.textContent = "17";
     if (uniLabs) uniLabs.textContent = "10 Labs";
-    if (hospDev) hospDev.textContent = appState.devices.filter(d => d.orgId === "HOSP").length || "11";
+    if (hospDev) hospDev.textContent = appState.devices.filter(d => d.orgId === "HOSP").length;
     if (hospWards) hospWards.textContent = "7 Wards";
 }
 
