@@ -3948,50 +3948,46 @@ function openAddDeviceModalForLocation(targetRoomId = null) {
 }
 
 function exportLocationDevicesCSV() {
-    const devices = getDevicesInLocationScope();
-    if (devices.length === 0) {
+    const rawDevices = getDevicesInLocationScope();
+    if (!rawDevices || rawDevices.length === 0) {
         showToast("No devices to export in this location.", "info");
         return;
     }
 
-    let csv = "Asset ID,Device Type,Serial Number,Location,Floor,Building,Campus,CPU Processor,Storage & RAM,OS,IP Address,MAC Address,Custodian,Custodian ID,Status\n";
-
-    devices.forEach(d => {
-        const room = appState.rooms.find(r => r.id === d.roomId);
-        const floor = room ? appState.floors.find(f => f.id === room.floorId) : null;
-        const bldg = floor ? appState.buildings.find(b => b.id === floor.buildingId) : null;
-        const org = appState.organizations.find(o => o.id === d.orgId);
-        const user = appState.users.find(u => u.id === d.assignedUserId);
-        const devType = d.deviceType || (d.assetId.includes('/C-') ? 'CPU' : d.assetId.includes('/D-') ? 'Display' : d.assetId.includes('/K-') ? 'Keyboard' : d.assetId.includes('/M-') ? 'Mouse' : d.assetId.includes('/P-') ? 'Printer' : 'CPU');
-
-        const row = [
-            `"${d.assetId}"`,
-            `"${devType}"`,
-            `"${d.serialNumber}"`,
-            `"${room ? room.name : ''}"`,
-            `"${floor ? floor.name : ''}"`,
-            `"${bldg ? bldg.name : ''}"`,
-            `"${org ? org.name : ''}"`,
-            `"${(d.cpuProcessor || '').replace(/"/g, '""')}"`,
-            `"${(d.storageRam || '').replace(/"/g, '""')}"`,
-            `"${d.operatingSystem || ''}"`,
-            `"${d.ipAddress || ''}"`,
-            `"${d.macAddress || ''}"`,
-            `"${user ? user.fullName : 'Unassigned'}"`,
-            `"${user ? user.empId : ''}"`,
-            `"${d.status || ''}"`
-        ];
-        csv += row.join(",") + "\n";
+    const devices = [];
+    rawDevices.forEach(d => {
+        if (typeof isCompositeWorkstation === 'function' && isCompositeWorkstation(d)) {
+            const comps = expandCompositeWorkstation(d);
+            comps.forEach(c => devices.push(c));
+        } else {
+            devices.push(d);
+        }
     });
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const exportRows = devices.map(d => getDeviceExportData(d));
+    if (exportRows.length === 0) return;
+
+    const headers = Object.keys(exportRows[0]);
+    let csvContent = "\uFEFF" + headers.map(h => `"${h.replace(/"/g, '""')}"`).join(",") + "\r\n";
+
+    exportRows.forEach(row => {
+        const line = headers.map(h => {
+            const val = String(row[h] === undefined || row[h] === null ? '' : row[h]);
+            return `"${val.replace(/"/g, '""')}"`;
+        }).join(",");
+        csvContent += line + "\r\n";
+    });
+
+    const locName = (currentLocationSelection && currentLocationSelection.name) ? currentLocationSelection.name : 'location';
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `location_assets_${currentLocationSelection.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.csv`);
+    link.setAttribute("download", `location_hardware_${locName.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
     showToast("Location hardware report exported successfully!", "success");
 }
 
@@ -4632,26 +4628,211 @@ function renderQRTagCenter() {
 // CSV Export & Toast Notifications
 // ============================================================================
 
+function getDeviceExportData(d) {
+    const devType = (d.deviceType || '').trim() || 'CPU';
+    const typeUpper = devType.toUpperCase();
+
+    // 1. Resolve Location Details
+    const room = (appState.rooms || []).find(r => r.id === d.roomId || (r.name && d.roomName && r.name.toLowerCase() === d.roomName.toLowerCase()));
+    const floor = (appState.floors || []).find(f => (room && f.id === room.floorId) || (d.floorName && f.name && f.name.toLowerCase().includes(d.floorName.toLowerCase())));
+    const bldg = (appState.buildings || []).find(b => (floor && b.id === floor.buildingId) || (d.buildingName && b.name && b.name.toLowerCase().includes(d.buildingName.toLowerCase())));
+    const org = (appState.organizations || []).find(o => o.id === (d.orgId || 'HOSP'));
+
+    const bldgName = d.buildingName || (bldg ? bldg.name : 'PSM Hospital Main');
+    const floorName = d.floorName || (floor ? floor.name : '—');
+    const roomName = d.roomName || (room ? `${room.roomNumber ? `Rm ${room.roomNumber} - ` : ''}${room.name}` : '—');
+
+    // 2. Resolve Custodian Details
+    let user = (appState.users || []).find(u => 
+        (u.id && d.assignedUserId && u.id === d.assignedUserId) ||
+        (u.empId && (u.empId === d.empId || u.empId === d.assignedEmpId))
+    );
+    if (!user && d.assignedUserName && d.assignedUserName.toLowerCase() !== 'unassigned') {
+        user = (appState.users || []).find(u => u.fullName && u.fullName.toLowerCase() === d.assignedUserName.toLowerCase());
+    }
+
+    const assignedName = (d.assignedUserName || (user ? user.fullName : '') || '').trim();
+    const isUnassigned = !assignedName || assignedName.toLowerCase() === 'unassigned' || assignedName.toLowerCase().includes('hardware pool');
+
+    const custodianName = isUnassigned ? 'Unassigned' : assignedName;
+    const custodianEmpId = isUnassigned ? '—' : (d.empId || d.assignedEmpId || (user ? user.empId : '—') || '—');
+    const custodianDept = isUnassigned ? '—' : (d.department || d.assignedDepartment || (user ? user.department : '—') || '—');
+    const custodianDesig = isUnassigned ? '—' : (d.designation || d.assignedDesignation || (user ? user.designation : '—') || '—');
+    const custodianContact = isUnassigned ? '—' : (d.email || d.assignedEmail || d.phone || d.assignedPhone || (user ? (user.email || user.phone) : '') || '—');
+
+    // 3. Resolve Brand
+    let brand = (d.brandName || d.brand || '').trim();
+    if (!brand || brand.toLowerCase() === 'enterprise medical grade') {
+        if (typeUpper.includes('CPU') || typeUpper.includes('DESKTOP') || typeUpper.includes('PC')) brand = 'Dell';
+        else if (typeUpper.includes('DISPLAY')) brand = 'Dell';
+        else if (typeUpper.includes('KEYBOARD') || typeUpper.includes('MOUSE')) brand = 'Dell';
+        else if (typeUpper.includes('PRINTER')) brand = 'HP';
+        else if (typeUpper.includes('UPS')) brand = 'APC';
+        else if (typeUpper.includes('TABLET')) brand = 'Samsung';
+        else brand = 'Standard OEM';
+    }
+
+    // 4. Resolve Model / Hardware Specification Summary
+    let modelSpec = '—';
+    if (typeUpper.includes('DISPLAY')) {
+        modelSpec = d.monitorSpec || d.cpuProcessor || '24" FHD IPS Medical Display';
+    } else if (typeUpper.includes('KEYBOARD')) {
+        modelSpec = d.keyboardSpec || d.cpuProcessor || 'Dell KB216 USB Wired Keyboard';
+    } else if (typeUpper.includes('MOUSE')) {
+        modelSpec = d.mouseSpec || d.cpuProcessor || 'Dell MS116 USB Optical Cleanable Mouse';
+    } else if (typeUpper.includes('PRINTER')) {
+        modelSpec = d.printerSpec || d.cpuProcessor || 'HP LaserJet Pro Network Printer';
+    } else if (typeUpper.includes('UPS')) {
+        modelSpec = d.upsSpec || d.cpuProcessor || 'APC Back-UPS 1100VA Surge Protected';
+    } else if (typeUpper.includes('TABLET')) {
+        modelSpec = d.tabletSpec || d.cpuProcessor || 'Samsung Galaxy Tab Active Touch Terminal';
+    } else if (typeUpper.includes('CPU') || typeUpper.includes('DESKTOP') || typeUpper.includes('PC')) {
+        modelSpec = `${brand} OptiPlex (${d.cpuProcessor || 'Tower PC'})`;
+    } else {
+        modelSpec = d.cpuProcessor || d.monitorSpec || `${brand} Hardware Unit`;
+    }
+
+    // 5. Compute Specifics (Processor, RAM, OS, Monitor)
+    const isCompute = typeUpper.includes('CPU') || typeUpper.includes('DESKTOP') || typeUpper.includes('PC') || typeUpper.includes('TOWER') || typeUpper.includes('WORKSTATION');
+    const isTablet = typeUpper.includes('TABLET') || typeUpper.includes('TAB');
+
+    let processor = '—';
+    let ramStorage = '—';
+    let monitorSpec = '—';
+    let operatingSystem = '—';
+
+    if (isCompute || isTablet) {
+        processor = d.cpuProcessor || '—';
+        ramStorage = d.storageRam || '—';
+        operatingSystem = d.operatingSystem || 'Windows 11 Pro Medical Edition';
+        monitorSpec = d.monitorSpec || '—';
+    } else if (typeUpper.includes('DISPLAY')) {
+        monitorSpec = d.monitorSpec || d.cpuProcessor || '24" FHD IPS Display';
+    } else if (typeUpper.includes('PRINTER')) {
+        operatingSystem = (d.operatingSystem && !d.operatingSystem.toLowerCase().includes('windows')) ? d.operatingSystem : 'Firmware Embedded';
+    }
+
+    // 6. Network & Remote ID
+    const ipAddress = (d.ipAddress && d.ipAddress !== '-' && d.ipAddress !== 'N/A') ? d.ipAddress : '—';
+    const macAddress = (d.macAddress && d.macAddress !== '-' && d.macAddress !== 'N/A') ? d.macAddress : '—';
+    const anydeskId = (d.anydeskId && d.anydeskId !== '-' && d.anydeskId !== 'N/A') ? d.anydeskId : '—';
+
+    return {
+        "Asset Tag": d.assetId || '—',
+        "Device Type": devType,
+        "Brand / Make": brand,
+        "Hardware Model & Specs": modelSpec,
+        "Serial Number": d.serialNumber || '—',
+        "Processor (CPU)": processor,
+        "RAM & Storage": ramStorage,
+        "Monitor / Screen": monitorSpec,
+        "Operating System": operatingSystem,
+        "IP Address": ipAddress,
+        "MAC Address": macAddress,
+        "AnyDesk Remote ID": anydeskId,
+        "Campus Organization": org ? org.name : 'PSM Hospital',
+        "Building": bldgName,
+        "Floor": floorName,
+        "Room / Location": roomName,
+        "Assigned Custodian": custodianName,
+        "Employee ID": custodianEmpId,
+        "Department": custodianDept,
+        "Designation": custodianDesig,
+        "Custodian Contact": custodianContact,
+        "Hardware Status": d.status || 'Active',
+        "Purchase Date": d.purchaseDate || '—',
+        "Warranty Expiry": d.warrantyExpiryDate || '—'
+    };
+}
+
 function exportToCSV() {
-    const devices = getFilteredDevices();
-    let csv = "Asset ID,Device Type,Serial Number,Organization,CPU,RAM/Storage,Monitor,OS,IP Address,MAC,Assigned User,Location,Status,Warranty Upto\n";
+    let rawDevices = getFilteredDevices();
+    if (!rawDevices || rawDevices.length === 0) {
+        showToast("No devices available in inventory to export.", "info");
+        return;
+    }
 
-    devices.forEach(d => {
-        const room = appState.rooms.find(r => r.id === d.roomId);
-        const user = appState.users.find(u => u.id === d.assignedUserId);
-        const org = appState.organizations.find(o => o.id === d.orgId);
-        const devType = d.deviceType || (d.assetId.includes('/C-') ? 'CPU' : d.assetId.includes('/D-') ? 'Display' : d.assetId.includes('/K-') ? 'Keyboard' : d.assetId.includes('/M-') ? 'Mouse' : d.assetId.includes('/P-') ? 'Printer' : 'CPU');
-
-        csv += `"${d.assetId}","${devType}","${d.serialNumber}","${org ? org.name : ''}","${d.cpuProcessor}","${d.storageRam}","${d.monitorSpec}","${d.operatingSystem}","${d.ipAddress || ''}","${d.macAddress || ''}","${user ? user.fullName : 'Unassigned'}","${room ? room.name : ''}","${d.status}","${d.warrantyExpiryDate}"\n`;
+    // Expand composite workstations if present so all linked peripherals are included
+    const devices = [];
+    rawDevices.forEach(d => {
+        if (typeof isCompositeWorkstation === 'function' && isCompositeWorkstation(d)) {
+            const comps = expandCompositeWorkstation(d);
+            comps.forEach(c => devices.push(c));
+        } else {
+            devices.push(d);
+        }
     });
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const exportRows = devices.map(d => getDeviceExportData(d));
+    if (exportRows.length === 0) return;
+
+    const headers = Object.keys(exportRows[0]);
+    
+    // Build CSV with RFC 4180 compliance & UTF-8 BOM (\uFEFF) for Microsoft Excel
+    let csvContent = "\uFEFF" + headers.map(h => `"${h.replace(/"/g, '""')}"`).join(",") + "\r\n";
+
+    exportRows.forEach(row => {
+        const line = headers.map(h => {
+            const val = String(row[h] === undefined || row[h] === null ? '' : row[h]);
+            return `"${val.replace(/"/g, '""')}"`;
+        }).join(",");
+        csvContent += line + "\r\n";
+    });
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Campus_Devices_Export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `PSM_Hospital_Hardware_Inventory_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
     a.click();
-    showToast("CSV inventory exported successfully!", "success");
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast("Hardware specs & workstation CSV report exported successfully!", "success");
+}
+
+function exportToExcel() {
+    let rawDevices = getFilteredDevices();
+    if (!rawDevices || rawDevices.length === 0) {
+        showToast("No devices available in inventory to export.", "info");
+        return;
+    }
+
+    const devices = [];
+    rawDevices.forEach(d => {
+        if (typeof isCompositeWorkstation === 'function' && isCompositeWorkstation(d)) {
+            const comps = expandCompositeWorkstation(d);
+            comps.forEach(c => devices.push(c));
+        } else {
+            devices.push(d);
+        }
+    });
+
+    const exportRows = devices.map(d => getDeviceExportData(d));
+    if (exportRows.length === 0) return;
+
+    if (typeof XLSX !== 'undefined') {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(exportRows);
+
+        // Auto-fit column widths based on maximum string length
+        const colWidths = Object.keys(exportRows[0]).map(key => {
+            const maxLen = Math.max(
+                key.length,
+                ...exportRows.map(r => String(r[key] || '').length)
+            );
+            return { wch: Math.min(Math.max(maxLen + 2, 12), 40) };
+        });
+        ws['!cols'] = colWidths;
+
+        XLSX.utils.book_append_sheet(wb, ws, "Hardware Inventory");
+        XLSX.writeFile(wb, `PSM_Hospital_Hardware_Inventory_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showToast("Formatted Excel (.xlsx) spreadsheet exported successfully!", "success");
+    } else {
+        // Fallback to CSV if XLSX library is unavailable
+        exportToCSV();
+    }
 }
 
 function showToast(message, type = "info") {
