@@ -1315,82 +1315,6 @@
         }
     }
 
-    // ==========================================
-    // DATABASE RESET / PURGE LOGIC
-    // ==========================================
-    function openClearDataModal() {
-        const modal = document.getElementById('modal-clear-data');
-        if (modal) modal.classList.remove('hidden');
-        const input = document.getElementById('clear-data-confirmation-input');
-        if (input) input.value = '';
-        const btn = document.getElementById('btn-confirm-wipe-data');
-        if (btn) btn.disabled = true;
-        const statusEl = document.getElementById('clear-data-status');
-        if (statusEl) {
-            statusEl.className = 'hidden';
-            statusEl.innerHTML = '';
-        }
-        if (window.lucide && typeof window.lucide.createIcons === 'function') {
-            window.lucide.createIcons();
-        }
-    }
-
-    function closeClearDataModal() {
-        const modal = document.getElementById('modal-clear-data');
-        if (modal) modal.classList.add('hidden');
-    }
-
-    async function executeDatabaseWipe() {
-        const btn = document.getElementById('btn-confirm-wipe-data');
-        const btnText = document.getElementById('btn-wipe-text');
-        const statusEl = document.getElementById('clear-data-status');
-
-        btn.disabled = true;
-        btnText.innerText = 'Wiping Database...';
-        statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 block';
-        statusEl.innerHTML = '<span class="inline-block animate-pulse mr-1">⏳</span> Purging all records from central PostgreSQL database...';
-
-        try {
-            const resp = await fetch('/api/admin/clear-all-data/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': (typeof getCsrfToken === 'function') ? getCsrfToken() : ''
-                },
-                body: new URLSearchParams({ confirm: 'yes', format: 'json' })
-            });
-
-            const res = await resp.json();
-
-            if (res.success) {
-                statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300 block';
-                statusEl.innerHTML = `✅ ${res.message || 'Database purged to clean slate!'}`;
-                btnText.innerText = 'Clean Slate Ready!';
-
-                // Wipe browser local storage cache
-                localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
-                localStorage.removeItem("CAMPUS_CACHE_VERSION");
-                localStorage.clear();
-
-                setTimeout(() => {
-                    closeClearDataModal();
-                    window.location.reload();
-                }, 1000);
-            } else {
-                statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 block';
-                statusEl.innerHTML = `❌ Error: ${res.error || 'Failed to wipe database.'}`;
-                btn.disabled = false;
-                btnText.innerText = 'Try Again';
-            }
-        } catch (err) {
-            console.error('Wipe error:', err);
-            statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 block';
-            statusEl.innerHTML = `❌ Server network error: ${err.message}`;
-            btn.disabled = false;
-            btnText.innerText = 'Yes, Permanently Delete All Data';
-        }
-    }
-
     // Drag and Drop listeners on Excel dropzone
     document.addEventListener('DOMContentLoaded', () => {
         const dropzoneEl = document.getElementById('excel-dropzone');
@@ -1812,8 +1736,6 @@
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-        }
-            document.body.removeChild(link);
         }
     }
 </script>
