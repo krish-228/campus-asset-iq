@@ -6,16 +6,7 @@ def cleanup_auto_defaulted_brands(apps, schema_editor):
         b_up = (dev.brand_name or '').strip().upper()
         m_up = (dev.cpu_processor or dev.monitor_spec or dev.keyboard_spec or dev.mouse_spec or '').upper()
 
-        if b_up == 'DELL' and 'DELL' not in m_up:
-            dev.brand_name = ''
-            dev.save(update_fields=['brand_name'])
-        elif b_up == 'HP' and 'HP' not in m_up and 'HEWLETT' not in m_up:
-            dev.brand_name = ''
-            dev.save(update_fields=['brand_name'])
-        elif b_up == 'APC' and 'APC' not in m_up:
-            dev.brand_name = ''
-            dev.save(update_fields=['brand_name'])
-        elif b_up in ('STANDARD OEM', '—', '-', 'N/A', 'NONE'):
+        if b_up in ('STANDARD OEM', '—', '-', 'N/A', 'NONE', 'UNKNOWN', 'NULL', 'UNASSIGNED'):
             dev.brand_name = ''
             dev.save(update_fields=['brand_name'])
 

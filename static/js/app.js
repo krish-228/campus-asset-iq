@@ -700,25 +700,30 @@ function getDeviceSpecificationsHtml(dev) {
     const rawType = (dev.deviceType || dev.device_type || '').toUpperCase();
     const model = (dev.cpuProcessor || '').trim();
     const secondary = (dev.storageRam || '').trim();
-    let brand = (dev.brandName || dev.brand || dev.brand_name || '').trim();
+    let brand = (dev.brandName || dev.brand || dev.brand_name || dev.cpuBrand || dev.monitorBrand || dev.keyboardBrand || dev.mouseBrand || dev.printerBrand || dev.tabletBrand || dev.upsBrand || '').trim();
 
-    // Prevent auto-defaulted false brands (e.g. CPU or Display showing "DELL" when user never specified it)
-    if (brand.toUpperCase() === 'DELL') {
-        const mUp = (model || '').toUpperCase();
-        if (!mUp.includes('DELL')) {
-            brand = '';
-        }
-    } else if (brand.toUpperCase() === 'HP') {
-        const mUp = (model || '').toUpperCase();
-        if (!mUp.includes('HP') && !mUp.includes('HEWLETT')) {
-            brand = '';
-        }
-    } else if (brand.toUpperCase() === 'APC') {
-        const mUp = (model || '').toUpperCase();
-        if (!mUp.includes('APC')) {
-            brand = '';
-        }
-    } else if (brand.toUpperCase() === 'STANDARD OEM' || brand === '—' || brand === '-' || brand.toUpperCase() === 'N/A') {
+    // If brand is empty or missing, infer from model & specifications text
+    if (!brand) {
+        const fullSpec = `${model} ${dev.monitorSpec || ''} ${dev.keyboardSpec || ''} ${dev.mouseSpec || ''} ${dev.printerSpec || ''} ${dev.tabletSpec || ''} ${dev.upsSpec || ''}`.toUpperCase();
+        if (fullSpec.includes('DELL')) brand = 'Dell';
+        else if (fullSpec.includes('HP') || fullSpec.includes('HEWLETT')) brand = 'HP';
+        else if (fullSpec.includes('LENOVO')) brand = 'Lenovo';
+        else if (fullSpec.includes('ASUS')) brand = 'ASUS';
+        else if (fullSpec.includes('SAMSUNG')) brand = 'Samsung';
+        else if (fullSpec.includes('APPLE') || fullSpec.includes('MACBOOK') || fullSpec.includes('IPAD')) brand = 'Apple';
+        else if (fullSpec.includes('LG')) brand = 'LG';
+        else if (fullSpec.includes('ACER')) brand = 'Acer';
+        else if (fullSpec.includes('LOGITECH')) brand = 'Logitech';
+        else if (fullSpec.includes('APC')) brand = 'APC';
+        else if (fullSpec.includes('ZEBRA')) brand = 'Zebra';
+        else if (fullSpec.includes('EPSON')) brand = 'Epson';
+        else if (fullSpec.includes('CANON')) brand = 'Canon';
+        else if (fullSpec.includes('HONEYWELL')) brand = 'Honeywell';
+    }
+
+    // Filter out only placeholders
+    const bUp = brand.toUpperCase();
+    if (bUp === 'STANDARD OEM' || brand === '—' || brand === '-' || bUp === 'N/A' || bUp === 'NONE' || bUp === 'UNKNOWN' || bUp === 'NULL' || bUp === 'UNASSIGNED') {
         brand = '';
     }
 
