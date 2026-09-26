@@ -83,6 +83,5 @@ urlpatterns = [
     path('api/devices/reassign/', views.api_reassign_device, name='api_reassign_device'),
     path('api/devices/save/', views.api_save_device, name='api_save_device'),
     path('api/audit-logs/', views.api_get_audit_logs, name='api_get_audit_logs'),
-    path('api/admin/clear-all-data/', views.api_clear_all_data, name='api_clear_all_data'),
 ]
 

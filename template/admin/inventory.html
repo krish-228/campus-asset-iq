@@ -95,13 +95,6 @@
                     <i data-lucide="sheet" class="w-4 h-4 text-emerald-300"></i>
                     <span>Export Excel</span>
                 </button>
-                <button onclick="purgeAllLiveSiteData()"
-                    title="Permanently wipe all test devices & live data to start 100% fresh"
-                    class="flex items-center gap-1.5 bg-rose-500/20 hover:bg-rose-500/30 active:bg-rose-500/40 text-rose-200 border border-rose-400/30 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-2xs"
-                    id="btn-purge-site-data">
-                    <i data-lucide="trash-2" class="w-4 h-4 text-rose-300"></i>
-                    <span>Reset Live Data</span>
-                </button>
             </div>
         </div>
     </div>
@@ -1239,7 +1232,7 @@
 {% block extra_scripts %}
 <script src="{% static 'js/data.js' %}?v=6.0"></script>
 <script src="{% static 'js/qr_generator.js' %}?v=9.1"></script>
-<script src="{% static 'js/app.js' %}?v=10.0_fresh_slate"></script>
+<script src="{% static 'js/app.js' %}?v=10.1_clean_actions"></script>
 
 <script>
     // ==========================================

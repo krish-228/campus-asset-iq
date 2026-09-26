@@ -222,46 +222,6 @@ function resetToSampleData() {
     }
 }
 
-window.purgeAllLiveSiteData = async function() {
-    if (!confirm("Are you sure you want to permanently delete ALL live site data (devices, tickets, breakdowns, transfers) and start 100% fresh?")) {
-        return;
-    }
-    try {
-        const csrfToken = (typeof getCsrfToken === 'function') ? getCsrfToken() : '';
-        await fetch('/api/admin/clear-all-data/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: 'confirm=yes'
-        });
-        
-        // Clear all client-side storage
-        localStorage.clear();
-        sessionStorage.clear();
-        localStorage.setItem("CAMPUS_CACHE_VERSION", "v10.0_100_percent_fresh_slate");
-        localStorage.setItem("CAMPUS_SELECTED_ORG", "HOSP");
-        
-        if (typeof appState !== 'undefined') {
-            appState.devices = [];
-            appState.locationHistories = [];
-            appState.assignmentHistories = [];
-            appState.loginSessions = [];
-            if (typeof saveAppState === 'function') saveAppState();
-        }
-
-        alert("Live site data has been 100% permanently deleted. Starting fresh new site!");
-        window.location.reload();
-    } catch (e) {
-        console.error(e);
-        localStorage.clear();
-        sessionStorage.clear();
-        window.location.reload();
-    }
-};
-
 // ============================================================================
 // Multi-Page Navigation & Organization Switcher
 // ============================================================================
