@@ -1265,7 +1265,7 @@
 {% block extra_scripts %}
 <script src="{% static 'js/data.js' %}?v=6.0"></script>
 <script src="{% static 'js/qr_generator.js' %}?v=9.1"></script>
-<script src="{% static 'js/app.js' %}?v=9.2_brand_in_specs"></script>
+<script src="{% static 'js/app.js' %}?v=9.3_brand_fix"></script>
 
 <script>
     // ==========================================
@@ -1420,7 +1420,7 @@
 
             const asset = getVal(['asset tag', 'asset id', 'asset_id', 'it asset id', 'asset tag / id', 'asset number', 'asset no', 'tag id', 'tag', 'device asset id'], 'Auto-assign');
             const deviceType = getVal(['device type', 'device_type', 'type', 'device category', 'category', 'device', 'equipment type'], 'CPU');
-            const brand = getVal(['brand / make', 'brand', 'brand_name', 'make', 'manufacturer', 'company'], 'Dell');
+            const brand = getVal(['brand / make', 'brand', 'brand_name', 'make', 'manufacturer', 'company'], '-');
             const modelSpecs = getVal(['hardware model & specs', 'hardware model & specifications', 'hardware model', 'model & specs', 'model', 'specs', 'compute hardware', 'cpu / processor', 'cpu processor', 'cpu'], 'Hardware Unit');
             const location = getVal(['room / location', 'room name', 'room', 'location', 'lab', 'department / room', 'ward'], 'PSM Campus');
             const user = getVal(['assigned custodian', 'custodian / user', 'custodian', 'assigned user', 'user', 'staff name', 'employee name', 'doctor / staff'], 'Unassigned');

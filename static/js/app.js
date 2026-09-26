@@ -700,7 +700,27 @@ function getDeviceSpecificationsHtml(dev) {
     const rawType = (dev.deviceType || dev.device_type || '').toUpperCase();
     const model = (dev.cpuProcessor || '').trim();
     const secondary = (dev.storageRam || '').trim();
-    const brand = (dev.brandName || dev.brand || dev.brand_name || '').trim();
+    let brand = (dev.brandName || dev.brand || dev.brand_name || '').trim();
+
+    // Prevent auto-defaulted false brands (e.g. CPU or Display showing "DELL" when user never specified it)
+    if (brand.toUpperCase() === 'DELL') {
+        const mUp = (model || '').toUpperCase();
+        if (!mUp.includes('DELL')) {
+            brand = '';
+        }
+    } else if (brand.toUpperCase() === 'HP') {
+        const mUp = (model || '').toUpperCase();
+        if (!mUp.includes('HP') && !mUp.includes('HEWLETT')) {
+            brand = '';
+        }
+    } else if (brand.toUpperCase() === 'APC') {
+        const mUp = (model || '').toUpperCase();
+        if (!mUp.includes('APC')) {
+            brand = '';
+        }
+    } else if (brand.toUpperCase() === 'STANDARD OEM' || brand === '—' || brand === '-' || brand.toUpperCase() === 'N/A') {
+        brand = '';
+    }
 
     const brandBadge = brand ? `
         <div class="flex items-center gap-1.5 pb-0.5">
@@ -738,7 +758,7 @@ function getDeviceSpecificationsHtml(dev) {
 
     // 2. Display / Monitor
     if (rawType.includes('DISPLAY') || rawType.includes('MONITOR') || rawType.includes('SCREEN') || rawType === 'D') {
-        const dispName = dev.monitorSpec || model || '24" FHD IPS Medical Display';
+        const dispName = dev.monitorSpec || model || 'FHD Display Monitor';
         return `
             <div class="space-y-1">
                 ${brandBadge}
@@ -756,7 +776,7 @@ function getDeviceSpecificationsHtml(dev) {
 
     // 3. Keyboard
     if (rawType.includes('KEYBOARD') || rawType.includes('KB') || rawType === 'K') {
-        const kbName = model || dev.keyboardSpec || 'Dell KB216 USB Wired Keyboard';
+        const kbName = model || dev.keyboardSpec || 'USB Wired Keyboard';
         return `
             <div class="space-y-1">
                 ${brandBadge}
@@ -774,7 +794,7 @@ function getDeviceSpecificationsHtml(dev) {
 
     // 4. Mouse
     if (rawType.includes('MOUSE') || rawType === 'M') {
-        const msName = model || dev.mouseSpec || 'Dell MS116 Optical USB Mouse';
+        const msName = model || dev.mouseSpec || 'Optical USB Mouse';
         return `
             <div class="space-y-1">
                 ${brandBadge}
@@ -810,7 +830,7 @@ function getDeviceSpecificationsHtml(dev) {
 
     // 6. UPS / Power Backup
     if (rawType.includes('UPS') || rawType.includes('POWER') || rawType.includes('INVERTER') || rawType === 'U') {
-        const upsName = model || dev.upsSpec || 'APC Back-UPS 650VA / 360W';
+        const upsName = model || dev.upsSpec || 'Uninterruptible Power Supply (UPS)';
         return `
             <div class="space-y-1">
                 ${brandBadge}
@@ -828,7 +848,7 @@ function getDeviceSpecificationsHtml(dev) {
 
     // 7. Tablet
     if (rawType.includes('TABLET') || rawType.includes('TAB') || rawType.includes('IPAD') || rawType === 'T') {
-        const tabName = model || dev.tabletSpec || 'Samsung Galaxy Tab Active4 Pro';
+        const tabName = model || dev.tabletSpec || 'Tablet Terminal';
         return `
             <div class="space-y-1">
                 ${brandBadge}

@@ -526,56 +526,56 @@ def api_save_device(request):
                 # Component-specific compute / specs & brand
                 if comp_upper == 'CPU':
                     item_dev_type = 'CPU'
-                    item_brand = cpu_brand or brand_name or 'Dell'
-                    item_cpu = cpu_processor or 'Intel Core i5 (Standard)'
-                    item_ram = storage_ram or '16GB RAM / 512GB SSD'
-                    item_os = operating_system or 'Windows 11 Pro'
+                    item_brand = cpu_brand or brand_name or ''
+                    item_cpu = cpu_processor or 'Workstation Processor Unit'
+                    item_ram = storage_ram or 'Standard RAM & Storage'
+                    item_os = operating_system or 'Workstation OS'
                     item_ip = ip_address
                     item_mac = mac_address
                 elif comp_upper == 'DISPLAY':
                     item_dev_type = 'Display'
-                    item_brand = monitor_brand or brand_name or 'Dell'
-                    item_cpu = monitor_spec or '24" FHD IPS Medical / Office Grade Display'
+                    item_brand = monitor_brand or brand_name or ''
+                    item_cpu = monitor_spec or 'Display Monitor'
                     item_ram = 'Hardware Display Monitor'
                     item_os = 'Hardware Display'
                     item_ip = '-'
                     item_mac = '-'
                 elif comp_upper == 'KEYBOARD':
                     item_dev_type = 'Keyboard'
-                    item_brand = keyboard_brand or brand_name or 'Dell'
-                    item_cpu = keyboard_spec or 'Spill-Resistant Membrane USB Keyboard'
+                    item_brand = keyboard_brand or brand_name or ''
+                    item_cpu = keyboard_spec or 'USB Keyboard'
                     item_ram = 'Hardware Peripheral (HID)'
                     item_os = 'Hardware Peripheral (HID)'
                     item_ip = '-'
                     item_mac = '-'
                 elif comp_upper == 'MOUSE':
                     item_dev_type = 'Mouse'
-                    item_brand = mouse_brand or brand_name or 'Dell'
-                    item_cpu = mouse_spec or 'Ergonomic Optical Cleanable Clinic Mouse'
+                    item_brand = mouse_brand or brand_name or ''
+                    item_cpu = mouse_spec or 'Optical Mouse'
                     item_ram = 'Hardware Peripheral (HID)'
                     item_os = 'Hardware Peripheral (HID)'
                     item_ip = '-'
                     item_mac = '-'
                 elif comp_upper == 'TABLET':
                     item_dev_type = 'Tablet'
-                    item_brand = tablet_brand or brand_name or 'Samsung'
-                    item_cpu = tablet_spec or 'Mobile Diagnostic Tablet'
+                    item_brand = tablet_brand or brand_name or ''
+                    item_cpu = tablet_spec or 'Mobile Tablet Terminal'
                     item_ram = 'Mobile Workstation Unit'
-                    item_os = 'Mobile OS / Windows Tablet'
+                    item_os = 'Mobile OS'
                     item_ip = ip_address or '-'
                     item_mac = tablet_mac or mac_address or '-'
                 elif comp_upper == 'PRINTER':
                     item_dev_type = 'Printer'
-                    item_brand = printer_brand or brand_name or 'HP'
-                    item_cpu = printer_spec or 'Direct Thermal & Document Printer'
+                    item_brand = printer_brand or brand_name or ''
+                    item_cpu = printer_spec or 'Document Printer'
                     item_ram = 'Direct Print Unit'
                     item_os = 'Printer Firmware'
                     item_ip = ip_address or '-'
                     item_mac = mac_address or '-'
                 elif comp_upper == 'UPS':
                     item_dev_type = 'UPS'
-                    item_brand = ups_brand or brand_name or 'APC'
-                    item_cpu = ups_spec or 'Line-Interactive Battery Backup Unit'
+                    item_brand = ups_brand or brand_name or ''
+                    item_cpu = ups_spec or 'Battery Backup (UPS)'
                     item_ram = 'AC Power Protection'
                     item_os = 'Power Unit'
                     item_ip = '-'
@@ -751,19 +751,19 @@ def api_save_device(request):
     if not single_brand:
         dtype_up = device_type.upper()
         if 'CPU' in dtype_up or 'WORKSTATION' in dtype_up:
-            single_brand = cpu_brand or 'Dell'
+            single_brand = cpu_brand or ''
         elif 'DISPLAY' in dtype_up or 'MONITOR' in dtype_up:
-            single_brand = monitor_brand or 'Dell'
+            single_brand = monitor_brand or ''
         elif 'KEYBOARD' in dtype_up:
-            single_brand = keyboard_brand or 'Dell'
+            single_brand = keyboard_brand or ''
         elif 'MOUSE' in dtype_up:
-            single_brand = mouse_brand or 'Dell'
+            single_brand = mouse_brand or ''
         elif 'PRINTER' in dtype_up:
-            single_brand = printer_brand or 'HP'
+            single_brand = printer_brand or ''
         elif 'UPS' in dtype_up:
-            single_brand = ups_brand or 'APC'
+            single_brand = ups_brand or ''
         elif 'TABLET' in dtype_up:
-            single_brand = tablet_brand or 'Samsung'
+            single_brand = tablet_brand or ''
         elif other_brand:
             single_brand = other_brand
         else:
@@ -2891,19 +2891,7 @@ def api_import_devices_excel(request):
         else:
             status = 'Active'
 
-        # Default brand name if missing
         type_upper = device_type.upper()
-        if not brand_name:
-            if type_upper in ('CPU', 'DISPLAY', 'KEYBOARD', 'MOUSE'):
-                brand_name = 'Dell'
-            elif 'PRINTER' in type_upper:
-                brand_name = 'HP'
-            elif 'UPS' in type_upper:
-                brand_name = 'APC'
-            elif 'TABLET' in type_upper:
-                brand_name = 'Samsung'
-            else:
-                brand_name = 'Standard OEM'
 
         # Peripheral & component specific fields
         keyboard_spec = ''
@@ -2913,36 +2901,36 @@ def api_import_devices_excel(request):
         tablet_spec = ''
 
         if type_upper == 'DISPLAY':
-            monitor_spec = monitor_spec if (monitor_spec and monitor_spec != '—') else (model_specs or '24" FHD IPS Medical Grade Display')
+            monitor_spec = monitor_spec if (monitor_spec and monitor_spec != '—') else (model_specs or '')
             cpu_processor = model_specs or monitor_spec
         elif type_upper == 'KEYBOARD':
-            keyboard_spec = model_specs or 'Dell KB216 USB Wired Antimicrobial Keyboard'
+            keyboard_spec = model_specs or ''
             cpu_processor = keyboard_spec
         elif type_upper == 'MOUSE':
-            mouse_spec = model_specs or 'Dell MS116 Cleanable Optical Clinic Mouse'
+            mouse_spec = model_specs or ''
             cpu_processor = mouse_spec
         elif type_upper == 'PRINTER':
-            printer_spec = model_specs or 'HP LaserJet Pro Network Printer'
+            printer_spec = model_specs or ''
             cpu_processor = printer_spec
             if not operating_system or operating_system == '—':
-                operating_system = 'HP Jetdirect Embedded Firmware'
+                operating_system = 'Printer Firmware'
         elif type_upper == 'UPS':
-            ups_spec = model_specs or 'APC Back-UPS 1100VA Surge Protected'
+            ups_spec = model_specs or ''
             cpu_processor = ups_spec
             if not operating_system or operating_system == '—':
                 operating_system = 'Microcontroller Power Firmware'
         elif type_upper == 'TABLET':
-            tablet_spec = model_specs or 'Samsung Galaxy Tab Active Touch Terminal'
+            tablet_spec = model_specs or ''
             cpu_processor = tablet_spec
             if not operating_system or operating_system == '—':
-                operating_system = 'Android / Windows 11 Tablet OS'
+                operating_system = 'Mobile OS'
         elif type_upper in ('CPU', 'DESKTOP', 'PC', 'TOWER'):
             if not cpu_processor or cpu_processor == '—':
-                cpu_processor = model_specs or 'Intel Core i5-12500 (6 Cores, 3.0 GHz)'
+                cpu_processor = model_specs or ''
             if not storage_ram or storage_ram == '—':
-                storage_ram = '16GB RAM / 512GB NVMe SSD'
+                storage_ram = ''
             if not operating_system or operating_system == '—':
-                operating_system = 'Windows 11 Pro Medical Edition'
+                operating_system = ''
 
         # Check if imported row represents a multi-component Workstation
         imported_components = parse_and_normalize_components(
@@ -2957,7 +2945,7 @@ def api_import_devices_excel(request):
                 c_tag = asset_id
                 c_upper = comp_name.upper()
                 c_sn = f"{serial_number}-{c_upper[:3]}" if serial_number else f"SN-PSM-{c_upper[:3]}-{c_tag.split('/')[-1]}"
-                c_brand = brand_name or ('Dell' if c_upper in ('CPU', 'DISPLAY', 'KEYBOARD', 'MOUSE') else 'HP' if c_upper == 'PRINTER' else 'APC' if c_upper == 'UPS' else 'Samsung' if c_upper == 'TABLET' else 'Standard OEM')
+                c_brand = brand_name or ''
 
                 c_kb = ''
                 c_ms = ''
@@ -2968,21 +2956,21 @@ def api_import_devices_excel(request):
 
                 if c_upper == 'CPU':
                     c_type = 'CPU'
-                    c_cpu = cpu_processor or 'Intel Core i5-12500 (6 Cores)'
-                    c_ram = storage_ram or '16GB RAM / 512GB NVMe SSD'
-                    c_os = operating_system or 'Windows 11 Pro Medical Edition'
+                    c_cpu = cpu_processor or 'Workstation Processor Unit'
+                    c_ram = storage_ram or ''
+                    c_os = operating_system or ''
                     c_ip = ip_address
                     c_mac = mac_address
                 elif c_upper == 'DISPLAY':
                     c_type = 'Display'
-                    c_cpu = monitor_spec or '24" FHD IPS Medical Grade Display'
+                    c_cpu = monitor_spec or model_specs or 'Display Monitor'
                     c_ram = 'Hardware Display Monitor'
                     c_os = 'Hardware Display'
                     c_ip = ''
                     c_mac = ''
                 elif c_upper == 'KEYBOARD':
                     c_type = 'Keyboard'
-                    c_kb = 'Dell KB216 USB Wired Antimicrobial Keyboard'
+                    c_kb = keyboard_spec or model_specs or 'USB Keyboard'
                     c_cpu = c_kb
                     c_ram = 'Hardware Peripheral (HID)'
                     c_os = 'Hardware Peripheral (HID)'
@@ -2990,7 +2978,7 @@ def api_import_devices_excel(request):
                     c_mac = ''
                 elif c_upper == 'MOUSE':
                     c_type = 'Mouse'
-                    c_ms = 'Dell MS116 Cleanable Optical Clinic Mouse'
+                    c_ms = mouse_spec or model_specs or 'Optical Mouse'
                     c_cpu = c_ms
                     c_ram = 'Hardware Peripheral (HID)'
                     c_os = 'Hardware Peripheral (HID)'
@@ -2998,23 +2986,23 @@ def api_import_devices_excel(request):
                     c_mac = ''
                 elif c_upper == 'TABLET':
                     c_type = 'Tablet'
-                    c_tab = 'Samsung Galaxy Tab Active Touch Terminal'
+                    c_tab = tablet_spec or model_specs or 'Tablet Terminal'
                     c_cpu = c_tab
-                    c_ram = 'Mobile Diagnostic Tablet'
-                    c_os = 'Android / Windows 11 Tablet OS'
+                    c_ram = 'Mobile Workstation Unit'
+                    c_os = 'Mobile OS'
                     c_ip = ''
                     c_mac = ''
                 elif c_upper == 'PRINTER':
                     c_type = 'Printer'
-                    c_prt = 'HP LaserJet Pro Network Printer'
+                    c_prt = printer_spec or model_specs or 'Document Printer'
                     c_cpu = c_prt
                     c_ram = 'Direct Print Unit'
-                    c_os = 'HP Jetdirect Embedded Firmware'
+                    c_os = 'Printer Firmware'
                     c_ip = ip_address
                     c_mac = mac_address
                 elif c_upper == 'UPS':
                     c_type = 'UPS'
-                    c_ups = 'APC Back-UPS 1100VA Surge Protected'
+                    c_ups = ups_spec or model_specs or 'Battery Backup (UPS)'
                     c_cpu = c_ups
                     c_ram = 'AC Power Protection'
                     c_os = 'Microcontroller Power Firmware'
