@@ -28,7 +28,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & workstation sets
-    const CURRENT_CACHE_VERSION = "v9.0_clean_slate";
+    const CURRENT_CACHE_VERSION = "v9.1_kpi_fix";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -1684,10 +1684,27 @@ function renderStats() {
         ? all
         : all.filter(d => d.orgId === appState.selectedOrg);
 
+    const isSpareDevice = (d) => {
+        if (d.status === "In Storage" || d.status === "Spare") return true;
+        const name = (d.assignedUserName || d.assigned_user_name || '').trim().toLowerCase();
+        const emp = (d.empId || d.assigned_emp_id || d.assignedEmpId || '').trim().toLowerCase();
+        const uid = (d.assignedUserId || '').trim().toLowerCase();
+        if (name && name !== 'unassigned' && !name.startsWith('unassigned') && !name.includes('it spares') && !name.includes('hardware pool')) {
+            return false;
+        }
+        if (emp && emp !== 'unassigned' && emp !== 'pool-spare') {
+            return false;
+        }
+        if (uid && uid !== 'unassigned' && uid !== 'pool-spare') {
+            return false;
+        }
+        return true;
+    };
+
     const totalVal = currentDevices.length;
     const activeVal = currentDevices.filter(d => d.status === "Active").length;
     const maintVal = currentDevices.filter(d => d.status === "In Maintenance").length;
-    const spareVal = currentDevices.filter(d => !d.assignedUserId).length;
+    const spareVal = currentDevices.filter(isSpareDevice).length;
 
     // Trigger staggered rolling count animation when opening the page
     if (!window._kpiStatsInitialAnimated) {
@@ -1704,7 +1721,7 @@ function renderStats() {
         animateNumberCounter(spare, spareVal, 400, 0);
     }
 
-    if (warranty) warranty.textContent = currentDevices.filter(d => d.warrantyExpiryDate.includes("2026") || d.warrantyExpiryDate.includes("2024")).length;
+    if (warranty) warranty.textContent = currentDevices.filter(d => (d.warrantyExpiryDate || '').includes("2026") || (d.warrantyExpiryDate || '').includes("2024")).length;
 
     const hospCount = all.filter(d => d.orgId === "HOSP").length;
     if (breakdown) breakdown.textContent = `${hospCount} Healthcare Units`;

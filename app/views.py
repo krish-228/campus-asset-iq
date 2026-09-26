@@ -3036,6 +3036,7 @@ def api_import_devices_excel(request):
                     c_dev.building_name = building_name
                     c_dev.floor_name = floor_name
                     c_dev.room_name = room_name
+                    c_dev.assigned_user_id = (assigned_emp_id or assigned_user_name) if (assigned_user_name and assigned_user_name.lower() != 'unassigned') else ''
                     c_dev.assigned_user_name = assigned_user_name
                     c_dev.assigned_emp_id = assigned_emp_id
                     c_dev.assigned_department = assigned_department
@@ -3071,7 +3072,7 @@ def api_import_devices_excel(request):
                         building_name=building_name,
                         floor_name=floor_name,
                         room_name=room_name,
-                        assigned_user_id='',
+                        assigned_user_id=(assigned_emp_id or assigned_user_name) if (assigned_user_name and assigned_user_name.lower() != 'unassigned') else '',
                         assigned_user_name=assigned_user_name,
                         assigned_emp_id=assigned_emp_id,
                         assigned_department=assigned_department,
@@ -3150,6 +3151,7 @@ def api_import_devices_excel(request):
             dev.building_name = building_name
             dev.floor_name = floor_name
             dev.room_name = room_name
+            dev.assigned_user_id = (assigned_emp_id or assigned_user_name) if (assigned_user_name and assigned_user_name.lower() != 'unassigned') else ''
             dev.assigned_user_name = assigned_user_name
             dev.assigned_emp_id = assigned_emp_id
             dev.assigned_department = assigned_department
@@ -3186,7 +3188,7 @@ def api_import_devices_excel(request):
                 building_name=building_name,
                 floor_name=floor_name,
                 room_name=room_name,
-                assigned_user_id='',
+                assigned_user_id=(assigned_emp_id or assigned_user_name) if (assigned_user_name and assigned_user_name.lower() != 'unassigned') else '',
                 assigned_user_name=assigned_user_name,
                 assigned_emp_id=assigned_emp_id,
                 assigned_department=assigned_department,
