@@ -864,10 +864,22 @@ function getDeviceSpecificationsHtml(dev) {
         brand = '';
     }
 
-    const brandBadge = brand ? `
+    // Format brand properly (e.g. Zebronics, Intel, Dell, HP)
+    let formattedBrand = brand;
+    if (formattedBrand) {
+        const up = formattedBrand.toUpperCase();
+        if (['HP', 'LG', 'APC', 'ASUS', 'TVS', 'IBM', 'MSI'].includes(up)) {
+            formattedBrand = up;
+        } else if (formattedBrand === up || formattedBrand === formattedBrand.toLowerCase()) {
+            formattedBrand = formattedBrand.charAt(0).toUpperCase() + formattedBrand.slice(1).toLowerCase();
+        }
+    }
+
+    const brandBadge = formattedBrand ? `
         <div class="flex items-center gap-1.5 pb-0.5">
-            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200 shadow-3xs" title="Hardware Brand: ${brand}">
-                ${brand}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/80 shadow-3xs whitespace-nowrap" title="Hardware Brand: ${formattedBrand}">
+                <span class="text-slate-500 font-medium">Brand name -</span>
+                <span class="font-bold text-slate-900">${formattedBrand}</span>
             </span>
         </div>
     ` : '';
