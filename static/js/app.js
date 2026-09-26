@@ -27,11 +27,23 @@ function initAppState() {
         ...INITIAL_SAMPLE_DATA
     };
 
-    // Automatic Cache Version Purge for clean slate & workstation sets
-    const CURRENT_CACHE_VERSION = "v9.1_kpi_fix";
+    // Automatic Cache Version Purge for clean slate & 100% fresh site
+    const CURRENT_CACHE_VERSION = "v10.0_100_percent_fresh_slate";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
+        localStorage.removeItem("CAMPUS_AUDIT_LOGS");
+        localStorage.removeItem("CAMPUS_LOCATION_HISTORY");
+        localStorage.removeItem("CAMPUS_ASSIGNMENT_HISTORY");
+        localStorage.removeItem("CAMPUS_LOGIN_SESSIONS");
+        localStorage.removeItem("psm_staff_profile");
+        localStorage.removeItem("campus_asset_draft");
+        localStorage.removeItem("campus_asset_draft_v2");
+        localStorage.removeItem("campus_asset_draft_v3");
+        localStorage.removeItem("campus_asset_draft_v4");
+        localStorage.removeItem("campus_asset_draft_v5");
+        localStorage.removeItem("campus_asset_draft_v6");
+        localStorage.removeItem("campus_asset_draft_v7");
         localStorage.setItem("CAMPUS_CACHE_VERSION", CURRENT_CACHE_VERSION);
     }
 
@@ -209,6 +221,46 @@ function resetToSampleData() {
         showToast("Database successfully restored to default sample records!", "success");
     }
 }
+
+window.purgeAllLiveSiteData = async function() {
+    if (!confirm("Are you sure you want to permanently delete ALL live site data (devices, tickets, breakdowns, transfers) and start 100% fresh?")) {
+        return;
+    }
+    try {
+        const csrfToken = (typeof getCsrfToken === 'function') ? getCsrfToken() : '';
+        await fetch('/api/admin/clear-all-data/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: 'confirm=yes'
+        });
+        
+        // Clear all client-side storage
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem("CAMPUS_CACHE_VERSION", "v10.0_100_percent_fresh_slate");
+        localStorage.setItem("CAMPUS_SELECTED_ORG", "HOSP");
+        
+        if (typeof appState !== 'undefined') {
+            appState.devices = [];
+            appState.locationHistories = [];
+            appState.assignmentHistories = [];
+            appState.loginSessions = [];
+            if (typeof saveAppState === 'function') saveAppState();
+        }
+
+        alert("Live site data has been 100% permanently deleted. Starting fresh new site!");
+        window.location.reload();
+    } catch (e) {
+        console.error(e);
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.reload();
+    }
+};
 
 // ============================================================================
 // Multi-Page Navigation & Organization Switcher
