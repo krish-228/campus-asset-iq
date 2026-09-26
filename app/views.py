@@ -524,60 +524,61 @@ def api_save_device(request):
                     comp_sn = f"{serial_number}-{comp_abbr}" if serial_number else f"SN-PSM-{comp_abbr}-{comp_tag.split('/')[-1]}"
 
                 # Component-specific compute / specs & brand
+                # Component-specific compute / specs & brand
                 if comp_upper == 'CPU':
                     item_dev_type = 'CPU'
                     item_brand = cpu_brand or brand_name or ''
-                    item_cpu = cpu_processor or 'Workstation Processor Unit'
-                    item_ram = storage_ram or 'Standard RAM & Storage'
-                    item_os = operating_system or 'Workstation OS'
+                    item_cpu = cpu_processor
+                    item_ram = storage_ram
+                    item_os = operating_system
                     item_ip = ip_address
                     item_mac = mac_address
                 elif comp_upper == 'DISPLAY':
                     item_dev_type = 'Display'
                     item_brand = monitor_brand or brand_name or ''
-                    item_cpu = monitor_spec or 'Display Monitor'
-                    item_ram = 'Hardware Display Monitor'
-                    item_os = 'Hardware Display'
+                    item_cpu = monitor_spec or ''
+                    item_ram = ''
+                    item_os = ''
                     item_ip = '-'
                     item_mac = '-'
                 elif comp_upper == 'KEYBOARD':
                     item_dev_type = 'Keyboard'
                     item_brand = keyboard_brand or brand_name or ''
-                    item_cpu = keyboard_spec or 'USB Keyboard'
-                    item_ram = 'Hardware Peripheral (HID)'
-                    item_os = 'Hardware Peripheral (HID)'
+                    item_cpu = keyboard_spec or ''
+                    item_ram = ''
+                    item_os = ''
                     item_ip = '-'
                     item_mac = '-'
                 elif comp_upper == 'MOUSE':
                     item_dev_type = 'Mouse'
                     item_brand = mouse_brand or brand_name or ''
-                    item_cpu = mouse_spec or 'Optical Mouse'
-                    item_ram = 'Hardware Peripheral (HID)'
-                    item_os = 'Hardware Peripheral (HID)'
+                    item_cpu = mouse_spec or ''
+                    item_ram = ''
+                    item_os = ''
                     item_ip = '-'
                     item_mac = '-'
                 elif comp_upper == 'TABLET':
                     item_dev_type = 'Tablet'
                     item_brand = tablet_brand or brand_name or ''
-                    item_cpu = tablet_spec or 'Mobile Tablet Terminal'
-                    item_ram = 'Mobile Workstation Unit'
-                    item_os = 'Mobile OS'
+                    item_cpu = tablet_spec or ''
+                    item_ram = storage_ram if comp_upper == 'TABLET' else ''
+                    item_os = operating_system if comp_upper == 'TABLET' else ''
                     item_ip = ip_address or '-'
                     item_mac = tablet_mac or mac_address or '-'
                 elif comp_upper == 'PRINTER':
                     item_dev_type = 'Printer'
                     item_brand = printer_brand or brand_name or ''
-                    item_cpu = printer_spec or 'Document Printer'
-                    item_ram = 'Direct Print Unit'
-                    item_os = 'Printer Firmware'
+                    item_cpu = printer_spec or ''
+                    item_ram = ''
+                    item_os = ''
                     item_ip = ip_address or '-'
                     item_mac = mac_address or '-'
                 elif comp_upper == 'UPS':
                     item_dev_type = 'UPS'
                     item_brand = ups_brand or brand_name or ''
-                    item_cpu = ups_spec or 'Battery Backup (UPS)'
-                    item_ram = 'AC Power Protection'
-                    item_os = 'Power Unit'
+                    item_cpu = ups_spec or ''
+                    item_ram = ''
+                    item_os = ''
                     item_ip = '-'
                     item_mac = '-'
                 elif (
@@ -592,16 +593,16 @@ def api_save_device(request):
                     item_dev_type = other_device_type or comp
                     item_brand = other_brand or brand_name or ''
                     item_cpu = other_model or f'{item_dev_type} Hardware Unit'
-                    item_ram = 'Hardware Accessory / Peripheral'
-                    item_os = 'Hardware Firmware'
+                    item_ram = ''
+                    item_os = ''
                     item_ip = '-'
                     item_mac = '-'
                 else:
                     item_dev_type = comp
                     item_brand = brand_name or ''
                     item_cpu = f'{comp} Hardware Unit'
-                    item_ram = 'Standard Hardware Component'
-                    item_os = operating_system or 'Hardware Firmware'
+                    item_ram = ''
+                    item_os = ''
                     item_ip = '-'
                     item_mac = '-'
 
@@ -2956,63 +2957,63 @@ def api_import_devices_excel(request):
 
                 if c_upper == 'CPU':
                     c_type = 'CPU'
-                    c_cpu = cpu_processor or 'Workstation Processor Unit'
+                    c_cpu = cpu_processor or model_specs or ''
                     c_ram = storage_ram or ''
                     c_os = operating_system or ''
                     c_ip = ip_address
                     c_mac = mac_address
                 elif c_upper == 'DISPLAY':
                     c_type = 'Display'
-                    c_cpu = monitor_spec or model_specs or 'Display Monitor'
-                    c_ram = 'Hardware Display Monitor'
-                    c_os = 'Hardware Display'
+                    c_cpu = monitor_spec or model_specs or ''
+                    c_ram = ''
+                    c_os = ''
                     c_ip = ''
                     c_mac = ''
                 elif c_upper == 'KEYBOARD':
                     c_type = 'Keyboard'
-                    c_kb = keyboard_spec or model_specs or 'USB Keyboard'
+                    c_kb = keyboard_spec or model_specs or ''
                     c_cpu = c_kb
-                    c_ram = 'Hardware Peripheral (HID)'
-                    c_os = 'Hardware Peripheral (HID)'
+                    c_ram = ''
+                    c_os = ''
                     c_ip = ''
                     c_mac = ''
                 elif c_upper == 'MOUSE':
                     c_type = 'Mouse'
-                    c_ms = mouse_spec or model_specs or 'Optical Mouse'
+                    c_ms = mouse_spec or model_specs or ''
                     c_cpu = c_ms
-                    c_ram = 'Hardware Peripheral (HID)'
-                    c_os = 'Hardware Peripheral (HID)'
+                    c_ram = ''
+                    c_os = ''
                     c_ip = ''
                     c_mac = ''
                 elif c_upper == 'TABLET':
                     c_type = 'Tablet'
-                    c_tab = tablet_spec or model_specs or 'Tablet Terminal'
+                    c_tab = tablet_spec or model_specs or ''
                     c_cpu = c_tab
-                    c_ram = 'Mobile Workstation Unit'
-                    c_os = 'Mobile OS'
+                    c_ram = storage_ram
+                    c_os = operating_system
                     c_ip = ''
                     c_mac = ''
                 elif c_upper == 'PRINTER':
                     c_type = 'Printer'
-                    c_prt = printer_spec or model_specs or 'Document Printer'
+                    c_prt = printer_spec or model_specs or ''
                     c_cpu = c_prt
-                    c_ram = 'Direct Print Unit'
-                    c_os = 'Printer Firmware'
+                    c_ram = ''
+                    c_os = ''
                     c_ip = ip_address
                     c_mac = mac_address
                 elif c_upper == 'UPS':
                     c_type = 'UPS'
-                    c_ups = ups_spec or model_specs or 'Battery Backup (UPS)'
+                    c_ups = ups_spec or model_specs or ''
                     c_cpu = c_ups
-                    c_ram = 'AC Power Protection'
-                    c_os = 'Microcontroller Power Firmware'
+                    c_ram = ''
+                    c_os = ''
                     c_ip = ''
                     c_mac = ''
                 else:
                     c_type = comp_name
-                    c_cpu = f'{comp_name} Hardware Unit'
-                    c_ram = 'Standard Hardware Component'
-                    c_os = operating_system or 'Firmware Embedded'
+                    c_cpu = model_specs or f'{comp_name} Hardware Unit'
+                    c_ram = ''
+                    c_os = ''
                     c_ip = ''
                     c_mac = ''
 

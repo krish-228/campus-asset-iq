@@ -87,6 +87,12 @@ function initAppState() {
                     appState.users = parsed.users;
                 }
                 if (Array.isArray(parsed.devices) && parsed.devices.length > 0) {
+                    parsed.devices.forEach(d => {
+                        if (typeof isPlaceholderDetail === 'function') {
+                            if (isPlaceholderDetail(d.storageRam)) d.storageRam = '';
+                            if (isPlaceholderDetail(d.operatingSystem)) d.operatingSystem = '';
+                        }
+                    });
                     appState.devices = parsed.devices;
                 }
                 if (Array.isArray(parsed.locationHistories)) {
@@ -114,6 +120,10 @@ function initAppState() {
             const serverDevices = JSON.parse(serverDevicesEl.textContent);
             if (Array.isArray(serverDevices)) {
                 serverDevices.forEach(dbDev => {
+                    if (typeof isPlaceholderDetail === 'function') {
+                        if (isPlaceholderDetail(dbDev.storageRam)) dbDev.storageRam = '';
+                        if (isPlaceholderDetail(dbDev.operatingSystem)) dbDev.operatingSystem = '';
+                    }
                     if (!dbDev.roomId && dbDev.roomName && appState.rooms) {
                         const matchRoom = appState.rooms.find(r =>
                             r.name.toLowerCase().includes(dbDev.roomName.toLowerCase()) ||
@@ -696,34 +706,161 @@ function getWorkstationRoleBadge(dev, displayName) {
     `;
 }
 
-function getDeviceSpecificationsHtml(dev) {
-    const rawType = (dev.deviceType || dev.device_type || '').toUpperCase();
-    const model = (dev.cpuProcessor || '').trim();
-    const secondary = (dev.storageRam || '').trim();
-    let brand = (dev.brandName || dev.brand || dev.brand_name || dev.cpuBrand || dev.monitorBrand || dev.keyboardBrand || dev.mouseBrand || dev.printerBrand || dev.tabletBrand || dev.upsBrand || '').trim();
+function isPlaceholderDetail(str) {
+    if (!str) return true;
+    const clean = String(str).trim();
+    if (!clean) return true;
+    const up = clean.toUpperCase();
 
-    // If brand is empty or missing, infer from model & specifications text
-    if (!brand) {
-        const fullSpec = `${model} ${dev.monitorSpec || ''} ${dev.keyboardSpec || ''} ${dev.mouseSpec || ''} ${dev.printerSpec || ''} ${dev.tabletSpec || ''} ${dev.upsSpec || ''}`.toUpperCase();
-        if (fullSpec.includes('DELL')) brand = 'Dell';
-        else if (fullSpec.includes('HP') || fullSpec.includes('HEWLETT')) brand = 'HP';
-        else if (fullSpec.includes('LENOVO')) brand = 'Lenovo';
-        else if (fullSpec.includes('ASUS')) brand = 'ASUS';
-        else if (fullSpec.includes('SAMSUNG')) brand = 'Samsung';
-        else if (fullSpec.includes('APPLE') || fullSpec.includes('MACBOOK') || fullSpec.includes('IPAD')) brand = 'Apple';
-        else if (fullSpec.includes('LG')) brand = 'LG';
-        else if (fullSpec.includes('ACER')) brand = 'Acer';
-        else if (fullSpec.includes('LOGITECH')) brand = 'Logitech';
-        else if (fullSpec.includes('APC')) brand = 'APC';
-        else if (fullSpec.includes('ZEBRA')) brand = 'Zebra';
-        else if (fullSpec.includes('EPSON')) brand = 'Epson';
-        else if (fullSpec.includes('CANON')) brand = 'Canon';
-        else if (fullSpec.includes('HONEYWELL')) brand = 'Honeywell';
+    // Symbols / trivial placeholders
+    if (clean === '—' || clean === '-' || clean === '--' || clean === 'N/A' || up === 'NONE' || up === 'UNKNOWN' || up === 'NULL' || up === 'UNASSIGNED') {
+        return true;
     }
 
-    // Filter out only placeholders
+    // Auto-generated dummy placeholders & fake marketing blurbs
+    const dummyPhrases = [
+        'STANDARD OEM',
+        'HARDWARE DISPLAY MONITOR',
+        'CONNECTED DISPLAY MONITOR',
+        'HARDWARE DISPLAY',
+        'HARDWARE PERIPHERAL',
+        'HARDWARE ACCESSORY',
+        'STANDARD HARDWARE COMPONENT',
+        'CAMPUS CLINICAL HARDWARE UNIT',
+        'DIRECT PRINT UNIT',
+        'PRINTER FIRMWARE',
+        'MOBILE WORKSTATION UNIT',
+        'MOBILE OS',
+        'AC POWER PROTECTION',
+        'POWER UNIT',
+        'MICROCONTROLLER POWER FIRMWARE',
+        'HARDWARE FIRMWARE',
+        'FIRMWARE EMBEDDED',
+        'WORKSTATION OS',
+        'WORKSTATION PROCESSOR UNIT',
+        'WORKSTATION COMPUTE ENGINE',
+        'STANDARD RAM & STORAGE',
+        'SYSTEM RAM & NVME STORAGE',
+        'IPS MEDICAL PANEL',
+        'DIRECT VIDEO STREAM',
+        'SPILL-RESISTANT MEMBRANE',
+        'USB WIRED INTERFACE',
+        'OPTICAL PRECISION SENSOR',
+        'USB CLEANABLE',
+        'HEALTHCARE DOCUMENT GRADE',
+        'CONTINUOUS POWER BACKUP',
+        'TOUCHSCREEN CLINICAL TERMINAL',
+        'MOBILE WIRELESS UNIT',
+        'OPTICAL 1D/2D READER',
+        'INSTANT IDENTIFICATION',
+        'STANDARD WORKSTATION CORE'
+    ];
+
+    for (const phrase of dummyPhrases) {
+        if (up.includes(phrase)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function getDeviceSpecificationsHtml(dev) {
+    const rawType = (dev.deviceType || dev.device_type || '').toUpperCase();
+
+    // 1. Model & specs resolution
+    let model = '';
+    if (rawType.includes('CPU') || rawType.includes('WORKSTATION') || rawType.includes('DESKTOP') || rawType.includes('PC') || rawType.includes('COMPUTER') || rawType.includes('LAPTOP')) {
+        model = (dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('DISPLAY') || rawType.includes('MONITOR') || rawType.includes('SCREEN') || rawType === 'D') {
+        model = (dev.monitorSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('KEYBOARD') || rawType.includes('KB') || rawType === 'K') {
+        model = (dev.keyboardSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('MOUSE') || rawType === 'M') {
+        model = (dev.mouseSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('PRINTER') || rawType.includes('PRT') || rawType === 'P') {
+        model = (dev.printerSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('UPS') || rawType.includes('POWER') || rawType.includes('INVERTER') || rawType === 'U') {
+        model = (dev.upsSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('TABLET') || rawType.includes('TAB') || rawType.includes('IPAD') || rawType === 'T') {
+        model = (dev.tabletSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else {
+        model = (dev.cpuProcessor || dev.modelSpecs || '').trim();
+    }
+
+    // 2. Brand resolution (Line 1)
+    let brand = '';
+    const mUp = model.toUpperCase();
+    const knownBrands = [
+        { key: 'DELL', name: 'Dell' },
+        { key: 'HP', name: 'HP' },
+        { key: 'HEWLETT', name: 'HP' },
+        { key: 'LENOVO', name: 'Lenovo' },
+        { key: 'INTEL', name: 'Intel' },
+        { key: 'ZEBRONICS', name: 'Zebronics' },
+        { key: 'LOGITECH', name: 'Logitech' },
+        { key: 'SAMSUNG', name: 'Samsung' },
+        { key: 'APPLE', name: 'Apple' },
+        { key: 'MACBOOK', name: 'Apple' },
+        { key: 'IPAD', name: 'Apple' },
+        { key: 'ASUS', name: 'ASUS' },
+        { key: 'ACER', name: 'Acer' },
+        { key: 'LG', name: 'LG' },
+        { key: 'APC', name: 'APC' },
+        { key: 'EPSON', name: 'Epson' },
+        { key: 'CANON', name: 'Canon' },
+        { key: 'ZEBRA', name: 'Zebra' },
+        { key: 'HONEYWELL', name: 'Honeywell' },
+        { key: 'TVS', name: 'TVS' }
+    ];
+
+    // Check if model explicitly starts with or names a known brand
+    for (const b of knownBrands) {
+        if (mUp.startsWith(b.key + ' ') || mUp.startsWith(b.key + '-') || mUp === b.key) {
+            brand = b.name;
+            break;
+        }
+    }
+
+    // If not found in model prefix, check device-specific brand field
+    if (!brand) {
+        if (rawType.includes('CPU') || rawType.includes('WORKSTATION') || rawType.includes('DESKTOP') || rawType.includes('PC') || rawType.includes('COMPUTER') || rawType.includes('LAPTOP')) {
+            brand = (dev.cpuBrand || dev.brandName || dev.brand || dev.brand_name || '').trim();
+        } else if (rawType.includes('DISPLAY') || rawType.includes('MONITOR') || rawType.includes('SCREEN') || rawType === 'D') {
+            brand = (dev.monitorBrand || dev.brandName || dev.brand || dev.brand_name || '').trim();
+        } else if (rawType.includes('KEYBOARD') || rawType.includes('KB') || rawType === 'K') {
+            brand = (dev.keyboardBrand || '').trim();
+        } else if (rawType.includes('MOUSE') || rawType === 'M') {
+            brand = (dev.mouseBrand || '').trim();
+        } else if (rawType.includes('PRINTER') || rawType.includes('PRT') || rawType === 'P') {
+            brand = (dev.printerBrand || dev.brandName || dev.brand || dev.brand_name || '').trim();
+        } else if (rawType.includes('UPS') || rawType.includes('POWER') || rawType.includes('INVERTER') || rawType === 'U') {
+            brand = (dev.upsBrand || dev.brandName || dev.brand || dev.brand_name || '').trim();
+        } else if (rawType.includes('TABLET') || rawType.includes('TAB') || rawType.includes('IPAD') || rawType === 'T') {
+            brand = (dev.tabletBrand || dev.brandName || dev.brand || dev.brand_name || '').trim();
+        } else {
+            brand = (dev.otherBrand || dev.other_brand || dev.brandName || dev.brand || dev.brand_name || '').trim();
+        }
+    }
+
+    // If still no brand, check if model contains any known brand
+    if (!brand && model) {
+        for (const b of knownBrands) {
+            if (mUp.includes(b.key)) {
+                brand = b.name;
+                break;
+            }
+        }
+    }
+
+    // Fallback to general brand if available
+    if (!brand && (dev.brandName || dev.brand || dev.brand_name)) {
+        brand = (dev.brandName || dev.brand || dev.brand_name || '').trim();
+    }
+
+    // Filter out dummy/placeholder brands
     const bUp = brand.toUpperCase();
-    if (bUp === 'STANDARD OEM' || brand === '—' || brand === '-' || bUp === 'N/A' || bUp === 'NONE' || bUp === 'UNKNOWN' || bUp === 'NULL' || bUp === 'UNASSIGNED') {
+    if (!brand || bUp === 'STANDARD OEM' || brand === '—' || brand === '-' || bUp === 'N/A' || bUp === 'NONE' || bUp === 'UNKNOWN' || bUp === 'NULL' || bUp === 'UNASSIGNED') {
         brand = '';
     }
 
@@ -735,169 +872,126 @@ function getDeviceSpecificationsHtml(dev) {
         </div>
     ` : '';
 
-    // 1. CPU / Workstation / Desktop / Laptop
+    // 2. Hardware Model & Specs (Line 2)
+    let icon = 'package';
+    let iconColor = 'text-slate-600';
+    let defaultModelName = 'Hardware Asset';
+
     if (rawType.includes('CPU') || rawType.includes('WORKSTATION') || rawType.includes('DESKTOP') || rawType.includes('PC') || rawType.includes('COMPUTER') || rawType.includes('LAPTOP')) {
-        let osPill = '';
-        if (dev.operatingSystem && !dev.operatingSystem.toUpperCase().includes('HID') && !dev.operatingSystem.toUpperCase().includes('PERIPHERAL')) {
-            osPill = `<span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-3xs whitespace-nowrap">
-                <i data-lucide="app-window" class="w-3 h-3 text-blue-600"></i> ${dev.operatingSystem}
-            </span>`;
-        }
-        return `
-            <div class="space-y-1">
-                ${brandBadge}
-                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${model}">
-                    <i data-lucide="cpu" class="w-4 h-4 text-indigo-600 shrink-0"></i>
-                    <span class="truncate max-w-[260px]">${model || 'Standard Workstation Core'}</span>
-                </div>
+        icon = 'cpu';
+        iconColor = 'text-indigo-600';
+        defaultModelName = 'Standard Workstation Core';
+    } else if (rawType.includes('DISPLAY') || rawType.includes('MONITOR') || rawType.includes('SCREEN') || rawType === 'D') {
+        icon = 'monitor';
+        iconColor = 'text-indigo-600';
+        defaultModelName = 'Display Monitor';
+    } else if (rawType.includes('KEYBOARD') || rawType.includes('KB') || rawType === 'K') {
+        icon = 'keyboard';
+        iconColor = 'text-amber-600';
+        defaultModelName = 'USB Keyboard';
+    } else if (rawType.includes('MOUSE') || rawType === 'M') {
+        icon = 'mouse';
+        iconColor = 'text-purple-600';
+        defaultModelName = 'Optical Mouse';
+    } else if (rawType.includes('PRINTER') || rawType.includes('PRT') || rawType === 'P') {
+        icon = 'printer';
+        iconColor = 'text-emerald-600';
+        defaultModelName = 'Document Printer';
+    } else if (rawType.includes('UPS') || rawType.includes('POWER') || rawType.includes('INVERTER') || rawType === 'U') {
+        icon = 'zap';
+        iconColor = 'text-orange-600';
+        defaultModelName = 'Uninterruptible Power Supply (UPS)';
+    } else if (rawType.includes('TABLET') || rawType.includes('TAB') || rawType.includes('IPAD') || rawType === 'T') {
+        icon = 'tablet';
+        iconColor = 'text-teal-600';
+        defaultModelName = 'Tablet Terminal';
+    } else if (rawType.includes('SCANNER') || rawType.includes('BARCODE') || rawType.includes('BIOMETRIC') || rawType.includes('EYE')) {
+        icon = 'scan-barcode';
+        iconColor = 'text-rose-600';
+        defaultModelName = 'Optical Scanner';
+    }
+
+    const displayModel = model || defaultModelName;
+    const line2Html = `
+        <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${displayModel}">
+            <i data-lucide="${icon}" class="w-4 h-4 ${iconColor} shrink-0"></i>
+            <span class="truncate max-w-[260px]">${displayModel}</span>
+        </div>
+    `;
+
+    // 3. Special Detail (Line 3)
+    let line3Html = '';
+
+    if (rawType.includes('CPU') || rawType.includes('WORKSTATION') || rawType.includes('DESKTOP') || rawType.includes('PC') || rawType.includes('COMPUTER') || rawType.includes('LAPTOP')) {
+        const hasRam = dev.storageRam && !isPlaceholderDetail(dev.storageRam);
+        const hasOs = dev.operatingSystem && !isPlaceholderDetail(dev.operatingSystem);
+
+        if (hasRam || hasOs) {
+            const ramPill = hasRam ? `
+                <span class="flex items-center gap-1 font-mono text-[11px] text-slate-700 font-semibold" title="${dev.storageRam}">
+                    <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                    <span class="truncate max-w-[170px]">${dev.storageRam}</span>
+                </span>
+            ` : '';
+
+            const osPill = hasOs ? `
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="app-window" class="w-3 h-3 text-blue-600"></i> ${dev.operatingSystem}
+                </span>
+            ` : '';
+
+            line3Html = `
                 <div class="flex items-center gap-2 flex-wrap text-xs text-slate-600 font-medium">
-                    <span class="flex items-center gap-1 font-mono text-[11px] text-slate-700 font-semibold" title="${secondary}">
-                        <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                        <span class="truncate max-w-[170px]">${secondary || '16GB RAM / 512GB SSD'}</span>
-                    </span>
+                    ${ramPill}
                     ${osPill}
                 </div>
-            </div>
-        `;
+            `;
+        }
+    } else if (rawType.includes('TABLET') || rawType.includes('TAB') || rawType.includes('IPAD') || rawType === 'T') {
+        const hasStorage = dev.storageRam && !isPlaceholderDetail(dev.storageRam);
+        const hasOs = dev.operatingSystem && !isPlaceholderDetail(dev.operatingSystem);
+
+        if (hasStorage || hasOs) {
+            const storagePill = hasStorage ? `
+                <span class="flex items-center gap-1 font-mono text-[11px] text-slate-700 font-semibold" title="${dev.storageRam}">
+                    <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                    <span class="truncate max-w-[170px]">${dev.storageRam}</span>
+                </span>
+            ` : '';
+
+            const osPill = hasOs ? `
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200/80 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="app-window" class="w-3 h-3 text-teal-600"></i> ${dev.operatingSystem}
+                </span>
+            ` : '';
+
+            line3Html = `
+                <div class="flex items-center gap-2 flex-wrap text-xs text-slate-600 font-medium">
+                    ${storagePill}
+                    ${osPill}
+                </div>
+            `;
+        }
+    } else {
+        // Display, Keyboard, Mouse, Printer, UPS, Scanner, Other:
+        // ONLY render Line 3 if there is genuine user-entered special detail.
+        // Otherwise, leave Line 3 completely blank!
+        const secondary = (dev.storageRam || '').trim();
+        if (secondary && !isPlaceholderDetail(secondary) && secondary.toLowerCase() !== displayModel.toLowerCase()) {
+            line3Html = `
+                <div class="flex items-center gap-1 text-[11px] text-slate-600 font-medium">
+                    <i data-lucide="info" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                    <span class="truncate max-w-[260px]">${secondary}</span>
+                </div>
+            `;
+        }
     }
 
-    // 2. Display / Monitor
-    if (rawType.includes('DISPLAY') || rawType.includes('MONITOR') || rawType.includes('SCREEN') || rawType === 'D') {
-        const dispName = dev.monitorSpec || model || 'FHD Display Monitor';
-        return `
-            <div class="space-y-1">
-                ${brandBadge}
-                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${dispName}">
-                    <i data-lucide="monitor" class="w-4 h-4 text-indigo-600 shrink-0"></i>
-                    <span class="truncate max-w-[260px]">${dispName}</span>
-                </div>
-                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                    <i data-lucide="sparkles" class="w-3 h-3 text-slate-400 shrink-0"></i>
-                    <span>IPS Medical Panel &bull; Direct Video Stream</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // 3. Keyboard
-    if (rawType.includes('KEYBOARD') || rawType.includes('KB') || rawType === 'K') {
-        const kbName = model || dev.keyboardSpec || 'USB Wired Keyboard';
-        return `
-            <div class="space-y-1">
-                ${brandBadge}
-                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${kbName}">
-                    <i data-lucide="keyboard" class="w-4 h-4 text-amber-600 shrink-0"></i>
-                    <span class="truncate max-w-[260px]">${kbName}</span>
-                </div>
-                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                    <i data-lucide="usb" class="w-3 h-3 text-slate-400 shrink-0"></i>
-                    <span>USB Wired Interface &bull; Spill-Resistant Membrane</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // 4. Mouse
-    if (rawType.includes('MOUSE') || rawType === 'M') {
-        const msName = model || dev.mouseSpec || 'Optical USB Mouse';
-        return `
-            <div class="space-y-1">
-                ${brandBadge}
-                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${msName}">
-                    <i data-lucide="mouse" class="w-4 h-4 text-purple-600 shrink-0"></i>
-                    <span class="truncate max-w-[260px]">${msName}</span>
-                </div>
-                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                    <i data-lucide="crosshair" class="w-3 h-3 text-slate-400 shrink-0"></i>
-                    <span>Optical Precision Sensor &bull; USB Cleanable</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // 5. Printer
-    if (rawType.includes('PRINTER') || rawType.includes('PRT') || rawType === 'P') {
-        const prtName = model || dev.printerSpec || 'High-Speed Laser / Barcode Printer';
-        return `
-            <div class="space-y-1">
-                ${brandBadge}
-                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${prtName}">
-                    <i data-lucide="printer" class="w-4 h-4 text-emerald-600 shrink-0"></i>
-                    <span class="truncate max-w-[260px]">${prtName}</span>
-                </div>
-                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                    <i data-lucide="file-text" class="w-3 h-3 text-slate-400 shrink-0"></i>
-                    <span>Direct Print Laser Unit &bull; Healthcare Document Grade</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // 6. UPS / Power Backup
-    if (rawType.includes('UPS') || rawType.includes('POWER') || rawType.includes('INVERTER') || rawType === 'U') {
-        const upsName = model || dev.upsSpec || 'Uninterruptible Power Supply (UPS)';
-        return `
-            <div class="space-y-1">
-                ${brandBadge}
-                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${upsName}">
-                    <i data-lucide="zap" class="w-4 h-4 text-orange-600 shrink-0"></i>
-                    <span class="truncate max-w-[260px]">${upsName}</span>
-                </div>
-                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                    <i data-lucide="shield-check" class="w-3 h-3 text-slate-400 shrink-0"></i>
-                    <span>230V AC Surge Protection &bull; Continuous Power Backup</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // 7. Tablet
-    if (rawType.includes('TABLET') || rawType.includes('TAB') || rawType.includes('IPAD') || rawType === 'T') {
-        const tabName = model || dev.tabletSpec || 'Tablet Terminal';
-        return `
-            <div class="space-y-1">
-                ${brandBadge}
-                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${tabName}">
-                    <i data-lucide="tablet" class="w-4 h-4 text-teal-600 shrink-0"></i>
-                    <span class="truncate max-w-[260px]">${tabName}</span>
-                </div>
-                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                    <i data-lucide="wifi" class="w-3 h-3 text-slate-400 shrink-0"></i>
-                    <span>Touchscreen Clinical Terminal &bull; Mobile Wireless Unit</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // 8. Scanner / Biometric
-    if (rawType.includes('SCANNER') || rawType.includes('BARCODE') || rawType.includes('BIOMETRIC') || rawType.includes('EYE')) {
-        const scName = model || 'High-Precision Optical Scanner';
-        return `
-            <div class="space-y-1">
-                ${brandBadge}
-                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${scName}">
-                    <i data-lucide="scan-barcode" class="w-4 h-4 text-rose-600 shrink-0"></i>
-                    <span class="truncate max-w-[260px]">${scName}</span>
-                </div>
-                <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                    <i data-lucide="check-circle-2" class="w-3 h-3 text-slate-400 shrink-0"></i>
-                    <span>Optical 1D/2D Reader &bull; Instant Identification</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // 9. Generic / Other Hardware
     return `
         <div class="space-y-1">
             ${brandBadge}
-            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${model || 'Hardware Asset'}">
-                <i data-lucide="package" class="w-4 h-4 text-slate-600 shrink-0"></i>
-                <span class="truncate max-w-[260px]">${model || 'Standard Hardware Peripheral'}</span>
-            </div>
-            <div class="text-[11px] text-slate-500 font-medium">
-                <span>${secondary && !secondary.toUpperCase().includes('HID') ? secondary : 'Campus Clinical Hardware Unit'}</span>
-            </div>
+            ${line2Html}
+            ${line3Html}
         </div>
     `;
 }
@@ -997,19 +1091,6 @@ function renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMultiDevice
     } else {
         locationDisplay = `<span class="text-slate-400 italic text-xs">Unassigned Location</span>`;
     }
-
-    const computeDisplay = `
-        <div class="space-y-1">
-            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800" title="${dev.cpuProcessor}">
-                <i data-lucide="cpu" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
-                <span class="truncate max-w-[200px]">${dev.cpuProcessor}</span>
-            </div>
-            <div class="flex items-center gap-1.5 text-xs font-mono text-slate-600 font-medium" title="${dev.storageRam}">
-                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                <span class="truncate max-w-[200px]">${dev.storageRam}</span>
-            </div>
-        </div>
-    `;
 
     return `
         <tr class="hover:bg-indigo-50/40 transition-colors divide-x divide-slate-100 text-slate-800" ${custKey ? `data-custodian-key="${custKey}"` : ''}>
@@ -1137,55 +1218,55 @@ function expandCompositeWorkstation(dev, group) {
 
         const compUpper = comp.toUpperCase();
         if (compUpper === 'CPU') {
-            sub.cpuProcessor = dev.cpuProcessor || 'Workstation Compute Engine';
-            sub.storageRam = dev.storageRam || 'System RAM & NVMe Storage';
-            sub.brandName = dev.cpuBrand || dev.brandName || dev.brand || 'Dell';
+            sub.cpuProcessor = dev.cpuProcessor || '';
+            sub.storageRam = dev.storageRam || '';
+            sub.brandName = dev.cpuBrand || dev.brandName || dev.brand || '';
         } else if (compUpper === 'DISPLAY') {
-            sub.cpuProcessor = dev.monitorSpec || '24" FHD IPS Medical / Office Grade';
-            sub.storageRam = 'Connected Display Monitor';
-            sub.operatingSystem = 'Hardware Display';
+            sub.cpuProcessor = dev.monitorSpec || '';
+            sub.storageRam = '';
+            sub.operatingSystem = '';
             sub.ipAddress = '—';
             sub.macAddress = '—';
-            sub.brandName = dev.monitorBrand || dev.brandName || dev.brand || 'Dell';
+            sub.brandName = dev.monitorBrand || '';
         } else if (compUpper === 'KEYBOARD') {
-            sub.cpuProcessor = dev.keyboardSpec || 'Spill-Resistant Membrane USB Keyboard';
-            sub.storageRam = 'Hardware Peripheral (HID)';
-            sub.operatingSystem = 'Hardware Peripheral (HID)';
+            sub.cpuProcessor = dev.keyboardSpec || '';
+            sub.storageRam = '';
+            sub.operatingSystem = '';
             sub.ipAddress = '—';
             sub.macAddress = '—';
-            sub.brandName = dev.keyboardBrand || dev.brandName || dev.brand || 'Dell';
+            sub.brandName = dev.keyboardBrand || '';
         } else if (compUpper === 'MOUSE') {
-            sub.cpuProcessor = dev.mouseSpec || 'Ergonomic Optical Cleanable Clinic Mouse';
-            sub.storageRam = 'Hardware Peripheral (HID)';
-            sub.operatingSystem = 'Hardware Peripheral (HID)';
+            sub.cpuProcessor = dev.mouseSpec || '';
+            sub.storageRam = '';
+            sub.operatingSystem = '';
             sub.ipAddress = '—';
             sub.macAddress = '—';
-            sub.brandName = dev.mouseBrand || dev.brandName || dev.brand || 'Dell';
+            sub.brandName = dev.mouseBrand || '';
         } else if (compUpper === 'TABLET') {
-            sub.cpuProcessor = dev.tabletSpec || 'Mobile Diagnostic Tablet';
-            sub.storageRam = 'Mobile Workstation Unit';
-            sub.operatingSystem = 'Mobile OS';
-            sub.ipAddress = '—';
-            sub.macAddress = '—';
-            sub.brandName = dev.tabletBrand || dev.brandName || dev.brand || 'Samsung';
+            sub.cpuProcessor = dev.tabletSpec || '';
+            sub.storageRam = dev.storageRam || '';
+            sub.operatingSystem = dev.operatingSystem || '';
+            sub.ipAddress = dev.ipAddress || '—';
+            sub.macAddress = dev.macAddress || '—';
+            sub.brandName = dev.tabletBrand || '';
         } else if (compUpper === 'PRINTER') {
-            sub.cpuProcessor = dev.printerSpec || 'High-Speed Medical Document Printer';
-            sub.storageRam = 'Direct Print Unit';
-            sub.operatingSystem = 'Printer Firmware';
-            sub.ipAddress = '—';
-            sub.macAddress = '—';
-            sub.brandName = dev.printerBrand || dev.brandName || dev.brand || 'HP';
+            sub.cpuProcessor = dev.printerSpec || '';
+            sub.storageRam = '';
+            sub.operatingSystem = '';
+            sub.ipAddress = dev.ipAddress || '—';
+            sub.macAddress = dev.macAddress || '—';
+            sub.brandName = dev.printerBrand || '';
         } else if (compUpper === 'UPS') {
-            sub.cpuProcessor = dev.upsSpec || 'Line-Interactive Battery Backup Unit';
-            sub.storageRam = 'AC Power Protection';
-            sub.operatingSystem = 'Power Unit';
+            sub.cpuProcessor = dev.upsSpec || '';
+            sub.storageRam = '';
+            sub.operatingSystem = '';
             sub.ipAddress = '—';
             sub.macAddress = '—';
-            sub.brandName = dev.upsBrand || dev.brandName || dev.brand || 'APC';
+            sub.brandName = dev.upsBrand || '';
         } else if (compUpper === 'OTHER' || compUpper === 'CUSTOM') {
-            sub.cpuProcessor = dev.otherSpec || dev.other_spec || dev.otherModel || 'Hardware Accessory / Peripheral';
-            sub.storageRam = 'Hardware Accessory / Peripheral';
-            sub.operatingSystem = 'Hardware Firmware';
+            sub.cpuProcessor = dev.otherSpec || dev.other_spec || dev.otherModel || '';
+            sub.storageRam = '';
+            sub.operatingSystem = '';
             sub.ipAddress = '—';
             sub.macAddress = '—';
             sub.brandName = dev.otherBrand || dev.other_brand || '';
@@ -1428,19 +1509,6 @@ function renderInventoryTable() {
                                 </span>
                             </div>
                             <div class="text-[11px] text-slate-400 font-medium truncate">${devFloor} &bull; Workstation Desk</div>
-                        </div>
-                    `;
-
-                    const computeDisplay = `
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800" title="${dev.cpuProcessor}">
-                                <i data-lucide="cpu" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
-                                <span class="truncate max-w-[200px]">${dev.cpuProcessor}</span>
-                            </div>
-                            <div class="flex items-center gap-1.5 text-xs font-mono text-slate-600 font-medium" title="${dev.storageRam}">
-                                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                                <span class="truncate max-w-[200px]">${dev.storageRam}</span>
-                            </div>
                         </div>
                     `;
 
