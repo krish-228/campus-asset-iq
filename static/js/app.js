@@ -452,19 +452,6 @@ function getDeviceTypeBadge(dev) {
         </span>`;
     }
 
-    const brand = (dev.brandName || dev.brand || dev.brand_name || '').trim();
-    if (brand) {
-        return `
-            <div class="space-y-0.5">
-                <div>${typeHtml}</div>
-                <div class="flex items-center gap-1">
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200 shadow-3xs" title="Hardware Brand: ${brand}">
-                        ${brand}
-                    </span>
-                </div>
-            </div>
-        `;
-    }
     return typeHtml;
 }
 
@@ -713,6 +700,15 @@ function getDeviceSpecificationsHtml(dev) {
     const rawType = (dev.deviceType || dev.device_type || '').toUpperCase();
     const model = (dev.cpuProcessor || '').trim();
     const secondary = (dev.storageRam || '').trim();
+    const brand = (dev.brandName || dev.brand || dev.brand_name || '').trim();
+
+    const brandBadge = brand ? `
+        <div class="flex items-center gap-1.5 pb-0.5">
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200 shadow-3xs" title="Hardware Brand: ${brand}">
+                ${brand}
+            </span>
+        </div>
+    ` : '';
 
     // 1. CPU / Workstation / Desktop / Laptop
     if (rawType.includes('CPU') || rawType.includes('WORKSTATION') || rawType.includes('DESKTOP') || rawType.includes('PC') || rawType.includes('COMPUTER') || rawType.includes('LAPTOP')) {
@@ -724,6 +720,7 @@ function getDeviceSpecificationsHtml(dev) {
         }
         return `
             <div class="space-y-1">
+                ${brandBadge}
                 <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${model}">
                     <i data-lucide="cpu" class="w-4 h-4 text-indigo-600 shrink-0"></i>
                     <span class="truncate max-w-[260px]">${model || 'Standard Workstation Core'}</span>
@@ -744,6 +741,7 @@ function getDeviceSpecificationsHtml(dev) {
         const dispName = dev.monitorSpec || model || '24" FHD IPS Medical Display';
         return `
             <div class="space-y-1">
+                ${brandBadge}
                 <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${dispName}">
                     <i data-lucide="monitor" class="w-4 h-4 text-indigo-600 shrink-0"></i>
                     <span class="truncate max-w-[260px]">${dispName}</span>
@@ -761,6 +759,7 @@ function getDeviceSpecificationsHtml(dev) {
         const kbName = model || dev.keyboardSpec || 'Dell KB216 USB Wired Keyboard';
         return `
             <div class="space-y-1">
+                ${brandBadge}
                 <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${kbName}">
                     <i data-lucide="keyboard" class="w-4 h-4 text-amber-600 shrink-0"></i>
                     <span class="truncate max-w-[260px]">${kbName}</span>
@@ -778,6 +777,7 @@ function getDeviceSpecificationsHtml(dev) {
         const msName = model || dev.mouseSpec || 'Dell MS116 Optical USB Mouse';
         return `
             <div class="space-y-1">
+                ${brandBadge}
                 <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${msName}">
                     <i data-lucide="mouse" class="w-4 h-4 text-purple-600 shrink-0"></i>
                     <span class="truncate max-w-[260px]">${msName}</span>
@@ -795,6 +795,7 @@ function getDeviceSpecificationsHtml(dev) {
         const prtName = model || dev.printerSpec || 'High-Speed Laser / Barcode Printer';
         return `
             <div class="space-y-1">
+                ${brandBadge}
                 <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${prtName}">
                     <i data-lucide="printer" class="w-4 h-4 text-emerald-600 shrink-0"></i>
                     <span class="truncate max-w-[260px]">${prtName}</span>
@@ -812,6 +813,7 @@ function getDeviceSpecificationsHtml(dev) {
         const upsName = model || dev.upsSpec || 'APC Back-UPS 650VA / 360W';
         return `
             <div class="space-y-1">
+                ${brandBadge}
                 <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${upsName}">
                     <i data-lucide="zap" class="w-4 h-4 text-orange-600 shrink-0"></i>
                     <span class="truncate max-w-[260px]">${upsName}</span>
@@ -829,6 +831,7 @@ function getDeviceSpecificationsHtml(dev) {
         const tabName = model || dev.tabletSpec || 'Samsung Galaxy Tab Active4 Pro';
         return `
             <div class="space-y-1">
+                ${brandBadge}
                 <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${tabName}">
                     <i data-lucide="tablet" class="w-4 h-4 text-teal-600 shrink-0"></i>
                     <span class="truncate max-w-[260px]">${tabName}</span>
@@ -846,6 +849,7 @@ function getDeviceSpecificationsHtml(dev) {
         const scName = model || 'High-Precision Optical Scanner';
         return `
             <div class="space-y-1">
+                ${brandBadge}
                 <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${scName}">
                     <i data-lucide="scan-barcode" class="w-4 h-4 text-rose-600 shrink-0"></i>
                     <span class="truncate max-w-[260px]">${scName}</span>
@@ -861,6 +865,7 @@ function getDeviceSpecificationsHtml(dev) {
     // 9. Generic / Other Hardware
     return `
         <div class="space-y-1">
+            ${brandBadge}
             <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900" title="${model || 'Hardware Asset'}">
                 <i data-lucide="package" class="w-4 h-4 text-slate-600 shrink-0"></i>
                 <span class="truncate max-w-[260px]">${model || 'Standard Hardware Peripheral'}</span>
