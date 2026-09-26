@@ -77,11 +77,12 @@ urlpatterns = [
     path('api/breakdown/delete/<int:pk>/', views.api_delete_breakdown, name='api_delete_breakdown'),
     path('api/breakdown/import-excel/', views.api_import_breakdown_excel, name='api_import_breakdown_excel'),
 
-    # Central Database Synchronization APIs
+    # Central Database Synchronization & Admin Maintenance APIs
     path('api/devices/', views.api_get_devices, name='api_get_devices'),
     path('api/devices/import-excel/', views.api_import_devices_excel, name='api_import_devices_excel'),
     path('api/devices/reassign/', views.api_reassign_device, name='api_reassign_device'),
     path('api/devices/save/', views.api_save_device, name='api_save_device'),
     path('api/audit-logs/', views.api_get_audit_logs, name='api_get_audit_logs'),
+    path('api/admin/clear-all-data/', views.api_clear_all_data, name='api_clear_all_data'),
 ]
 

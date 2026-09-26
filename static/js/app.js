@@ -28,7 +28,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & workstation sets
-    const CURRENT_CACHE_VERSION = "v8.0_clean_slate";
+    const CURRENT_CACHE_VERSION = "v9.0_clean_slate";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");

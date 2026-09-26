@@ -3258,3 +3258,65 @@ def api_import_devices_excel(request):
         'updated': updated_count,
         'message': f'Successfully imported {saved_count} device(s) ({created_count} registered, {updated_count} updated) into Inventory!'
     })
+
+
+@csrf_exempt
+def api_clear_all_data(request):
+    """
+    Administrator API & Web Trigger to completely purge all device inventory,
+    complaints, breakdown records, PMS schedules, and test accounts.
+    Allows 1-click clean slate directly from live deployment.
+    """
+    if not is_admin_authenticated(request):
+        return JsonResponse({
+            'success': False,
+            'error': 'Administrator authentication required. Please log into the Admin Console first.'
+        }, status=403)
+
+    if request.method not in ('POST', 'GET'):
+        return JsonResponse({'success': False, 'error': 'POST or GET method required.'}, status=405)
+
+    confirm = (request.POST.get('confirm') or request.GET.get('confirm') or '').strip().lower()
+    if confirm != 'yes':
+        return JsonResponse({
+            'success': False,
+            'error': "Confirmation required. Pass confirm='yes' to execute permanent data wipe."
+        }, status=400)
+
+    dev_count = DeviceAsset.objects.count()
+    trans_count = CustodyTransferLog.objects.count()
+    comp_count = DeviceComplaint.objects.count()
+    pms_count = EquipmentPMS.objects.count()
+    bd_count = EquipmentBreakdown.objects.count()
+
+    DeviceAsset.objects.all().delete()
+    CustodyTransferLog.objects.all().delete()
+    DeviceComplaint.objects.all().delete()
+    EquipmentPMS.objects.all().delete()
+    EquipmentBreakdown.objects.all().delete()
+
+    # Clean up non-admin test profiles & staff accounts while preserving administrative access
+    prof_count = UserProfile.objects.filter(user__is_staff=False, user__is_superuser=False).count()
+    UserProfile.objects.filter(user__is_staff=False, user__is_superuser=False).delete()
+    user_count = User.objects.filter(is_staff=False, is_superuser=False).count()
+    User.objects.filter(is_staff=False, is_superuser=False).delete()
+
+    msg = f"Successfully purged database to 100% clean slate: {dev_count} devices, {comp_count} complaints, {bd_count} breakdown records, {pms_count} PMS schedules deleted."
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json' or request.POST.get('format') == 'json' or request.GET.get('format') == 'json':
+        return JsonResponse({
+            'success': True,
+            'message': msg,
+            'counts': {
+                'devices': dev_count,
+                'transfers': trans_count,
+                'complaints': comp_count,
+                'pms': pms_count,
+                'breakdown': bd_count,
+                'test_profiles': prof_count,
+                'test_users': user_count
+            }
+        })
+
+    messages.success(request, msg)
+    return redirect('inventory')
