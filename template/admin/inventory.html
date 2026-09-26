@@ -235,7 +235,7 @@
                 </div>
             </div>
 
-            <!-- Center: View Mode Segmented Control (Workstation Sets vs Flat Table) -->
+            <!-- Right: View Mode Segmented Control (Workstation Sets vs Flat Table) -->
             <div class="inline-flex items-center p-1 bg-slate-200/90 rounded-xl border border-slate-300/80 shadow-2xs self-start lg:self-center">
                 <button type="button" id="btn-view-grouped" onclick="setInventoryViewMode('grouped')"
                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer">
@@ -247,28 +247,6 @@
                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
                     <i data-lucide="list" class="w-3.5 h-3.5 text-slate-500"></i>
                     <span>All Devices (Flat)</span>
-                </button>
-            </div>
-
-            <!-- Right: Mouse Cursor Horizontal Scroll Buttons -->
-            <div class="flex items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200 shadow-2xs self-start lg:self-center">
-                <button type="button" onclick="scrollTableHorizontally('inventory-table-tbody', -380)"
-                    title="Scroll Left with Mouse Cursor (or click & drag table)"
-                    class="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-200 text-slate-700 transition-all shadow-2xs active:scale-95 flex items-center gap-1 text-xs font-bold cursor-pointer">
-                    <i data-lucide="chevron-left" class="w-4 h-4 text-indigo-600"></i>
-                    <span>Scroll Left</span>
-                </button>
-                <span
-                    class="px-2.5 text-[11px] font-bold text-slate-500 hidden sm:flex items-center gap-1.5 select-none"
-                    title="Click anywhere on the table and drag left or right with your mouse">
-                    <i data-lucide="move-horizontal" class="w-3.5 h-3.5 text-indigo-500"></i>
-                    <span>Drag with cursor</span>
-                </span>
-                <button type="button" onclick="scrollTableHorizontally('inventory-table-tbody', 380)"
-                    title="Scroll Right with Mouse Cursor (or click & drag table)"
-                    class="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-200 text-slate-700 transition-all shadow-2xs active:scale-95 flex items-center gap-1 text-xs font-bold cursor-pointer">
-                    <span>Scroll Right</span>
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-indigo-600"></i>
                 </button>
             </div>
         </div>
