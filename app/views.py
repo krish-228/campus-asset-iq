@@ -566,8 +566,8 @@ def api_save_device(request):
                         item_cpu = printer_spec or ''
                         item_ram = ''
                         item_os = ''
-                        item_ip = ip_address or '-'
-                        item_mac = mac_address or '-'
+                        item_ip = '-'
+                        item_mac = '-'
                     elif comp_upper == 'UPS':
                         item_dev_type = 'UPS'
                         item_brand = ups_brand or brand_name or ''
@@ -584,8 +584,8 @@ def api_save_device(request):
                         item_cpu = tablet_spec or ''
                         item_ram = storage_ram
                         item_os = operating_system
-                        item_ip = ip_address or '-'
-                        item_mac = tablet_mac or mac_address or '-'
+                        item_ip = '-'
+                        item_mac = '-'
                     else:
                         item_dev_type = other_device_type or comp
                         item_brand = other_brand or brand_name or ''
@@ -928,16 +928,16 @@ def api_save_device(request):
                     item_cpu = tablet_spec or ''
                     item_ram = storage_ram if comp_upper == 'TABLET' else ''
                     item_os = operating_system if comp_upper == 'TABLET' else ''
-                    item_ip = ip_address or '-'
-                    item_mac = tablet_mac or mac_address or '-'
+                    item_ip = '-'
+                    item_mac = '-'
                 elif comp_upper == 'PRINTER':
                     item_dev_type = 'Printer'
                     item_brand = printer_brand or brand_name or ''
                     item_cpu = printer_spec or ''
                     item_ram = ''
                     item_os = ''
-                    item_ip = ip_address or '-'
-                    item_mac = mac_address or '-'
+                    item_ip = '-'
+                    item_mac = '-'
                 elif comp_upper == 'UPS':
                     item_dev_type = 'UPS'
                     item_brand = ups_brand or brand_name or ''

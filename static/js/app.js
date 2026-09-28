@@ -28,7 +28,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v12.0_clean_no_m_asset_tags";
+    const CURRENT_CACHE_VERSION = "v13.0_fix_printer_ip_mac";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -1272,15 +1272,15 @@ function expandCompositeWorkstation(dev, group) {
             sub.cpuProcessor = dev.tabletSpec || '';
             sub.storageRam = dev.storageRam || '';
             sub.operatingSystem = dev.operatingSystem || '';
-            sub.ipAddress = dev.ipAddress || '—';
-            sub.macAddress = dev.macAddress || '—';
+            sub.ipAddress = '—';
+            sub.macAddress = '—';
             sub.brandName = dev.tabletBrand || '';
         } else if (compUpper === 'PRINTER') {
             sub.cpuProcessor = dev.printerSpec || '';
             sub.storageRam = '';
             sub.operatingSystem = '';
-            sub.ipAddress = dev.ipAddress || '—';
-            sub.macAddress = dev.macAddress || '—';
+            sub.ipAddress = '—';
+            sub.macAddress = '—';
             sub.brandName = dev.printerBrand || '';
         } else if (compUpper === 'UPS') {
             sub.cpuProcessor = dev.upsSpec || '';
