@@ -370,15 +370,40 @@
                 <div>
                     <div class="relative">
                         <input type="text" id="input-asset-id" name="asset_id" required
-                            placeholder="e.g. PSM/IT/0926/001 or PSM/IT/0926/002"
+                            placeholder="e.g. PSM/IT/M/0826/001 or PSM/IT/0926/001"
                             class="mobile-input uppercase font-mono font-bold tracking-wide pr-10 text-base"
                             oninput="handleAssetIdInput(this)"
+                            list="existing-tags-datalist"
                             autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+                        <datalist id="existing-tags-datalist">
+                            {% for t in existing_tags %}
+                            <option value="{{ t }}"></option>
+                            {% endfor %}
+                        </datalist>
                         <span id="asset-id-status" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
                             <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
                         </span>
                     </div>
+
+                    <!-- Quick Suggestions from PostgreSQL Database -->
+                    {% if existing_tags %}
+                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2">
+                        <span class="text-[10px] text-slate-500 font-bold shrink-0 flex items-center gap-1">
+                            <i data-lucide="database" class="w-3 h-3 text-cyan-400"></i>
+                            <span>Load Existing:</span>
+                        </span>
+                        {% for t in existing_tags|slice:":10" %}
+                        <button type="button" onclick="selectExistingAssetTag('{{ t }}')"
+                            class="px-2 py-0.5 rounded-lg bg-cyan-950/70 hover:bg-cyan-900/80 active:scale-95 text-cyan-300 font-mono text-[11px] font-bold border border-cyan-800/60 shrink-0 transition-all shadow-sm">
+                            {{ t }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
                     <div id="asset-id-warning" class="text-[11px] text-rose-400 font-semibold mt-1.5 hidden flex items-center gap-1.5"></div>
+                    <div id="asset-id-info" class="text-[11px] text-emerald-400 font-medium mt-1.5 hidden flex items-center gap-1.5"></div>
+
                     <!-- Existing Asset Edit Mode Banner -->
                     <div id="asset-id-edit-badge" class="hidden mt-2 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs flex items-center justify-between animate-in fade-in duration-200">
                         <div class="flex items-center gap-2">
@@ -1587,23 +1612,24 @@
 
         function handleAssetIdInput(input) {
             let val = (input.value || '').toUpperCase();
-            // Automatically strip any legacy type letter (e.g. PSM/IT/M/0926/002 -> PSM/IT/0926/002)
-            val = val.replace(/^PSM\/IT\/[A-Z]\/(\d{4}\/\d*)$/, 'PSM/IT/$1');
             const parts = val.split('/');
             let exceeded = false;
 
-            if (parts.length >= 4) {
-                const rawSeq = parts[3];
-                // Allow only numeric digits in the sequence part
+            // Determine sequence index:
+            // For 5 parts (e.g. PSM/IT/M/0826/001) -> seq is parts[4]
+            // For 4 parts (e.g. PSM/IT/0826/001) -> seq is parts[3]
+            const seqIndex = parts.length >= 5 ? 4 : (parts.length === 4 ? 3 : -1);
+
+            if (seqIndex !== -1 && parts[seqIndex] !== undefined) {
+                const rawSeq = parts[seqIndex];
                 const cleanSeq = rawSeq.replace(/[^0-9]/g, '');
                 if (cleanSeq.length > 3) {
-                    parts[3] = cleanSeq.slice(0, 3);
+                    parts[seqIndex] = cleanSeq.slice(0, 3);
                     exceeded = true;
                 } else {
-                    parts[3] = cleanSeq;
+                    parts[seqIndex] = cleanSeq;
                 }
-                // Discard any 5th segment or trailing slashes
-                val = parts.slice(0, 4).join('/');
+                val = parts.slice(0, seqIndex + 1).join('/');
                 input.value = val;
             }
 
@@ -1620,22 +1646,21 @@
 
             // Restrict sequence segment to maximum 3 digits upon keystroke
             assetInput.addEventListener('keydown', function(e) {
-                // Allow control & navigation keys
                 if (['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape', 'Home', 'End'].includes(e.key) || e.ctrlKey || e.metaKey || e.altKey) {
                     return;
                 }
 
                 const val = this.value;
                 const parts = val.split('/');
-                if (parts.length >= 4) {
+                const seqIndex = parts.length >= 5 ? 4 : (parts.length === 4 ? 3 : -1);
+                if (seqIndex !== -1) {
                     const selStart = this.selectionStart;
                     const selEnd = this.selectionEnd;
-                    const prefixLen = parts.slice(0, 3).join('/').length + 1; // index after the 3rd slash (PSM/IT/MMYY/)
+                    const prefixLen = parts.slice(0, seqIndex).join('/').length + 1;
 
-                    // If typing inside or at the end of the 4th segment
+                    // If typing inside or at the end of the sequence segment
                     if (selStart >= prefixLen && selStart === selEnd) {
-                        const curSeq = parts[3] || '';
-                        // If already 3 digits and user is typing a character, reject keystroke!
+                        const curSeq = parts[seqIndex] || '';
                         if (curSeq.length >= 3 && e.key.length === 1) {
                             e.preventDefault();
                             showSequenceDigitWarning("Only 3 digits allowed in unique sequence (e.g. 001–999). More than 3 digits not accepted.");
@@ -1648,15 +1673,25 @@
             // On blur: auto-pad if 1 or 2 digits entered (e.g. 7 -> 007)
             assetInput.addEventListener('blur', function() {
                 const parts = this.value.trim().split('/');
-                if (parts.length === 4 && parts[3] && /^\d+$/.test(parts[3])) {
-                    if (parts[3].length < 3) {
-                        parts[3] = parts[3].padStart(3, '0');
+                const seqIndex = parts.length >= 5 ? 4 : (parts.length === 4 ? 3 : -1);
+                if (seqIndex !== -1 && parts[seqIndex] && /^\d+$/.test(parts[seqIndex])) {
+                    if (parts[seqIndex].length < 3) {
+                        parts[seqIndex] = parts[seqIndex].padStart(3, '0');
                         this.value = parts.join('/');
                         validateAssetId(this.value);
                         saveDraft();
                     }
                 }
             });
+        }
+
+        function selectExistingAssetTag(tag) {
+            const input = document.getElementById('input-asset-id');
+            if (input) {
+                input.value = tag;
+                validateAssetId(tag);
+                if (navigator.vibrate) navigator.vibrate([20, 20]);
+            }
         }
 
         // Auto Generate Asset Tag (PSM/IT/<MMYY>/<XXX>)
@@ -1712,6 +1747,7 @@
             const clean = (val || '').trim().toUpperCase();
             const statusIcon = document.getElementById('asset-id-status');
             const warningEl = document.getElementById('asset-id-warning');
+            const infoEl = document.getElementById('asset-id-info');
             const submitBtn = document.getElementById('btn-submit');
 
             if (!clean || clean.length < 3) {
@@ -1720,13 +1756,18 @@
                     warningEl.classList.add('hidden');
                     warningEl.innerHTML = '';
                 }
+                if (infoEl) {
+                    infoEl.classList.add('hidden');
+                    infoEl.innerHTML = '';
+                }
                 return;
             }
 
             // Check if sequence part exceeds 3 digits
             const parts = clean.split('/');
-            if (parts.length >= 4) {
-                const seq = parts[parts.length === 4 ? 3 : 4];
+            const seqIndex = parts.length >= 5 ? 4 : (parts.length === 4 ? 3 : -1);
+            if (seqIndex !== -1 && parts[seqIndex]) {
+                const seq = parts[seqIndex];
                 if (seq.length > 3) {
                     if (statusIcon) {
                         statusIcon.classList.remove('hidden');
@@ -1736,6 +1777,7 @@
                         warningEl.classList.remove('hidden');
                         warningEl.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-400"></i> <span>Sequence code cannot exceed 3 digits (e.g. 001 to 999). Only 3 digits are accepted.</span>`;
                     }
+                    if (infoEl) infoEl.classList.add('hidden');
                     if (submitBtn) {
                         submitBtn.disabled = true;
                         submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -1768,12 +1810,18 @@
                             warningEl.classList.remove('hidden');
                             warningEl.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-400"></i> <span>${data.message || 'Invalid sequence format.'}</span>`;
                         }
+                        if (infoEl) infoEl.classList.add('hidden');
                         if (submitBtn) {
                             submitBtn.disabled = true;
                             submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
                         }
                     } else if (data.exists && data.device) {
                         // Existing asset found in PostgreSQL -> Automatically fetch and enter Edit & Update Mode!
+                        if (warningEl) {
+                            warningEl.classList.add('hidden');
+                            warningEl.innerHTML = '';
+                        }
+                        if (infoEl) infoEl.classList.add('hidden');
                         enterEditModeWithDevice(data.device);
                     } else {
                         // 100% Unique and available for new enrollment!
@@ -1787,6 +1835,10 @@
                         if (warningEl) {
                             warningEl.classList.add('hidden');
                             warningEl.innerHTML = '';
+                        }
+                        if (infoEl) {
+                            infoEl.classList.remove('hidden');
+                            infoEl.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 shrink-0 text-emerald-400"></i> <span>Available for new registration: <strong>${clean}</strong> (not in DB yet).</span>`;
                         }
                         if (submitBtn) {
                             submitBtn.disabled = false;
@@ -1812,6 +1864,10 @@
         function enterEditModeWithDevice(dev) {
             isEditMode = true;
             loadedAssetId = dev.asset_id;
+
+            // Ensure input displays canonical database tag
+            const assetInput = document.getElementById('input-asset-id');
+            if (assetInput) assetInput.value = dev.asset_id;
 
             // 1. Update Top Bar Title
             const titleEl = document.getElementById('page-title');
@@ -1993,6 +2049,12 @@
             const editBadge = document.getElementById('asset-id-edit-badge');
             if (editBadge) editBadge.classList.add('hidden');
 
+            const infoEl = document.getElementById('asset-id-info');
+            if (infoEl) {
+                infoEl.classList.add('hidden');
+                infoEl.innerHTML = '';
+            }
+
             const submitBtn = document.getElementById('btn-submit');
             const submitText = document.getElementById('btn-submit-text');
             const submitIcon = document.getElementById('btn-submit-icon');
@@ -2013,6 +2075,11 @@
             if (warningEl) {
                 warningEl.classList.add('hidden');
                 warningEl.innerHTML = '';
+            }
+            const infoEl = document.getElementById('asset-id-info');
+            if (infoEl) {
+                infoEl.classList.add('hidden');
+                infoEl.innerHTML = '';
             }
             if (navigator.vibrate) navigator.vibrate(20);
         }

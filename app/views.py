@@ -438,6 +438,19 @@ def api_save_device(request):
         dev = DeviceAsset.objects.filter(dev_id=edit_id).first() or DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
     else:
         dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
+        if not dev and asset_id:
+            # Flexible variant lookup (e.g. PSM/IT/0826/001 <-> PSM/IT/M/0826/001)
+            parts = asset_id.split('/')
+            if len(parts) == 4 and parts[0].upper() == 'PSM' and parts[1].upper() == 'IT':
+                dev = DeviceAsset.objects.filter(asset_id__iexact=f"PSM/IT/M/{parts[2]}/{parts[3]}").first()
+                if not dev:
+                    dev = DeviceAsset.objects.filter(asset_id__iregex=rf"^PSM/IT/[A-Z]/{parts[2]}/{parts[3]}$").first()
+            elif len(parts) == 5 and parts[0].upper() == 'PSM' and parts[1].upper() == 'IT':
+                dev = DeviceAsset.objects.filter(asset_id__iexact=f"PSM/IT/{parts[3]}/{parts[4]}").first()
+
+    if dev and is_edit_request:
+        # Align asset_id with the actual DB asset_id if it was resolved via variant
+        asset_id = dev.asset_id
 
     if dev and not is_edit_request:
         return JsonResponse({
@@ -2085,6 +2098,8 @@ def mobile_add_device_view(request):
         ]
 
 
+    existing_tags = sorted(list(set(DeviceAsset.objects.values_list('asset_id', flat=True))))
+
     context = {
         'today_str': today_str,
         'warranty_str': warranty_str,
@@ -2093,6 +2108,8 @@ def mobile_add_device_view(request):
         'rooms': rooms,
         'staff_list': staff_list,
         'staff_list_json': json.dumps(staff_list, default=str),
+        'existing_tags': existing_tags,
+        'existing_tags_json': json.dumps(existing_tags),
         'selected_org': 'HOSP',
     }
     response = render(request, "admin/mobile_add_device.html", context)
@@ -2183,8 +2200,36 @@ def serialize_device_for_mobile_edit(asset_id):
     Serializes a complete workstation or standalone hardware device from PostgreSQL
     for automatic pre-filling and editing in the Mobile Provisioning Portal.
     Extracts all 24-column hardware specs across multi-component rows under this asset_id.
+    Supports smart flexible matching for both 4-part (PSM/IT/0826/001) and 5-part (PSM/IT/M/0826/001) formats.
     """
-    matching_devs = list(DeviceAsset.objects.filter(asset_id__iexact=asset_id).order_by('id'))
+    clean_id = (asset_id or '').strip()
+    if not clean_id:
+        return None
+
+    # 1. Direct exact match
+    matching_devs = list(DeviceAsset.objects.filter(asset_id__iexact=clean_id).order_by('id'))
+
+    # 2. Smart variations match (e.g. PSM/IT/0826/001 <-> PSM/IT/M/0826/001)
+    if not matching_devs:
+        parts = clean_id.split('/')
+        candidates = []
+        if len(parts) == 4 and parts[0].upper() == 'PSM' and parts[1].upper() == 'IT':
+            mmyy, seq = parts[2], parts[3]
+            candidates.append(f"PSM/IT/M/{mmyy}/{seq}")
+            # Also search any single middle letter in DB
+            for row in DeviceAsset.objects.filter(asset_id__iregex=rf"^PSM/IT/[A-Z]/{mmyy}/{seq}$").order_by('id'):
+                if row.asset_id not in candidates:
+                    candidates.append(row.asset_id)
+        elif len(parts) == 5 and parts[0].upper() == 'PSM' and parts[1].upper() == 'IT':
+            mmyy, seq = parts[3], parts[4]
+            candidates.append(f"PSM/IT/{mmyy}/{seq}")
+
+        for cand in candidates:
+            devs = list(DeviceAsset.objects.filter(asset_id__iexact=cand).order_by('id'))
+            if devs:
+                matching_devs = devs
+                break
+
     if not matching_devs:
         return None
 
@@ -2439,7 +2484,7 @@ def api_check_asset_id(request):
         'exists': False,
         'valid': True,
         'asset_id': asset_id,
-        'message': "Tag is available & unique."
+        'message': f'Tag "{asset_id}" is unique & ready for new hardware registration.'
     })
 
 @admin_required
