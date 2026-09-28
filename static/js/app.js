@@ -28,7 +28,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v13.0_fix_printer_ip_mac";
+    const CURRENT_CACHE_VERSION = "v14.0_device_specific_spec_boxes";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -3830,51 +3830,189 @@ function populateDetailModalCustodian(user, dev, isUnassigned) {
     }
 }
 
+function buildDynamicDeviceSpecsGridHtml(dev, locationStr) {
+    const rawType = (dev.deviceType || dev.device_type || 'CPU').trim();
+    const t = rawType.toUpperCase();
+
+    function makeCard(icon, iconColor, label, value, valueClass = 'font-extrabold text-slate-900', colSpan = '') {
+        const valStr = String(value || '—').trim() || '—';
+        return `
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors ${colSpan}">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
+                    <i data-lucide="${icon}" class="w-3.5 h-3.5 ${iconColor} shrink-0"></i>
+                    <span>${label}</span>
+                </div>
+                <div class="text-xs ${valueClass} truncate" title="${valStr}">${valStr}</div>
+            </div>
+        `;
+    }
+
+    // 1. KEYBOARD
+    if (t.includes('KEYBOARD') || t === 'K' || t === 'KB') {
+        const kbModel = (dev.keyboardSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || 'USB Multimedia Wired Keyboard';
+        return [
+            makeCard('keyboard', 'text-amber-600', 'Keyboard Model & Specs', kbModel, 'font-extrabold text-slate-900'),
+            makeCard('cable', 'text-sky-600', 'Connectivity & Interface', 'USB Wired Interface (Plug & Play)'),
+            makeCard('layout-grid', 'text-indigo-600', 'Key Layout & Architecture', 'Standard 104-Key QWERTY • Spill-Resistant Membrane'),
+            makeCard('check-circle-2', 'text-emerald-600', 'Hardware Status', 'Active Workstation Input Peripheral', 'font-bold text-emerald-700'),
+            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+        ].join('');
+    }
+
+    // 2. MOUSE
+    if (t.includes('MOUSE') || t === 'M') {
+        const mouseModel = (dev.mouseSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || 'USB Cleanable Optical Mouse';
+        return [
+            makeCard('mouse', 'text-purple-600', 'Mouse Model & Sensor', mouseModel, 'font-extrabold text-slate-900'),
+            makeCard('target', 'text-sky-600', 'Tracking & Resolution', '1000 DPI Optical Engine • 3-Button with Scroll'),
+            makeCard('shield-check', 'text-teal-600', 'Interface & Sanitation', 'USB Wired • Hospital Cleanable & Spill-Resistant'),
+            makeCard('check-circle-2', 'text-emerald-600', 'Hardware Status', 'Active Workstation Pointer Peripheral', 'font-bold text-emerald-700'),
+            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+        ].join('');
+    }
+
+    // 3. DISPLAY / MONITOR / SCREEN
+    if (t.includes('DISPLAY') || t.includes('MONITOR') || t.includes('SCREEN') || t === 'D') {
+        const dispModel = (dev.monitorSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || '24" Full HD (1920x1080) LED Display';
+        return [
+            makeCard('monitor', 'text-indigo-600', 'Display Panel & Resolution', dispModel, 'font-extrabold text-slate-900'),
+            makeCard('tv', 'text-sky-600', 'Panel Technology', 'LED Backlit IPS Panel • 60Hz Refresh Rate'),
+            makeCard('cable', 'text-teal-600', 'Video Connectivity', 'HDMI / VGA / DisplayPort Direct Stream'),
+            makeCard('activity', 'text-emerald-600', 'Display Signal & Duty', 'Active Video Signal • Clinical / Office Grade', 'font-bold text-emerald-700'),
+            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+        ].join('');
+    }
+
+    // 4. PRINTER / BARCODE PRINTER
+    if (t.includes('PRINTER') || t.includes('PRT') || t === 'P') {
+        const prtModel = (dev.printerSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || 'Document / Barcode Printer';
+        const isNet = dev.ipAddress && dev.ipAddress !== '—' && dev.ipAddress !== '-' && dev.ipAddress !== 'N/A';
+        const connText = isNet ? `Network Ethernet (IP: ${dev.ipAddress})` : 'High-Speed USB Direct Console Port';
+        const isBarcode = t.includes('BARCODE') || prtModel.toLowerCase().includes('barcode') || prtModel.toLowerCase().includes('zebra') || prtModel.toLowerCase().includes('tsc');
+        return [
+            makeCard('printer', 'text-emerald-600', 'Printer Model & Type', prtModel, 'font-extrabold text-slate-900'),
+            makeCard('file-text', 'text-teal-600', 'Print Engine & Technology', isBarcode ? 'Direct Thermal / Thermal Transfer Barcode Engine' : 'High-Speed Laser / Ink Document Engine'),
+            makeCard('network', 'text-sky-600', 'Connectivity & Port', connText, isNet ? 'font-mono font-bold text-blue-700' : 'font-bold text-slate-800'),
+            makeCard('package', 'text-amber-600', 'Media & Feed Support', isBarcode ? 'Clinical Specimen & Barcode Wristband Rolls' : 'Standard A4 / Prescription & Document Feed'),
+            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+        ].join('');
+    }
+
+    // 5. BARCODE SCANNER / BIOMETRIC / EYE SCANNER
+    if (t.includes('SCANNER') || t.includes('BARCODE') || t.includes('BIOMETRIC') || t.includes('EYE')) {
+        const scnModel = (dev.cpuProcessor || dev.otherSpec || dev.modelSpecs || '').trim() || '1D/2D High-Speed Optical Scanner';
+        return [
+            makeCard('scan-barcode', 'text-rose-600', 'Scanner Engine & Optics', scnModel, 'font-extrabold text-slate-900'),
+            makeCard('qr-code', 'text-indigo-600', 'Supported Symbologies', '1D Barcodes, 2D QR Codes, PDF417 & DataMatrix'),
+            makeCard('cable', 'text-sky-600', 'Interface & Connectivity', 'USB HID Keyboard Wedge (Instant Plug & Play)'),
+            makeCard('zap', 'text-amber-600', 'Scan Trigger & Speed', 'Instant 300 scans/sec Omni-Directional Capture'),
+            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+        ].join('');
+    }
+
+    // 6. UPS (POWER BACKUP)
+    if (t.includes('UPS') || t.includes('POWER') || t.includes('INVERTER') || t === 'U') {
+        const upsModel = (dev.upsSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || '600VA / 360W Line-Interactive UPS';
+        return [
+            makeCard('zap', 'text-amber-600', 'Power Capacity & Rating', upsModel, 'font-extrabold text-slate-900'),
+            makeCard('shield-check', 'text-emerald-600', 'Topology & Protection', 'Automatic Voltage Regulation (AVR) • Surge Protection'),
+            makeCard('battery-charging', 'text-orange-600', 'Internal Battery Bank', '12V / 7Ah Sealed Maintenance-Free Lead-Acid'),
+            makeCard('plug', 'text-sky-600', 'Protected Outlets', '3x Universal Protected Output Sockets'),
+            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+        ].join('');
+    }
+
+    // 7. TABLET / IPAD
+    if (t.includes('TABLET') || t.includes('TAB') || t.includes('IPAD') || t === 'T') {
+        const tabModel = (dev.tabletSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || '10.5" Touchscreen Clinical Tablet';
+        const isWifi = dev.ipAddress && dev.ipAddress !== '—' && dev.ipAddress !== '-' && dev.ipAddress !== 'N/A';
+        return [
+            makeCard('tablet', 'text-teal-600', 'Tablet Model & Screen', tabModel, 'font-extrabold text-slate-900'),
+            makeCard('terminal', 'text-indigo-600', 'Operating System', dev.operatingSystem || 'Android 13 / iPadOS Enterprise'),
+            makeCard('hard-drive', 'text-purple-600', 'Storage & Memory', dev.storageRam || '64GB / 128GB Flash Storage'),
+            makeCard('wifi', 'text-emerald-600', 'Wireless Connectivity', isWifi ? `Wi-Fi IP: ${dev.ipAddress}` : 'Wi-Fi 802.11ac Dual-Band • Bluetooth 5.0'),
+            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+        ].join('');
+    }
+
+    // 8. DEFAULT: CPU / DESKTOP / PC / WORKSTATION / LAPTOP
+    const cpuModel = (dev.cpuProcessor || dev.modelSpecs || '').trim() || 'Workstation Compute Engine';
+    const ramSpec = (dev.storageRam || '').trim() || 'Standard Memory Configuration';
+    const osSpec = (dev.operatingSystem || '').trim() || 'Windows 11 Pro Medical Edition';
+    const dispSpec = (dev.monitorSpec || '').trim() || 'External FHD Video Display';
+    const ipSpec = (dev.ipAddress && dev.ipAddress !== '-' && dev.ipAddress !== 'N/A') ? dev.ipAddress : '—';
+    const macSpec = (dev.macAddress && dev.macAddress !== '-' && dev.macAddress !== 'N/A') ? dev.macAddress : '—';
+    const anydeskSpec = (dev.anydeskId && dev.anydeskId !== '-' && dev.anydeskId !== 'N/A') ? dev.anydeskId : 'Direct Physical Console';
+
+    return [
+        makeCard('cpu', 'text-blue-600', 'Processor (CPU)', cpuModel, 'font-extrabold text-slate-900'),
+        makeCard('hard-drive', 'text-indigo-600', 'Storage & RAM Memory', ramSpec, 'font-mono font-bold text-slate-900'),
+        makeCard('terminal', 'text-teal-600', 'Operating System', osSpec, 'font-bold text-slate-900'),
+        makeCard('monitor', 'text-purple-600', 'Connected Display Spec', dispSpec),
+        makeCard('network', 'text-emerald-600', 'Network IP Address', ipSpec, 'font-mono font-black text-blue-700'),
+        makeCard('binary', 'text-slate-500', 'MAC Address', macSpec, 'font-mono font-bold text-slate-700'),
+        makeCard('monitor-dot', 'text-rose-500', 'AnyDesk Remote ID', anydeskSpec, 'font-mono font-bold text-slate-800'),
+        makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+    ].join('');
+}
+
 function renderDetailModalActiveSpecs(dev) {
     const rawType = (dev.deviceType || '').trim() || 'Workstation Component';
     const specNameEl = document.getElementById("devmodal-target-spec-name");
     if (specNameEl) specNameEl.textContent = `(${rawType})`;
 
     const brandEl = document.getElementById("devmodal-spec-brand-badge");
-    if (brandEl) brandEl.textContent = dev.brandName || dev.brand || 'Enterprise Medical Grade';
+    if (brandEl) {
+        let b = (dev.brandName || dev.brand || '').trim();
+        if (!b || b === '—' || b === '-' || b.toUpperCase() === 'STANDARD OEM' || b.toUpperCase() === 'N/A') {
+            b = 'Enterprise Hardware';
+        }
+        brandEl.textContent = b;
+    }
 
     const serialEl = document.getElementById("devmodal-spec-serial-badge");
     if (serialEl) serialEl.textContent = dev.serialNumber ? `SN: ${dev.serialNumber}` : 'SN: —';
 
-    const cpuEl = document.getElementById("devmodal-cpu");
-    if (cpuEl) cpuEl.textContent = dev.cpuProcessor || 'Workstation Processing Unit';
+    // Compute location string
+    const room = appState.rooms ? appState.rooms.find(r => r.id === dev.roomId) : null;
+    const floor = room && appState.floors ? appState.floors.find(f => f.id === room.floorId) : null;
+    const floorStr = dev.floorName || (floor ? floor.name : 'Floor Level');
+    const roomStr = dev.roomName || (room ? `${room.roomNumber ? `Rm ${room.roomNumber} - ` : ''}${room.name}` : 'Clinical Room');
+    const locationStr = `${floorStr} • ${roomStr}`;
 
-    const ramEl = document.getElementById("devmodal-ram");
-    if (ramEl) ramEl.textContent = dev.storageRam || 'Standard Memory Configuration';
+    const gridEl = document.getElementById("devmodal-specs-grid");
+    if (gridEl) {
+        gridEl.innerHTML = buildDynamicDeviceSpecsGridHtml(dev, locationStr);
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+    } else {
+        // Fallback for legacy static DOM
+        const cpuEl = document.getElementById("devmodal-cpu");
+        if (cpuEl) cpuEl.textContent = dev.cpuProcessor || 'Workstation Processing Unit';
 
-    const osEl = document.getElementById("devmodal-os");
-    if (osEl) osEl.textContent = dev.operatingSystem || 'Windows 11 Pro Medical Edition';
+        const ramEl = document.getElementById("devmodal-ram");
+        if (ramEl) ramEl.textContent = dev.storageRam || 'Standard Memory Configuration';
 
-    const displayEl = document.getElementById("devmodal-display");
-    if (displayEl) {
-        if (dev.deviceType === 'Display') {
-            displayEl.textContent = dev.monitorSpec || dev.cpuProcessor || '24-inch Cleanable Touch FHD';
-        } else {
+        const osEl = document.getElementById("devmodal-os");
+        if (osEl) osEl.textContent = dev.operatingSystem || 'Windows 11 Pro Medical Edition';
+
+        const displayEl = document.getElementById("devmodal-display");
+        if (displayEl) {
             displayEl.textContent = dev.monitorSpec || 'Connected Video Display Stream';
         }
-    }
 
-    const ipEl = document.getElementById("devmodal-ip");
-    if (ipEl) ipEl.textContent = dev.ipAddress || '—';
+        const ipEl = document.getElementById("devmodal-ip");
+        if (ipEl) ipEl.textContent = dev.ipAddress || '—';
 
-    const macEl = document.getElementById("devmodal-mac");
-    if (macEl) macEl.textContent = dev.macAddress || '—';
+        const macEl = document.getElementById("devmodal-mac");
+        if (macEl) macEl.textContent = dev.macAddress || '—';
 
-    const anydeskEl = document.getElementById("devmodal-anydesk");
-    if (anydeskEl) anydeskEl.textContent = dev.anydeskId || 'Direct Physical Console';
+        const anydeskEl = document.getElementById("devmodal-anydesk");
+        if (anydeskEl) anydeskEl.textContent = dev.anydeskId || 'Direct Physical Console';
 
-    const locEl = document.getElementById("devmodal-location-text");
-    if (locEl) {
-        const room = appState.rooms ? appState.rooms.find(r => r.id === dev.roomId) : null;
-        const floor = room && appState.floors ? appState.floors.find(f => f.id === room.floorId) : null;
-        const floorStr = dev.floorName || (floor ? floor.name : 'Floor Level');
-        const roomStr = dev.roomName || (room ? `${room.roomNumber ? `Rm ${room.roomNumber} - ` : ''}${room.name}` : 'Clinical Room');
-        locEl.textContent = `${floorStr} • ${roomStr}`;
+        const locEl = document.getElementById("devmodal-location-text");
+        if (locEl) locEl.textContent = locationStr;
     }
 }
 
@@ -3898,6 +4036,9 @@ function renderDetailModalLinkedDevices(linkedDevices, currentDevId) {
         else if (type === 'Keyboard') specSnippet = item.keyboardSpec || item.cpuProcessor || 'Spill-Proof Keyboard';
         else if (type === 'Mouse') specSnippet = item.mouseSpec || item.cpuProcessor || 'USB Cleanable Optical';
         else if (type === 'Printer') specSnippet = item.printerSpec || item.cpuProcessor || 'Medical Document Printer';
+        else if (type === 'UPS') specSnippet = item.upsSpec || item.cpuProcessor || 'Line-Interactive Power Backup';
+        else if (type === 'Tablet') specSnippet = item.tabletSpec || item.cpuProcessor || 'Clinical Tablet Terminal';
+        else if (type.includes('Scanner') || type.includes('Barcode')) specSnippet = item.cpuProcessor || 'Optical Barcode Scanner';
 
         html += `
             <div onclick="selectDetailModalDevice('${item.id}')" 
