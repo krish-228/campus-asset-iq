@@ -1821,7 +1821,12 @@
                             warningEl.classList.add('hidden');
                             warningEl.innerHTML = '';
                         }
-                        if (infoEl) infoEl.classList.add('hidden');
+                        const devSeq = data.device.asset_id.split('/').pop();
+                        if (infoEl) {
+                            infoEl.classList.remove('hidden');
+                            infoEl.className = 'text-[11px] text-amber-400 font-semibold mt-1.5 flex items-center gap-1.5';
+                            infoEl.innerHTML = `<i data-lucide="alert-triangle" class="w-3.5 h-3.5 shrink-0 text-amber-400"></i> <span>Hardware #${devSeq} is already in the database (${data.device.asset_id}). Cannot be registered as new — loaded for editing & updating.</span>`;
+                        }
                         enterEditModeWithDevice(data.device);
                     } else {
                         // 100% Unique and available for new enrollment!
@@ -1838,6 +1843,7 @@
                         }
                         if (infoEl) {
                             infoEl.classList.remove('hidden');
+                            infoEl.className = 'text-[11px] text-emerald-400 font-medium mt-1.5 flex items-center gap-1.5';
                             infoEl.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 shrink-0 text-emerald-400"></i> <span>Available for new registration: <strong>${clean}</strong> (not in DB yet).</span>`;
                         }
                         if (submitBtn) {
@@ -1888,7 +1894,8 @@
                 editBadge.classList.remove('hidden');
             }
             if (editDesc) {
-                editDesc.innerHTML = `<strong>Existing Asset Found:</strong> <span>Loaded ${dev.device_type} in ${dev.room_name} (${dev.floor_name}). Edit fields & click Update.</span>`;
+                const seq = dev.asset_id.split('/').pop();
+                editDesc.innerHTML = `<strong>Existing Asset #${seq} Found (Cannot Register as New):</strong> <span>Loaded ${dev.device_type} in Room ${dev.room_name} (${dev.floor_name}). Modify fields & click Update below.</span>`;
             }
             if (statusIcon) {
                 statusIcon.classList.remove('hidden');

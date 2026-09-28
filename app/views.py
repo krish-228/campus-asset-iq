@@ -448,14 +448,21 @@ def api_save_device(request):
             elif len(parts) == 5 and parts[0].upper() == 'PSM' and parts[1].upper() == 'IT':
                 dev = DeviceAsset.objects.filter(asset_id__iexact=f"PSM/IT/{parts[3]}/{parts[4]}").first()
 
+            # Global sequence lookup (e.g. sequence 007 is already registered as Device #7)
+            if not dev and parts:
+                last = parts[-1]
+                if last.isdigit():
+                    seq_val = f"{int(last):03d}"
+                    dev = DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}").first()
+
     if dev and is_edit_request:
-        # Align asset_id with the actual DB asset_id if it was resolved via variant
+        # Align asset_id with the actual DB asset_id if it was resolved via variant or sequence
         asset_id = dev.asset_id
 
     if dev and not is_edit_request:
         return JsonResponse({
             'success': False,
-            'message': f'Asset Tag "{asset_id}" is already registered to {dev.device_type} in {dev.room_name}. Please click "Auto Generate" for the next unique code.'
+            'message': f'Hardware #{dev.asset_id.split("/")[-1]} is ALREADY registered in the database ({dev.asset_id} — {dev.device_type} in Room {dev.room_name}). It CANNOT be registered as a new device! Please click "Auto Generate" for the next available new sequence number, or edit this existing device.'
         }, status=409)
 
     # Determine multi-component workstation composition
@@ -2136,24 +2143,22 @@ def api_generate_asset_id(request):
     mmyy = now.strftime("%m%y")  # e.g. "0926"
     prefix = f"PSM/IT/{mmyy}/"
 
-    # Scan ALL existing tags in PostgreSQL to guarantee global uniqueness
+    # Scan ALL existing tags in PostgreSQL to guarantee global uniqueness across all batches
     all_tags = list(DeviceAsset.objects.all().values_list('asset_id', flat=True))
     used_numbers = set()
 
     for tag in all_tags:
         tag_str = str(tag).strip().upper()
-        # 1. Match /{mmyy}/(\d+)
-        m = re.search(rf'/{mmyy}/(\d+)', tag_str)
+        parts = tag_str.split('/')
+        if parts and parts[-1].isdigit():
+            try:
+                used_numbers.add(int(parts[-1]))
+            except ValueError:
+                pass
+        m = re.search(r'/(\d{3,})$', tag_str)
         if m:
             try:
                 used_numbers.add(int(m.group(1)))
-            except ValueError:
-                pass
-        # 2. Match standard 4-part structure PSM/IT/<MMYY>/<XXX>
-        parts = tag_str.split('/')
-        if len(parts) >= 4 and (parts[2] == mmyy or (len(parts) >= 5 and parts[3] == mmyy)):
-            try:
-                used_numbers.add(int(parts[-1]))
             except ValueError:
                 pass
 
@@ -2229,6 +2234,18 @@ def serialize_device_for_mobile_edit(asset_id):
             if devs:
                 matching_devs = devs
                 break
+
+    # 3. Global hardware sequence lookup (e.g. if user types PSM/IT/0926/007, 007, or 7, find existing Device #7)
+    if not matching_devs:
+        parts = clean_id.split('/')
+        if parts:
+            last = parts[-1].strip()
+            if last.isdigit():
+                seq_num = int(last)
+                seq_val = f"{seq_num:03d}"
+                devs = list(DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}").order_by('id'))
+                if devs:
+                    matching_devs = devs
 
     if not matching_devs:
         return None
@@ -2476,7 +2493,7 @@ def api_check_asset_id(request):
             'device_type': dev_data['device_type'],
             'location': f"{dev_data['room_name']} ({dev_data['floor_name']})",
             'status': dev_data['status'],
-            'message': f"Existing asset found: {dev_data['device_type']} in {dev_data['room_name']}.",
+            'message': f"Existing hardware #{dev_data['asset_id'].split('/')[-1]} found in database ({dev_data['asset_id']}). Cannot be registered as new — loaded for editing & updating.",
             'device': dev_data
         })
 
