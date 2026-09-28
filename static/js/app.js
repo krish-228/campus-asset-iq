@@ -3830,6 +3830,77 @@ function populateDetailModalCustodian(user, dev, isUnassigned) {
     }
 }
 
+function resolveDeviceDbBrand(dev) {
+    if (!dev) return '—';
+    const rawType = (dev.deviceType || dev.device_type || '').toUpperCase();
+    let b = (dev.brandName || dev.brand || dev.brand_name || '').trim();
+
+    // Check specific brand fields if populated
+    if (!b || b === '—' || b === '-' || b.toUpperCase() === 'STANDARD OEM' || b.toUpperCase() === 'N/A') {
+        if (rawType.includes('KEYBOARD')) b = (dev.keyboardBrand || '').trim();
+        else if (rawType.includes('MOUSE')) b = (dev.mouseBrand || '').trim();
+        else if (rawType.includes('DISPLAY') || rawType.includes('MONITOR')) b = (dev.monitorBrand || '').trim();
+        else if (rawType.includes('PRINTER')) b = (dev.printerBrand || '').trim();
+        else if (rawType.includes('UPS')) b = (dev.upsBrand || '').trim();
+        else if (rawType.includes('TABLET')) b = (dev.tabletBrand || '').trim();
+        else if (rawType.includes('CPU')) b = (dev.cpuBrand || '').trim();
+        else if (rawType.includes('OTHER') || rawType.includes('CUSTOM')) b = (dev.otherBrand || '').trim();
+    }
+
+    // Check parent workstation if composite sub-item
+    if ((!b || b === '—' || b === '-' || b.toUpperCase() === 'STANDARD OEM' || b.toUpperCase() === 'N/A') && dev._parentAssetId && typeof appState !== 'undefined' && appState.devices) {
+        const parent = appState.devices.find(d => d.assetId === dev._parentAssetId);
+        if (parent) {
+            if (rawType.includes('KEYBOARD')) b = (parent.keyboardBrand || parent.brandName || '').trim();
+            else if (rawType.includes('MOUSE')) b = (parent.mouseBrand || parent.brandName || '').trim();
+            else if (rawType.includes('DISPLAY') || rawType.includes('MONITOR')) b = (parent.monitorBrand || parent.brandName || '').trim();
+            else if (rawType.includes('PRINTER')) b = (parent.printerBrand || parent.brandName || '').trim();
+            else if (rawType.includes('UPS')) b = (parent.upsBrand || parent.brandName || '').trim();
+            else if (rawType.includes('TABLET')) b = (parent.tabletBrand || parent.brandName || '').trim();
+            else if (rawType.includes('CPU')) b = (parent.cpuBrand || parent.brandName || '').trim();
+            else b = (parent.brandName || parent.brand || '').trim();
+        }
+    }
+
+    return (b && b !== '-' && b.toUpperCase() !== 'N/A' && b.toUpperCase() !== 'STANDARD OEM') ? b : '—';
+}
+
+function resolveDeviceDbModel(dev) {
+    if (!dev) return '—';
+    const rawType = (dev.deviceType || dev.device_type || '').toUpperCase();
+    let m = '';
+    if (rawType.includes('KEYBOARD') || rawType === 'K' || rawType === 'KB') {
+        m = (dev.keyboardSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('MOUSE') || rawType === 'M') {
+        m = (dev.mouseSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('DISPLAY') || rawType.includes('MONITOR') || rawType.includes('SCREEN') || rawType === 'D') {
+        m = (dev.monitorSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('PRINTER') || rawType.includes('PRT') || rawType === 'P') {
+        m = (dev.printerSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('UPS') || rawType.includes('POWER') || rawType === 'U') {
+        m = (dev.upsSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('TABLET') || rawType.includes('TAB') || rawType === 'T') {
+        m = (dev.tabletSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('SCANNER') || rawType.includes('BARCODE') || rawType.includes('BIOMETRIC') || rawType.includes('EYE')) {
+        m = (dev.otherSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else {
+        m = (dev.cpuProcessor || dev.modelSpecs || '').trim();
+    }
+    return (m && m !== '-' && m !== '—' && m.toUpperCase() !== 'N/A') ? m : '—';
+}
+
+function resolveDeviceDbSerial(dev) {
+    if (!dev) return '—';
+    const s = (dev.serialNumber || dev.serial_number || '').trim();
+    return (s && s !== '-' && s.toUpperCase() !== 'N/A') ? s : '—';
+}
+
+function resolveDeviceDbStatus(dev) {
+    if (!dev) return 'Active';
+    const s = (dev.status || '').trim();
+    return s || 'Active';
+}
+
 function buildDynamicDeviceSpecsGridHtml(dev, locationStr) {
     const rawType = (dev.deviceType || dev.device_type || 'CPU').trim();
     const t = rawType.toUpperCase();
@@ -3847,113 +3918,149 @@ function buildDynamicDeviceSpecsGridHtml(dev, locationStr) {
         `;
     }
 
+    const brand = resolveDeviceDbBrand(dev);
+    const model = resolveDeviceDbModel(dev);
+    const serial = resolveDeviceDbSerial(dev);
+    const status = resolveDeviceDbStatus(dev);
+    const isStatusActive = status === 'Active';
+    const statusClass = isStatusActive ? 'font-bold text-emerald-700' : 'font-bold text-amber-700';
+
     // 1. KEYBOARD
     if (t.includes('KEYBOARD') || t === 'K' || t === 'KB') {
-        const kbModel = (dev.keyboardSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || 'USB Multimedia Wired Keyboard';
         return [
-            makeCard('keyboard', 'text-amber-600', 'Keyboard Model & Specs', kbModel, 'font-extrabold text-slate-900'),
-            makeCard('cable', 'text-sky-600', 'Connectivity & Interface', 'USB Wired Interface (Plug & Play)'),
-            makeCard('layout-grid', 'text-indigo-600', 'Key Layout & Architecture', 'Standard 104-Key QWERTY • Spill-Resistant Membrane'),
-            makeCard('check-circle-2', 'text-emerald-600', 'Hardware Status', 'Active Workstation Input Peripheral', 'font-bold text-emerald-700'),
-            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+            makeCard('tag', 'text-indigo-600', 'Brand Name', brand, 'font-extrabold text-slate-900'),
+            makeCard('keyboard', 'text-blue-600', 'Model / Specs', model, 'font-extrabold text-slate-900'),
+            makeCard('barcode', 'text-slate-600', 'Serial Number (S/N)', serial, 'font-mono font-bold text-slate-800'),
+            makeCard('check-circle-2', isStatusActive ? 'text-emerald-600' : 'text-amber-600', 'Device Status', status, statusClass),
+            makeCard('map-pin', 'text-rose-600', 'Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
         ].join('');
     }
 
     // 2. MOUSE
     if (t.includes('MOUSE') || t === 'M') {
-        const mouseModel = (dev.mouseSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || 'USB Cleanable Optical Mouse';
         return [
-            makeCard('mouse', 'text-purple-600', 'Mouse Model & Sensor', mouseModel, 'font-extrabold text-slate-900'),
-            makeCard('target', 'text-sky-600', 'Tracking & Resolution', '1000 DPI Optical Engine • 3-Button with Scroll'),
-            makeCard('shield-check', 'text-teal-600', 'Interface & Sanitation', 'USB Wired • Hospital Cleanable & Spill-Resistant'),
-            makeCard('check-circle-2', 'text-emerald-600', 'Hardware Status', 'Active Workstation Pointer Peripheral', 'font-bold text-emerald-700'),
-            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+            makeCard('tag', 'text-indigo-600', 'Brand Name', brand, 'font-extrabold text-slate-900'),
+            makeCard('mouse', 'text-blue-600', 'Model / Specs', model, 'font-extrabold text-slate-900'),
+            makeCard('barcode', 'text-slate-600', 'Serial Number (S/N)', serial, 'font-mono font-bold text-slate-800'),
+            makeCard('check-circle-2', isStatusActive ? 'text-emerald-600' : 'text-amber-600', 'Device Status', status, statusClass),
+            makeCard('map-pin', 'text-rose-600', 'Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
         ].join('');
     }
 
     // 3. DISPLAY / MONITOR / SCREEN
     if (t.includes('DISPLAY') || t.includes('MONITOR') || t.includes('SCREEN') || t === 'D') {
-        const dispModel = (dev.monitorSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || '24" Full HD (1920x1080) LED Display';
         return [
-            makeCard('monitor', 'text-indigo-600', 'Display Panel & Resolution', dispModel, 'font-extrabold text-slate-900'),
-            makeCard('tv', 'text-sky-600', 'Panel Technology', 'LED Backlit IPS Panel • 60Hz Refresh Rate'),
-            makeCard('cable', 'text-teal-600', 'Video Connectivity', 'HDMI / VGA / DisplayPort Direct Stream'),
-            makeCard('activity', 'text-emerald-600', 'Display Signal & Duty', 'Active Video Signal • Clinical / Office Grade', 'font-bold text-emerald-700'),
-            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+            makeCard('tag', 'text-indigo-600', 'Brand Name', brand, 'font-extrabold text-slate-900'),
+            makeCard('monitor', 'text-blue-600', 'Model / Specs', model, 'font-extrabold text-slate-900'),
+            makeCard('barcode', 'text-slate-600', 'Serial Number (S/N)', serial, 'font-mono font-bold text-slate-800'),
+            makeCard('check-circle-2', isStatusActive ? 'text-emerald-600' : 'text-amber-600', 'Device Status', status, statusClass),
+            makeCard('map-pin', 'text-rose-600', 'Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
         ].join('');
     }
 
     // 4. PRINTER / BARCODE PRINTER
     if (t.includes('PRINTER') || t.includes('PRT') || t === 'P') {
-        const prtModel = (dev.printerSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || 'Document / Barcode Printer';
-        const isNet = dev.ipAddress && dev.ipAddress !== '—' && dev.ipAddress !== '-' && dev.ipAddress !== 'N/A';
-        const connText = isNet ? `Network Ethernet (IP: ${dev.ipAddress})` : 'High-Speed USB Direct Console Port';
-        const isBarcode = t.includes('BARCODE') || prtModel.toLowerCase().includes('barcode') || prtModel.toLowerCase().includes('zebra') || prtModel.toLowerCase().includes('tsc');
-        return [
-            makeCard('printer', 'text-emerald-600', 'Printer Model & Type', prtModel, 'font-extrabold text-slate-900'),
-            makeCard('file-text', 'text-teal-600', 'Print Engine & Technology', isBarcode ? 'Direct Thermal / Thermal Transfer Barcode Engine' : 'High-Speed Laser / Ink Document Engine'),
-            makeCard('network', 'text-sky-600', 'Connectivity & Port', connText, isNet ? 'font-mono font-bold text-blue-700' : 'font-bold text-slate-800'),
-            makeCard('package', 'text-amber-600', 'Media & Feed Support', isBarcode ? 'Clinical Specimen & Barcode Wristband Rolls' : 'Standard A4 / Prescription & Document Feed'),
-            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
-        ].join('');
+        const hasIp = dev.ipAddress && dev.ipAddress !== '—' && dev.ipAddress !== '-' && dev.ipAddress !== 'N/A';
+        const hasMac = dev.macAddress && dev.macAddress !== '—' && dev.macAddress !== '-' && dev.macAddress !== 'N/A';
+        const cards = [
+            makeCard('tag', 'text-indigo-600', 'Brand Name', brand, 'font-extrabold text-slate-900'),
+            makeCard('printer', 'text-blue-600', 'Model / Specs', model, 'font-extrabold text-slate-900'),
+            makeCard('barcode', 'text-slate-600', 'Serial Number (S/N)', serial, 'font-mono font-bold text-slate-800')
+        ];
+        if (hasIp) {
+            cards.push(makeCard('network', 'text-emerald-600', 'Network IP Address', dev.ipAddress, 'font-mono font-bold text-blue-700'));
+        }
+        if (hasMac) {
+            cards.push(makeCard('binary', 'text-slate-500', 'MAC Address', dev.macAddress, 'font-mono font-bold text-slate-700'));
+        }
+        cards.push(makeCard('check-circle-2', isStatusActive ? 'text-emerald-600' : 'text-amber-600', 'Device Status', status, statusClass));
+        cards.push(makeCard('map-pin', 'text-rose-600', 'Campus Location', locationStr, 'font-bold text-slate-900', (cards.length % 3 === 2) ? 'sm:col-span-2' : ''));
+        return cards.join('');
     }
 
     // 5. BARCODE SCANNER / BIOMETRIC / EYE SCANNER
     if (t.includes('SCANNER') || t.includes('BARCODE') || t.includes('BIOMETRIC') || t.includes('EYE')) {
-        const scnModel = (dev.cpuProcessor || dev.otherSpec || dev.modelSpecs || '').trim() || '1D/2D High-Speed Optical Scanner';
         return [
-            makeCard('scan-barcode', 'text-rose-600', 'Scanner Engine & Optics', scnModel, 'font-extrabold text-slate-900'),
-            makeCard('qr-code', 'text-indigo-600', 'Supported Symbologies', '1D Barcodes, 2D QR Codes, PDF417 & DataMatrix'),
-            makeCard('cable', 'text-sky-600', 'Interface & Connectivity', 'USB HID Keyboard Wedge (Instant Plug & Play)'),
-            makeCard('zap', 'text-amber-600', 'Scan Trigger & Speed', 'Instant 300 scans/sec Omni-Directional Capture'),
-            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+            makeCard('tag', 'text-indigo-600', 'Brand Name', brand, 'font-extrabold text-slate-900'),
+            makeCard('scan-barcode', 'text-blue-600', 'Model / Specs', model, 'font-extrabold text-slate-900'),
+            makeCard('barcode', 'text-slate-600', 'Serial Number (S/N)', serial, 'font-mono font-bold text-slate-800'),
+            makeCard('check-circle-2', isStatusActive ? 'text-emerald-600' : 'text-amber-600', 'Device Status', status, statusClass),
+            makeCard('map-pin', 'text-rose-600', 'Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
         ].join('');
     }
 
     // 6. UPS (POWER BACKUP)
     if (t.includes('UPS') || t.includes('POWER') || t.includes('INVERTER') || t === 'U') {
-        const upsModel = (dev.upsSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || '600VA / 360W Line-Interactive UPS';
         return [
-            makeCard('zap', 'text-amber-600', 'Power Capacity & Rating', upsModel, 'font-extrabold text-slate-900'),
-            makeCard('shield-check', 'text-emerald-600', 'Topology & Protection', 'Automatic Voltage Regulation (AVR) • Surge Protection'),
-            makeCard('battery-charging', 'text-orange-600', 'Internal Battery Bank', '12V / 7Ah Sealed Maintenance-Free Lead-Acid'),
-            makeCard('plug', 'text-sky-600', 'Protected Outlets', '3x Universal Protected Output Sockets'),
-            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+            makeCard('tag', 'text-indigo-600', 'Brand Name', brand, 'font-extrabold text-slate-900'),
+            makeCard('zap', 'text-blue-600', 'Model / Specs', model, 'font-extrabold text-slate-900'),
+            makeCard('barcode', 'text-slate-600', 'Serial Number (S/N)', serial, 'font-mono font-bold text-slate-800'),
+            makeCard('check-circle-2', isStatusActive ? 'text-emerald-600' : 'text-amber-600', 'Device Status', status, statusClass),
+            makeCard('map-pin', 'text-rose-600', 'Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
         ].join('');
     }
 
     // 7. TABLET / IPAD
     if (t.includes('TABLET') || t.includes('TAB') || t.includes('IPAD') || t === 'T') {
-        const tabModel = (dev.tabletSpec || dev.cpuProcessor || dev.modelSpecs || '').trim() || '10.5" Touchscreen Clinical Tablet';
-        const isWifi = dev.ipAddress && dev.ipAddress !== '—' && dev.ipAddress !== '-' && dev.ipAddress !== 'N/A';
-        return [
-            makeCard('tablet', 'text-teal-600', 'Tablet Model & Screen', tabModel, 'font-extrabold text-slate-900'),
-            makeCard('terminal', 'text-indigo-600', 'Operating System', dev.operatingSystem || 'Android 13 / iPadOS Enterprise'),
-            makeCard('hard-drive', 'text-purple-600', 'Storage & Memory', dev.storageRam || '64GB / 128GB Flash Storage'),
-            makeCard('wifi', 'text-emerald-600', 'Wireless Connectivity', isWifi ? `Wi-Fi IP: ${dev.ipAddress}` : 'Wi-Fi 802.11ac Dual-Band • Bluetooth 5.0'),
-            makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
-        ].join('');
+        const hasIp = dev.ipAddress && dev.ipAddress !== '—' && dev.ipAddress !== '-' && dev.ipAddress !== 'N/A';
+        const hasRam = dev.storageRam && dev.storageRam !== '—' && dev.storageRam !== '-';
+        const hasOs = dev.operatingSystem && dev.operatingSystem !== '—' && dev.operatingSystem !== '-';
+        const cards = [
+            makeCard('tag', 'text-indigo-600', 'Brand Name', brand, 'font-extrabold text-slate-900'),
+            makeCard('tablet', 'text-blue-600', 'Model / Specs', model, 'font-extrabold text-slate-900'),
+            makeCard('barcode', 'text-slate-600', 'Serial Number (S/N)', serial, 'font-mono font-bold text-slate-800')
+        ];
+        if (hasOs) {
+            cards.push(makeCard('terminal', 'text-teal-600', 'Operating System', dev.operatingSystem, 'font-bold text-slate-900'));
+        }
+        if (hasRam) {
+            cards.push(makeCard('hard-drive', 'text-indigo-600', 'RAM & Storage', dev.storageRam, 'font-mono font-bold text-slate-800'));
+        }
+        if (hasIp) {
+            cards.push(makeCard('wifi', 'text-emerald-600', 'Wi-Fi IP Address', dev.ipAddress, 'font-mono font-bold text-blue-700'));
+        }
+        cards.push(makeCard('check-circle-2', isStatusActive ? 'text-emerald-600' : 'text-amber-600', 'Device Status', status, statusClass));
+        cards.push(makeCard('map-pin', 'text-rose-600', 'Campus Location', locationStr, 'font-bold text-slate-900', (cards.length % 3 === 2) ? 'sm:col-span-2' : ''));
+        return cards.join('');
     }
 
-    // 8. DEFAULT: CPU / DESKTOP / PC / WORKSTATION / LAPTOP
-    const cpuModel = (dev.cpuProcessor || dev.modelSpecs || '').trim() || 'Workstation Compute Engine';
-    const ramSpec = (dev.storageRam || '').trim() || 'Standard Memory Configuration';
-    const osSpec = (dev.operatingSystem || '').trim() || 'Windows 11 Pro Medical Edition';
-    const dispSpec = (dev.monitorSpec || '').trim() || 'External FHD Video Display';
-    const ipSpec = (dev.ipAddress && dev.ipAddress !== '-' && dev.ipAddress !== 'N/A') ? dev.ipAddress : '—';
-    const macSpec = (dev.macAddress && dev.macAddress !== '-' && dev.macAddress !== 'N/A') ? dev.macAddress : '—';
-    const anydeskSpec = (dev.anydeskId && dev.anydeskId !== '-' && dev.anydeskId !== 'N/A') ? dev.anydeskId : 'Direct Physical Console';
+    // 8. CPU / DESKTOP / PC / WORKSTATION / LAPTOP
+    const hasRam = dev.storageRam && dev.storageRam !== '—' && dev.storageRam !== '-';
+    const hasOs = dev.operatingSystem && dev.operatingSystem !== '—' && dev.operatingSystem !== '-';
+    const hasIp = dev.ipAddress && dev.ipAddress !== '—' && dev.ipAddress !== '-' && dev.ipAddress !== 'N/A';
+    const hasMac = dev.macAddress && dev.macAddress !== '—' && dev.macAddress !== '-' && dev.macAddress !== 'N/A';
+    const hasAnydesk = dev.anydeskId && dev.anydeskId !== '—' && dev.anydeskId !== '-' && dev.anydeskId !== 'N/A';
+    const hasDisp = dev.monitorSpec && dev.monitorSpec !== '—' && dev.monitorSpec !== '-';
 
-    return [
-        makeCard('cpu', 'text-blue-600', 'Processor (CPU)', cpuModel, 'font-extrabold text-slate-900'),
-        makeCard('hard-drive', 'text-indigo-600', 'Storage & RAM Memory', ramSpec, 'font-mono font-bold text-slate-900'),
-        makeCard('terminal', 'text-teal-600', 'Operating System', osSpec, 'font-bold text-slate-900'),
-        makeCard('monitor', 'text-purple-600', 'Connected Display Spec', dispSpec),
-        makeCard('network', 'text-emerald-600', 'Network IP Address', ipSpec, 'font-mono font-black text-blue-700'),
-        makeCard('binary', 'text-slate-500', 'MAC Address', macSpec, 'font-mono font-bold text-slate-700'),
-        makeCard('monitor-dot', 'text-rose-500', 'AnyDesk Remote ID', anydeskSpec, 'font-mono font-bold text-slate-800'),
-        makeCard('map-pin', 'text-rose-600', 'Physical Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
-    ].join('');
+    const cards = [
+        makeCard('tag', 'text-indigo-600', 'Brand Name', brand, 'font-extrabold text-slate-900'),
+        makeCard('cpu', 'text-blue-600', 'Processor (CPU)', model, 'font-extrabold text-slate-900'),
+        makeCard('barcode', 'text-slate-600', 'Serial Number (S/N)', serial, 'font-mono font-bold text-slate-800')
+    ];
+
+    if (hasRam) {
+        cards.push(makeCard('hard-drive', 'text-indigo-600', 'RAM & Storage', dev.storageRam, 'font-mono font-bold text-slate-800'));
+    }
+    if (hasOs) {
+        cards.push(makeCard('terminal', 'text-teal-600', 'Operating System', dev.operatingSystem, 'font-bold text-slate-900'));
+    }
+    if (hasDisp) {
+        cards.push(makeCard('monitor', 'text-purple-600', 'Connected Display', dev.monitorSpec, 'font-bold text-slate-900'));
+    }
+    if (hasIp) {
+        cards.push(makeCard('network', 'text-emerald-600', 'Network IP Address', dev.ipAddress, 'font-mono font-black text-blue-700'));
+    }
+    if (hasMac) {
+        cards.push(makeCard('binary', 'text-slate-500', 'MAC Address', dev.macAddress, 'font-mono font-bold text-slate-700'));
+    }
+    if (hasAnydesk) {
+        cards.push(makeCard('monitor-dot', 'text-rose-500', 'AnyDesk Remote ID', dev.anydeskId, 'font-mono font-bold text-slate-800'));
+    }
+
+    cards.push(makeCard('check-circle-2', isStatusActive ? 'text-emerald-600' : 'text-amber-600', 'Device Status', status, statusClass));
+    cards.push(makeCard('map-pin', 'text-rose-600', 'Campus Location', locationStr, 'font-bold text-slate-900', (cards.length % 3 === 2) ? 'sm:col-span-2' : ''));
+
+    return cards.join('');
 }
 
 function renderDetailModalActiveSpecs(dev) {
@@ -3963,15 +4070,14 @@ function renderDetailModalActiveSpecs(dev) {
 
     const brandEl = document.getElementById("devmodal-spec-brand-badge");
     if (brandEl) {
-        let b = (dev.brandName || dev.brand || '').trim();
-        if (!b || b === '—' || b === '-' || b.toUpperCase() === 'STANDARD OEM' || b.toUpperCase() === 'N/A') {
-            b = 'Enterprise Hardware';
-        }
-        brandEl.textContent = b;
+        brandEl.textContent = resolveDeviceDbBrand(dev);
     }
 
     const serialEl = document.getElementById("devmodal-spec-serial-badge");
-    if (serialEl) serialEl.textContent = dev.serialNumber ? `SN: ${dev.serialNumber}` : 'SN: —';
+    if (serialEl) {
+        const sn = resolveDeviceDbSerial(dev);
+        serialEl.textContent = `SN: ${sn}`;
+    }
 
     // Compute location string
     const room = appState.rooms ? appState.rooms.find(r => r.id === dev.roomId) : null;
@@ -3989,27 +4095,27 @@ function renderDetailModalActiveSpecs(dev) {
     } else {
         // Fallback for legacy static DOM
         const cpuEl = document.getElementById("devmodal-cpu");
-        if (cpuEl) cpuEl.textContent = dev.cpuProcessor || 'Workstation Processing Unit';
+        if (cpuEl) cpuEl.textContent = resolveDeviceDbModel(dev);
 
         const ramEl = document.getElementById("devmodal-ram");
-        if (ramEl) ramEl.textContent = dev.storageRam || 'Standard Memory Configuration';
+        if (ramEl) ramEl.textContent = dev.storageRam || '—';
 
         const osEl = document.getElementById("devmodal-os");
-        if (osEl) osEl.textContent = dev.operatingSystem || 'Windows 11 Pro Medical Edition';
+        if (osEl) osEl.textContent = dev.operatingSystem || '—';
 
         const displayEl = document.getElementById("devmodal-display");
         if (displayEl) {
-            displayEl.textContent = dev.monitorSpec || 'Connected Video Display Stream';
+            displayEl.textContent = dev.monitorSpec || '—';
         }
 
         const ipEl = document.getElementById("devmodal-ip");
-        if (ipEl) ipEl.textContent = dev.ipAddress || '—';
+        if (ipEl) ipEl.textContent = (dev.ipAddress && dev.ipAddress !== '-' && dev.ipAddress !== 'N/A') ? dev.ipAddress : '—';
 
         const macEl = document.getElementById("devmodal-mac");
-        if (macEl) macEl.textContent = dev.macAddress || '—';
+        if (macEl) macEl.textContent = (dev.macAddress && dev.macAddress !== '-' && dev.macAddress !== 'N/A') ? dev.macAddress : '—';
 
         const anydeskEl = document.getElementById("devmodal-anydesk");
-        if (anydeskEl) anydeskEl.textContent = dev.anydeskId || 'Direct Physical Console';
+        if (anydeskEl) anydeskEl.textContent = (dev.anydeskId && dev.anydeskId !== '-' && dev.anydeskId !== 'N/A') ? dev.anydeskId : '—';
 
         const locEl = document.getElementById("devmodal-location-text");
         if (locEl) locEl.textContent = locationStr;
@@ -4031,14 +4137,10 @@ function renderDetailModalLinkedDevices(linkedDevices, currentDevId) {
         const iconName = getDeviceLucideIconName(type);
         const isActive = (item.status || 'Active') === 'Active';
 
-        let specSnippet = item.cpuProcessor || item.storageRam || item.monitorSpec || 'Hardware Unit';
-        if (type === 'Display') specSnippet = item.monitorSpec || item.cpuProcessor || '24" Display Stream';
-        else if (type === 'Keyboard') specSnippet = item.keyboardSpec || item.cpuProcessor || 'Spill-Proof Keyboard';
-        else if (type === 'Mouse') specSnippet = item.mouseSpec || item.cpuProcessor || 'USB Cleanable Optical';
-        else if (type === 'Printer') specSnippet = item.printerSpec || item.cpuProcessor || 'Medical Document Printer';
-        else if (type === 'UPS') specSnippet = item.upsSpec || item.cpuProcessor || 'Line-Interactive Power Backup';
-        else if (type === 'Tablet') specSnippet = item.tabletSpec || item.cpuProcessor || 'Clinical Tablet Terminal';
-        else if (type.includes('Scanner') || type.includes('Barcode')) specSnippet = item.cpuProcessor || 'Optical Barcode Scanner';
+        const modelStr = resolveDeviceDbModel(item);
+        const specSnippet = (modelStr && modelStr !== '—') 
+            ? modelStr 
+            : (item.brandName ? `${item.brandName} ${type}` : `${type} Unit`);
 
         html += `
             <div onclick="selectDetailModalDevice('${item.id}')" 

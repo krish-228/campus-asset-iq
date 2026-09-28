@@ -400,22 +400,38 @@
                         </div>
                     </div>
 
-                    <!-- 6-Metric High Contrast Spec Grid -->
+                    <!-- High Contrast Spec Grid (Simple DB Labels) -->
                     <div id="devmodal-specs-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-                        <!-- CPU -->
+                        <!-- Brand Name -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
+                                <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-600"></i> Brand Name
+                            </div>
+                            <div id="devmodal-brand" class="font-extrabold text-slate-900 text-xs">—</div>
+                        </div>
+
+                        <!-- Processor (CPU) -->
                         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
                             <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
                                 <i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-600"></i> Processor (CPU)
                             </div>
-                            <div id="devmodal-cpu" class="font-extrabold text-slate-900 text-xs">Intel Core i5-12500E (Fanless)</div>
+                            <div id="devmodal-cpu" class="font-extrabold text-slate-900 text-xs">—</div>
+                        </div>
+
+                        <!-- Serial Number -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
+                                <i data-lucide="barcode" class="w-3.5 h-3.5 text-slate-600"></i> Serial Number (S/N)
+                            </div>
+                            <div id="devmodal-serial" class="font-mono font-bold text-slate-800 text-xs">—</div>
                         </div>
 
                         <!-- RAM & Storage -->
                         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
                             <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-indigo-600"></i> Storage & RAM Memory
+                                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-indigo-600"></i> RAM & Storage
                             </div>
-                            <div id="devmodal-ram" class="font-mono font-bold text-slate-900 text-xs">512GB M.2 SSD / 16GB RAM</div>
+                            <div id="devmodal-ram" class="font-mono font-bold text-slate-900 text-xs">—</div>
                         </div>
 
                         <!-- OS -->
@@ -423,48 +439,23 @@
                             <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
                                 <i data-lucide="terminal" class="w-3.5 h-3.5 text-teal-600"></i> Operating System
                             </div>
-                            <div id="devmodal-os" class="font-bold text-slate-900 text-xs">Windows 11 Pro Medical Edition</div>
+                            <div id="devmodal-os" class="font-bold text-slate-900 text-xs">—</div>
                         </div>
 
-                        <!-- Monitor / Display Specs -->
+                        <!-- Device Status -->
                         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
                             <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="monitor" class="w-3.5 h-3.5 text-purple-600"></i> Monitor / Screen Spec
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i> Device Status
                             </div>
-                            <div id="devmodal-display" class="font-medium text-slate-900 text-xs">24-inch Cleanable Touch FHD</div>
+                            <div id="devmodal-status" class="font-bold text-emerald-700 text-xs">Active</div>
                         </div>
 
-                        <!-- IP Address -->
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                <i data-lucide="network" class="w-3.5 h-3.5 text-emerald-600"></i> Network IP Address
-                            </div>
-                            <div id="devmodal-ip" class="font-mono font-black text-blue-700 text-xs">10.20.10.42</div>
-                        </div>
-
-                        <!-- MAC Address -->
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="binary" class="w-3.5 h-3.5 text-slate-500"></i> MAC Address
-                            </div>
-                            <div id="devmodal-mac" class="font-mono font-bold text-slate-700 text-xs">E4-54-E8-71-22-31</div>
-                        </div>
-
-                        <!-- AnyDesk ID -->
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="monitor-dot" class="w-3.5 h-3.5 text-rose-500"></i> AnyDesk Remote ID
-                            </div>
-                            <div id="devmodal-anydesk" class="font-mono font-bold text-slate-800 text-xs">928 341 552</div>
-                        </div>
-
-                        <!-- Facility Location -->
+                        <!-- Campus Location -->
                         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors sm:col-span-2">
                             <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-600"></i> Physical Campus Location
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-600"></i> Campus Location
                             </div>
-                            <div id="devmodal-location-text" class="font-bold text-slate-900 text-xs">2nd Floor &bull; ICU Bedside Monitoring Pod A</div>
+                            <div id="devmodal-location-text" class="font-bold text-slate-900 text-xs">—</div>
                         </div>
                     </div>
                 </div>
@@ -845,7 +836,7 @@
 {% block extra_scripts %}
     <script src="{% static 'js/data.js' %}?v=6.0"></script>
     <script src="{% static 'js/qr_generator.js' %}?v=6.0"></script>
-    <script src="{% static 'js/app.js' %}?v=14.0_device_specific_spec_boxes"></script>
+    <script src="{% static 'js/app.js' %}?v=15.0_simple_db_specs_with_brand"></script>
     <script>
         // Explicit initialization: Lock to PSM Hospital single building with 7 levels
         (function() {
