@@ -129,7 +129,7 @@
                     <span class="text-xs font-extrabold uppercase tracking-wider text-blue-400">Mobile Provisioning</span>
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 </div>
-                <h1 class="text-base font-extrabold text-white leading-tight">Add New Hardware</h1>
+                <h1 id="page-title" class="text-base font-extrabold text-white leading-tight">Add New Hardware</h1>
             </div>
         </div>
 
@@ -379,6 +379,16 @@
                         </span>
                     </div>
                     <div id="asset-id-warning" class="text-[11px] text-rose-400 font-semibold mt-1.5 hidden flex items-center gap-1.5"></div>
+                    <!-- Existing Asset Edit Mode Banner -->
+                    <div id="asset-id-edit-badge" class="hidden mt-2 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs flex items-center justify-between animate-in fade-in duration-200">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="file-edit" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                            <span id="asset-id-edit-desc"><strong>Existing Asset Found:</strong> Loaded details for editing & updating.</span>
+                        </div>
+                        <button type="button" onclick="switchToNewDeviceMode()" class="text-[11px] font-bold text-amber-300 underline hover:text-white shrink-0 ml-2 cursor-pointer">
+                            New Device
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Operational Status -->
@@ -1047,8 +1057,8 @@
                     <i data-lucide="check" class="w-6 h-6 stroke-[3]"></i>
                 </div>
                 <div>
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">Successfully Enrolled</span>
-                    <h3 class="text-lg font-black text-white">Hardware Saved!</h3>
+                    <span id="modal-success-badge" class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">Successfully Enrolled</span>
+                    <h3 id="modal-success-title" class="text-lg font-black text-white">Hardware Saved!</h3>
                 </div>
             </div>
 
@@ -1079,7 +1089,7 @@
                 <button type="button" onclick="continueEnrollNext()"
                     class="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                    <span>Enroll Next Device Now</span>
+                    <span id="modal-btn-next-text">Enroll Next Device Now</span>
                 </button>
 
                 <a href="{% url 'inventory' %}"
@@ -1100,7 +1110,9 @@
         let currentCategory = 'CPU';
         let currentFloor = '2nd Floor';
         let lastRegisteredAssetId = '';
-        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v8';
+        let isEditMode = false;
+        let loadedAssetId = '';
+        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v9';
 
         // Multi-select components state (Default: CPU only)
         let selectedComponents = new Set(['CPU']);
@@ -1747,6 +1759,7 @@
                     const data = await res.json();
 
                     if (data.valid === false) {
+                        if (isEditMode) exitEditMode();
                         if (statusIcon) {
                             statusIcon.classList.remove('hidden');
                             statusIcon.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400" title="Invalid Format"></i>`;
@@ -1759,22 +1772,14 @@
                             submitBtn.disabled = true;
                             submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
                         }
-                    } else if (data.exists) {
-                        // Tag already registered to another device!
-                        if (statusIcon) {
-                            statusIcon.classList.remove('hidden');
-                            statusIcon.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400" title="Already Registered!"></i>`;
-                        }
-                        if (warningEl) {
-                            warningEl.classList.remove('hidden');
-                            warningEl.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-400"></i> <span>Tag is already in use by <strong>${data.device_type}</strong> in ${data.location}. Click <strong>Auto Generate</strong> for the next unique code.</span>`;
-                        }
-                        if (submitBtn) {
-                            submitBtn.disabled = true;
-                            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                        }
+                    } else if (data.exists && data.device) {
+                        // Existing asset found in PostgreSQL -> Automatically fetch and enter Edit & Update Mode!
+                        enterEditModeWithDevice(data.device);
                     } else {
-                        // 100% Unique and available!
+                        // 100% Unique and available for new enrollment!
+                        if (isEditMode) {
+                            exitEditMode();
+                        }
                         if (statusIcon) {
                             statusIcon.classList.remove('hidden');
                             statusIcon.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400" title="100% Unique & Available"></i>`;
@@ -1798,6 +1803,218 @@
                     }
                 }
             }, 250);
+        }
+
+        // ====================================================================
+        // Existing Asset Edit & Update Controller
+        // Automatically populates all form inputs, specs, custodian & location
+        // ====================================================================
+        function enterEditModeWithDevice(dev) {
+            isEditMode = true;
+            loadedAssetId = dev.asset_id;
+
+            // 1. Update Top Bar Title
+            const titleEl = document.getElementById('page-title');
+            if (titleEl) {
+                titleEl.innerHTML = `<span class="flex items-center gap-1.5"><i data-lucide="file-edit" class="w-4 h-4 text-amber-400 inline"></i><span>Edit Hardware Asset</span></span>`;
+            }
+
+            // 2. Display Edit Mode Banner in Section 3
+            const editBadge = document.getElementById('asset-id-edit-badge');
+            const editDesc = document.getElementById('asset-id-edit-desc');
+            const warningEl = document.getElementById('asset-id-warning');
+            const statusIcon = document.getElementById('asset-id-status');
+            if (warningEl) {
+                warningEl.classList.add('hidden');
+                warningEl.innerHTML = '';
+            }
+            if (editBadge) {
+                editBadge.classList.remove('hidden');
+            }
+            if (editDesc) {
+                editDesc.innerHTML = `<strong>Existing Asset Found:</strong> <span>Loaded ${dev.device_type} in ${dev.room_name} (${dev.floor_name}). Edit fields & click Update.</span>`;
+            }
+            if (statusIcon) {
+                statusIcon.classList.remove('hidden');
+                statusIcon.innerHTML = `<i data-lucide="file-edit" class="w-5 h-5 text-amber-400" title="Existing Asset: Edit Mode"></i>`;
+            }
+
+            // 3. Transform Submit Button to Update Action
+            const submitBtn = document.getElementById('btn-submit');
+            const submitText = document.getElementById('btn-submit-text');
+            const submitIcon = document.getElementById('btn-submit-icon');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-blue-600', 'hover:bg-blue-500');
+                submitBtn.className = "flex-1 h-12 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:from-amber-700 active:to-amber-800 text-white text-sm font-extrabold shadow-lg shadow-amber-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]";
+            }
+            if (submitText) submitText.textContent = `Update Device (${dev.asset_id})`;
+            if (submitIcon) submitIcon.setAttribute('data-lucide', 'save');
+
+            // 4. Pre-fill Section 1: Custodian Assignment
+            const userNameEl = document.getElementById('input-user-name');
+            if (userNameEl) userNameEl.value = dev.assigned_user_name || 'Unassigned';
+            const empIdEl = document.getElementById('input-emp-id');
+            if (empIdEl) empIdEl.value = dev.assigned_emp_id || '';
+            const desigEl = document.getElementById('input-designation');
+            if (desigEl) desigEl.value = dev.assigned_designation || '';
+            const deptEl = document.getElementById('input-department');
+            if (deptEl) deptEl.value = dev.assigned_department || '';
+            const contactEl = document.getElementById('input-contact');
+            if (contactEl) contactEl.value = dev.assigned_phone || '';
+            const emailEl = document.getElementById('input-email');
+            if (emailEl) emailEl.value = dev.assigned_email || '';
+            updateCustodianStatusUI();
+            highlightActiveStaffChip(dev.assigned_user_name || '');
+
+            // 5. Pre-fill Section 2: Physical Campus Placement
+            const bldgEl = document.getElementById('input-building');
+            if (bldgEl && dev.building_name) bldgEl.value = dev.building_name;
+            if (dev.floor_name) selectFloor(dev.floor_name);
+            const roomEl = document.getElementById('input-room');
+            if (roomEl) roomEl.value = dev.room_name || '';
+
+            // 6. Pre-fill Section 3: Operational Status
+            const statusEl = document.getElementById('input-status');
+            if (statusEl && dev.status) statusEl.value = dev.status;
+
+            // 7. Pre-fill Section 4: Hardware Components
+            if (dev.components && Array.isArray(dev.components) && dev.components.length > 0) {
+                selectedComponents = new Set(dev.components);
+            } else {
+                selectedComponents = new Set(['CPU']);
+            }
+
+            // 8. Pre-fill Section 5: Hardware Specifications
+            // CPU
+            const cpuBrandEl = document.getElementById('input-cpu-brand');
+            if (cpuBrandEl) cpuBrandEl.value = dev.cpu_brand || '';
+            const cpuSnEl = document.getElementById('input-cpu-sn');
+            if (cpuSnEl) cpuSnEl.value = dev.cpu_sn || '';
+            const cpuEl = document.getElementById('input-cpu');
+            if (cpuEl) cpuEl.value = dev.cpu_processor || '';
+            const ramEl = document.getElementById('input-ram');
+            if (ramEl) ramEl.value = dev.storage_ram || '';
+            const osEl = document.getElementById('input-os');
+            if (osEl) osEl.value = dev.operating_system || 'Windows 11 Pro';
+            const ipEl = document.getElementById('input-ip');
+            if (ipEl) ipEl.value = dev.ip_address || '';
+            const macEl = document.getElementById('input-mac');
+            if (macEl) macEl.value = dev.mac_address || '';
+
+            // Monitor
+            const monBrandEl = document.getElementById('input-monitor-brand');
+            if (monBrandEl) monBrandEl.value = dev.monitor_brand || '';
+            const monSnEl = document.getElementById('input-monitor-sn');
+            if (monSnEl) monSnEl.value = dev.monitor_sn || '';
+            const monSpecEl = document.getElementById('input-monitor');
+            if (monSpecEl) monSpecEl.value = dev.monitor_spec || '';
+
+            // Keyboard
+            const kbBrandEl = document.getElementById('input-keyboard-brand');
+            if (kbBrandEl) kbBrandEl.value = dev.keyboard_brand || '';
+            const kbSnEl = document.getElementById('input-keyboard-sn');
+            if (kbSnEl) kbSnEl.value = dev.keyboard_sn || '';
+            const kbSpecEl = document.getElementById('input-keyboard');
+            if (kbSpecEl) kbSpecEl.value = dev.keyboard_spec || '';
+
+            // Mouse
+            const msBrandEl = document.getElementById('input-mouse-brand');
+            if (msBrandEl) msBrandEl.value = dev.mouse_brand || '';
+            const msSnEl = document.getElementById('input-mouse-sn');
+            if (msSnEl) msSnEl.value = dev.mouse_sn || '';
+            const msSpecEl = document.getElementById('input-mouse');
+            if (msSpecEl) msSpecEl.value = dev.mouse_spec || '';
+
+            // Printer
+            const prtBrandEl = document.getElementById('input-printer-brand');
+            if (prtBrandEl) prtBrandEl.value = dev.printer_brand || '';
+            const prtSnEl = document.getElementById('input-printer-sn');
+            if (prtSnEl) prtSnEl.value = dev.printer_sn || '';
+            const prtSpecEl = document.getElementById('input-printer');
+            if (prtSpecEl) prtSpecEl.value = dev.printer_spec || '';
+
+            // UPS
+            const upsBrandEl = document.getElementById('input-ups-brand');
+            if (upsBrandEl) upsBrandEl.value = dev.ups_brand || '';
+            const upsSnEl = document.getElementById('input-ups-sn');
+            if (upsSnEl) upsSnEl.value = dev.ups_sn || '';
+            const upsSpecEl = document.getElementById('input-ups');
+            if (upsSpecEl) upsSpecEl.value = dev.ups_spec || '';
+
+            // Tablet
+            const tabBrandEl = document.getElementById('input-tablet-brand');
+            if (tabBrandEl) tabBrandEl.value = dev.tablet_brand || '';
+            const tabSnEl = document.getElementById('input-tablet-sn');
+            if (tabSnEl) tabSnEl.value = dev.tablet_sn || '';
+            const tabSpecEl = document.getElementById('input-tablet');
+            if (tabSpecEl) tabSpecEl.value = dev.tablet_spec || '';
+            const tabDevIdEl = document.getElementById('input-tablet-device-id');
+            if (tabDevIdEl) tabDevIdEl.value = dev.tablet_device_id || '';
+            const tabAnydeskEl = document.getElementById('input-tablet-anydesk-id');
+            if (tabAnydeskEl) tabAnydeskEl.value = dev.tablet_anydesk_id || '';
+            const tabMacEl = document.getElementById('input-tablet-mac');
+            if (tabMacEl) tabMacEl.value = dev.tablet_mac || '';
+
+            // Other
+            if (dev.other_device_type && document.getElementById('input-other-type')) {
+                document.getElementById('input-other-type').value = dev.other_device_type;
+            }
+            const othBrandEl = document.getElementById('input-other-brand');
+            if (othBrandEl) othBrandEl.value = dev.other_brand || '';
+            const othModelEl = document.getElementById('input-other-model');
+            if (othModelEl) othModelEl.value = dev.other_model || '';
+            const othSnEl = document.getElementById('input-other-sn');
+            if (othSnEl) othSnEl.value = dev.other_sn || '';
+
+            // Dates
+            if (dev.purchase_date && document.getElementById('input-purchase-date')) {
+                document.getElementById('input-purchase-date').value = dev.purchase_date;
+            }
+            if (dev.warranty_expiry_date && document.getElementById('input-warranty-date')) {
+                document.getElementById('input-warranty-date').value = dev.warranty_expiry_date;
+            }
+
+            updateSelectedComponentsUI();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            if (navigator.vibrate) navigator.vibrate([20, 40]);
+            saveDraft();
+        }
+
+        function exitEditMode() {
+            isEditMode = false;
+            loadedAssetId = '';
+
+            const titleEl = document.getElementById('page-title');
+            if (titleEl) {
+                titleEl.textContent = 'Add New Hardware';
+            }
+
+            const editBadge = document.getElementById('asset-id-edit-badge');
+            if (editBadge) editBadge.classList.add('hidden');
+
+            const submitBtn = document.getElementById('btn-submit');
+            const submitText = document.getElementById('btn-submit-text');
+            const submitIcon = document.getElementById('btn-submit-icon');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                submitBtn.className = "flex-1 h-12 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-sm font-extrabold shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]";
+            }
+            if (submitText) submitText.textContent = "Save Device to Inventory";
+            if (submitIcon) submitIcon.setAttribute('data-lucide', 'check');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function switchToNewDeviceMode() {
+            exitEditMode();
+            autoGenerateTag(true);
+            const warningEl = document.getElementById('asset-id-warning');
+            if (warningEl) {
+                warningEl.classList.add('hidden');
+                warningEl.innerHTML = '';
+            }
+            if (navigator.vibrate) navigator.vibrate(20);
         }
 
         // Local Storage Draft Recovery
@@ -1952,6 +2169,7 @@
         }
 
         function discardDraft() {
+            exitEditMode();
             localStorage.removeItem(DRAFT_STORAGE_KEY);
             document.getElementById('draft-banner').classList.add('hidden');
             document.getElementById('add-device-form').reset();
@@ -2029,7 +2247,7 @@
             const submitText = document.getElementById('btn-submit-text');
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-75');
-            submitText.textContent = "Saving to PostgreSQL Database...";
+            submitText.textContent = isEditMode ? "Updating PostgreSQL Database..." : "Saving to PostgreSQL Database...";
 
             // Assemble payload
             const assignedUserName = document.getElementById('input-user-name').value.trim() || 'Unassigned';
@@ -2040,6 +2258,7 @@
             const cpuSerial = (document.getElementById('input-cpu-sn')?.value || '').trim();
             const payload = {
                 asset_id: assetId,
+                is_edit: isEditMode,
                 device_type: currentCategory,
                 components: Array.from(selectedComponents),
                 serial_number: cpuSerial,
@@ -2105,6 +2324,23 @@
                 if (data.success) {
                     lastRegisteredAssetId = data.asset_id || assetId;
 
+                    // Adapt modal header for update vs enrollment
+                    if (data.is_edit || !data.is_new) {
+                        const badgeEl = document.getElementById('modal-success-badge');
+                        if (badgeEl) badgeEl.textContent = 'Successfully Updated';
+                        const titleEl = document.getElementById('modal-success-title');
+                        if (titleEl) titleEl.textContent = 'Hardware Updated!';
+                        const nextBtnEl = document.getElementById('modal-btn-next-text');
+                        if (nextBtnEl) nextBtnEl.textContent = 'Enroll / Edit Next Device';
+                    } else {
+                        const badgeEl = document.getElementById('modal-success-badge');
+                        if (badgeEl) badgeEl.textContent = 'Successfully Enrolled';
+                        const titleEl = document.getElementById('modal-success-title');
+                        if (titleEl) titleEl.textContent = 'Hardware Saved!';
+                        const nextBtnEl = document.getElementById('modal-btn-next-text');
+                        if (nextBtnEl) nextBtnEl.textContent = 'Enroll Next Device Now';
+                    }
+
                     // Populate success modal
                     document.getElementById('modal-saved-tag').textContent = data.asset_tag_summary || assetId;
                     document.getElementById('modal-saved-type').textContent = data.created_count > 1 
@@ -2133,13 +2369,18 @@
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('opacity-75');
-                submitText.textContent = "Save Device to Inventory";
+                if (isEditMode) {
+                    submitText.textContent = `Update Device (${assetId})`;
+                } else {
+                    submitText.textContent = "Save Device to Inventory";
+                }
             }
         }
 
         // Continue to enroll next device
         function continueEnrollNext() {
             document.getElementById('modal-success').classList.add('hidden');
+            exitEditMode();
             const keepLocation = document.getElementById('toggle-keep-location').checked;
 
             // Reset asset ID and CPU serial number

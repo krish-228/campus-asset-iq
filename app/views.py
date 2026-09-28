@@ -461,6 +461,354 @@ def api_save_device(request):
     )
 
     # =========================================================================
+    # EXISTING ASSET UPDATE MODE (Edit / Update Hardware Record in PostgreSQL)
+    # =========================================================================
+    if is_edit_request and dev:
+        old_user_name = dev.assigned_user_name
+        old_emp_id = dev.assigned_emp_id
+
+        ABBR_MAP = {
+            'CPU': 'CPU',
+            'DISPLAY': 'DISP',
+            'KEYBOARD': 'KB',
+            'MOUSE': 'MS',
+            'TABLET': 'TAB',
+            'PRINTER': 'PRT',
+            'UPS': 'UPS',
+            'OTHER': 'OTH',
+            'SCANNER': 'SCN',
+            'BIOMETRIC MACHINE': 'BIO',
+            'BIOMETRIC': 'BIO',
+            'EYE SCANNER': 'EYE',
+            'BARCODE PRINTER': 'BPR',
+            'BARCODE SCANNER': 'BCS',
+            'PROJECTOR': 'PRJ',
+            'WEBCAM': 'CAM'
+        }
+
+        with transaction.atomic():
+            if len(components) > 1:
+                existing_rows = list(DeviceAsset.objects.filter(asset_id__iexact=asset_id))
+                used_row_ids = set()
+
+                for comp in components:
+                    comp_upper = comp.upper()
+                    comp_abbr = ABBR_MAP.get(comp_upper, comp_upper[:3])
+
+                    row = None
+                    for r in existing_rows:
+                        if r.id not in used_row_ids and (
+                            r.device_type.upper() == comp_upper
+                            or (comp_upper == 'DISPLAY' and 'MONITOR' in r.device_type.upper())
+                            or (comp_upper not in ('CPU', 'DISPLAY', 'KEYBOARD', 'MOUSE', 'TABLET', 'PRINTER', 'UPS') and r.device_type.upper() not in ('CPU', 'DISPLAY', 'KEYBOARD', 'MOUSE', 'TABLET', 'PRINTER', 'UPS'))
+                        ):
+                            row = r
+                            used_row_ids.add(r.id)
+                            break
+
+                    if comp_upper == 'CPU':
+                        item_dev_type = 'CPU'
+                        item_brand = cpu_brand or brand_name or ''
+                        item_sn = cpu_serial or serial_number or f"SN-PSM-CPU-{asset_id.split('/')[-1]}"
+                        item_cpu = cpu_processor
+                        item_ram = storage_ram
+                        item_os = operating_system
+                        item_ip = ip_address
+                        item_mac = mac_address
+                    elif comp_upper == 'DISPLAY':
+                        item_dev_type = 'Display'
+                        item_brand = monitor_brand or brand_name or ''
+                        item_sn = monitor_serial or (f"{serial_number}-DISP" if serial_number else f"SN-PSM-DISP-{asset_id.split('/')[-1]}")
+                        item_cpu = monitor_spec or ''
+                        item_ram = ''
+                        item_os = ''
+                        item_ip = '-'
+                        item_mac = '-'
+                    elif comp_upper == 'KEYBOARD':
+                        item_dev_type = 'Keyboard'
+                        item_brand = keyboard_brand or brand_name or ''
+                        item_sn = keyboard_serial or (f"{serial_number}-KB" if serial_number else f"SN-PSM-KB-{asset_id.split('/')[-1]}")
+                        item_cpu = keyboard_spec or ''
+                        item_ram = ''
+                        item_os = ''
+                        item_ip = '-'
+                        item_mac = '-'
+                    elif comp_upper == 'MOUSE':
+                        item_dev_type = 'Mouse'
+                        item_brand = mouse_brand or brand_name or ''
+                        item_sn = mouse_serial or (f"{serial_number}-MS" if serial_number else f"SN-PSM-MS-{asset_id.split('/')[-1]}")
+                        item_cpu = mouse_spec or ''
+                        item_ram = ''
+                        item_os = ''
+                        item_ip = '-'
+                        item_mac = '-'
+                    elif comp_upper == 'PRINTER':
+                        item_dev_type = 'Printer'
+                        item_brand = printer_brand or brand_name or ''
+                        item_sn = printer_serial or (f"{serial_number}-PRT" if serial_number else f"SN-PSM-PRT-{asset_id.split('/')[-1]}")
+                        item_cpu = printer_spec or ''
+                        item_ram = ''
+                        item_os = ''
+                        item_ip = ip_address or '-'
+                        item_mac = mac_address or '-'
+                    elif comp_upper == 'UPS':
+                        item_dev_type = 'UPS'
+                        item_brand = ups_brand or brand_name or ''
+                        item_sn = ups_serial or (f"{serial_number}-UPS" if serial_number else f"SN-PSM-UPS-{asset_id.split('/')[-1]}")
+                        item_cpu = ups_spec or ''
+                        item_ram = ''
+                        item_os = ''
+                        item_ip = '-'
+                        item_mac = '-'
+                    elif comp_upper == 'TABLET':
+                        item_dev_type = 'Tablet'
+                        item_brand = tablet_brand or brand_name or ''
+                        item_sn = tablet_serial or (f"{serial_number}-TAB" if serial_number else f"SN-PSM-TAB-{asset_id.split('/')[-1]}")
+                        item_cpu = tablet_spec or ''
+                        item_ram = storage_ram
+                        item_os = operating_system
+                        item_ip = ip_address or '-'
+                        item_mac = tablet_mac or mac_address or '-'
+                    else:
+                        item_dev_type = other_device_type or comp
+                        item_brand = other_brand or brand_name or ''
+                        item_sn = other_serial or (f"{serial_number}-{comp_abbr}" if serial_number else f"SN-PSM-{comp_abbr}-{asset_id.split('/')[-1]}")
+                        item_cpu = other_model or f'{item_dev_type} Hardware Unit'
+                        item_ram = ''
+                        item_os = ''
+                        item_ip = '-'
+                        item_mac = '-'
+
+                    if row:
+                        row.device_type = item_dev_type
+                        row.brand_name = item_brand
+                        row.serial_number = item_sn
+                        row.org_id = org_id
+                        row.org_name = org_name
+                        row.building_name = building_name
+                        row.floor_name = floor_name
+                        row.room_name = room_name
+                        row.assigned_user_id = assigned_user_id
+                        row.assigned_user_name = assigned_user_name
+                        row.assigned_emp_id = assigned_emp_id
+                        row.assigned_designation = assigned_designation
+                        row.assigned_department = assigned_department
+                        row.assigned_email = assigned_email
+                        row.assigned_phone = assigned_phone
+                        row.cpu_processor = item_cpu
+                        row.storage_ram = item_ram
+                        row.monitor_spec = monitor_spec if comp_upper in ('CPU', 'DISPLAY') else ''
+                        row.keyboard_spec = keyboard_spec if comp_upper in ('CPU', 'KEYBOARD') else ''
+                        row.mouse_spec = mouse_spec if comp_upper in ('CPU', 'MOUSE') else ''
+                        row.printer_spec = printer_spec if comp_upper in ('CPU', 'PRINTER') else ''
+                        row.ups_spec = ups_spec if comp_upper in ('CPU', 'UPS') else ''
+                        row.tablet_spec = tablet_spec if comp_upper in ('CPU', 'TABLET') else ''
+                        row.operating_system = item_os
+                        row.ip_address = item_ip
+                        row.mac_address = item_mac
+                        row.status = status
+                        row.purchase_date = purchase_date
+                        row.warranty_expiry_date = warranty_expiry_date
+                        if comp_upper == 'TABLET':
+                            row.device_id = tablet_device_id
+                            row.anydesk_id = tablet_anydesk_id
+                        elif comp_upper == 'CPU':
+                            row.device_id = device_id
+                            row.anydesk_id = anydesk_id
+                        row.save()
+                    else:
+                        new_dev_id = f"dev-{uuid.uuid4().hex[:8]}"
+                        new_row = DeviceAsset.objects.create(
+                            dev_id=new_dev_id,
+                            asset_id=asset_id,
+                            device_type=item_dev_type,
+                            brand_name=item_brand,
+                            serial_number=item_sn,
+                            device_id=tablet_device_id if comp_upper == 'TABLET' else (device_id if comp_upper == 'CPU' else ''),
+                            anydesk_id=tablet_anydesk_id if comp_upper == 'TABLET' else anydesk_id,
+                            org_id=org_id,
+                            org_name=org_name,
+                            building_name=building_name,
+                            floor_name=floor_name,
+                            room_name=room_name,
+                            assigned_user_id=assigned_user_id,
+                            assigned_user_name=assigned_user_name,
+                            assigned_emp_id=assigned_emp_id,
+                            assigned_designation=assigned_designation,
+                            assigned_department=assigned_department,
+                            assigned_email=assigned_email,
+                            assigned_phone=assigned_phone,
+                            cpu_processor=item_cpu,
+                            storage_ram=item_ram,
+                            monitor_spec=monitor_spec if comp_upper in ('CPU', 'DISPLAY') else '',
+                            keyboard_spec=keyboard_spec if comp_upper in ('CPU', 'KEYBOARD') else '',
+                            mouse_spec=mouse_spec if comp_upper in ('CPU', 'MOUSE') else '',
+                            printer_spec=printer_spec if comp_upper in ('CPU', 'PRINTER') else '',
+                            ups_spec=ups_spec if comp_upper in ('CPU', 'UPS') else '',
+                            tablet_spec=tablet_spec if comp_upper in ('CPU', 'TABLET') else '',
+                            operating_system=item_os,
+                            ip_address=item_ip,
+                            mac_address=item_mac,
+                            purchase_date=purchase_date,
+                            warranty_expiry_date=warranty_expiry_date,
+                            status=status
+                        )
+                        used_row_ids.add(new_row.id)
+
+                for r in existing_rows:
+                    if r.id not in used_row_ids:
+                        r.delete()
+
+                dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first() or dev
+            else:
+                single_brand = brand_name
+                if not single_brand:
+                    dtype_up = device_type.upper()
+                    if 'CPU' in dtype_up or 'WORKSTATION' in dtype_up:
+                        single_brand = cpu_brand or ''
+                    elif 'DISPLAY' in dtype_up or 'MONITOR' in dtype_up:
+                        single_brand = monitor_brand or ''
+                    elif 'KEYBOARD' in dtype_up:
+                        single_brand = keyboard_brand or ''
+                    elif 'MOUSE' in dtype_up:
+                        single_brand = mouse_brand or ''
+                    elif 'PRINTER' in dtype_up:
+                        single_brand = printer_brand or ''
+                    elif 'UPS' in dtype_up:
+                        single_brand = ups_brand or ''
+                    elif 'TABLET' in dtype_up:
+                        single_brand = tablet_brand or ''
+                    elif other_brand:
+                        single_brand = other_brand
+
+                if not serial_number:
+                    dtype_up = device_type.upper()
+                    if 'CPU' in dtype_up:
+                        serial_number = cpu_serial
+                    elif 'DISPLAY' in dtype_up or 'MONITOR' in dtype_up:
+                        serial_number = monitor_serial
+                    elif 'KEYBOARD' in dtype_up:
+                        serial_number = keyboard_serial
+                    elif 'MOUSE' in dtype_up:
+                        serial_number = mouse_serial
+                    elif 'PRINTER' in dtype_up:
+                        serial_number = printer_serial
+                    elif 'UPS' in dtype_up:
+                        serial_number = ups_serial
+                    elif 'TABLET' in dtype_up:
+                        serial_number = tablet_serial
+                    elif other_serial:
+                        serial_number = other_serial
+
+                dtype_up = device_type.upper()
+                dev.device_type = device_type
+                if single_brand:
+                    dev.brand_name = single_brand
+                if serial_number:
+                    dev.serial_number = serial_number
+                dev.org_id = org_id
+                dev.org_name = org_name
+                dev.building_name = building_name
+                dev.floor_name = floor_name
+                dev.room_name = room_name
+                dev.assigned_user_id = assigned_user_id
+                dev.assigned_user_name = assigned_user_name
+                dev.assigned_emp_id = assigned_emp_id
+                dev.assigned_designation = assigned_designation
+                dev.assigned_department = assigned_department
+                dev.assigned_email = assigned_email
+                dev.assigned_phone = assigned_phone
+                dev.cpu_processor = cpu_processor
+                dev.storage_ram = storage_ram
+                dev.monitor_spec = monitor_spec
+                dev.keyboard_spec = keyboard_spec
+                dev.mouse_spec = mouse_spec
+                dev.printer_spec = printer_spec
+                dev.ups_spec = ups_spec
+                dev.tablet_spec = tablet_spec
+                dev.operating_system = operating_system
+                dev.ip_address = ip_address
+                dev.mac_address = tablet_mac if ('TABLET' in dtype_up and tablet_mac) else mac_address
+                if 'TABLET' in dtype_up:
+                    if tablet_device_id:
+                        dev.device_id = tablet_device_id
+                    if tablet_anydesk_id:
+                        dev.anydesk_id = tablet_anydesk_id
+                else:
+                    if device_id:
+                        dev.device_id = device_id
+                    if anydesk_id:
+                        dev.anydesk_id = anydesk_id
+                dev.purchase_date = purchase_date
+                dev.warranty_expiry_date = warranty_expiry_date
+                dev.status = status
+                dev.save()
+
+                DeviceAsset.objects.filter(asset_id__iexact=asset_id).exclude(id=dev.id).delete()
+
+            if old_user_name and old_user_name.lower() != assigned_user_name.lower() and assigned_user_name.lower() != 'unassigned':
+                CustodyTransferLog.objects.create(
+                    device=dev,
+                    device_asset_id=dev.asset_id,
+                    from_user_name=old_user_name,
+                    from_emp_id=old_emp_id,
+                    to_user_name=assigned_user_name,
+                    to_emp_id=assigned_emp_id,
+                    handover_date=timezone.now().strftime('%d-%b-%Y'),
+                    assigned_by=request.session.get('staff_name', 'IT Admin Desk') if hasattr(request, 'session') else 'IT Admin Desk',
+                    remarks=f"Mobile Asset Update: Custody updated from {old_user_name} to {assigned_user_name}"
+                )
+
+            if assigned_emp_id:
+                UserProfile.objects.filter(emp_id=assigned_emp_id).update(assigned_asset_id=dev.asset_id)
+
+        return JsonResponse({
+            'success': True,
+            'message': f"Hardware device {dev.asset_id} updated successfully and synchronized with Inventory!",
+            'is_new': False,
+            'is_edit': True,
+            'asset_id': dev.asset_id,
+            'asset_tag_summary': dev.asset_id,
+            'tag_url': f"/tag/?asset_id={urllib.parse.quote(dev.asset_id)}",
+            'device': {
+                'id': dev.dev_id,
+                'assetId': dev.asset_id,
+                'deviceType': dev.device_type,
+                'serialNumber': dev.serial_number,
+                'orgId': dev.org_id,
+                'orgName': dev.org_name,
+                'buildingName': dev.building_name,
+                'floorName': dev.floor_name,
+                'roomName': dev.room_name,
+                'assignedUserId': dev.assigned_user_id,
+                'assignedUserName': dev.assigned_user_name,
+                'empId': dev.assigned_emp_id,
+                'designation': dev.assigned_designation or '',
+                'assignedDesignation': dev.assigned_designation or '',
+                'email': getattr(dev, 'assigned_email', '') or '',
+                'assignedEmail': getattr(dev, 'assigned_email', '') or '',
+                'phone': getattr(dev, 'assigned_phone', '') or '',
+                'assignedPhone': getattr(dev, 'assigned_phone', '') or '',
+                'cpuProcessor': dev.cpu_processor,
+                'storageRam': dev.storage_ram,
+                'monitorSpec': dev.monitor_spec,
+                'keyboardSpec': getattr(dev, 'keyboard_spec', '') or '',
+                'mouseSpec': getattr(dev, 'mouse_spec', '') or '',
+                'printerSpec': getattr(dev, 'printer_spec', '') or '',
+                'upsSpec': getattr(dev, 'ups_spec', '') or '',
+                'tabletSpec': getattr(dev, 'tablet_spec', '') or '',
+                'operatingSystem': dev.operating_system,
+                'ipAddress': dev.ip_address,
+                'macAddress': dev.mac_address,
+                'purchaseDate': dev.purchase_date,
+                'warrantyExpiryDate': dev.warranty_expiry_date,
+                'status': dev.status,
+                'brandName': getattr(dev, 'brand_name', '') or '',
+                'brand': getattr(dev, 'brand_name', '') or '',
+            }
+        })
+
+    # =========================================================================
     # MULTI-COMPONENT WORKSTATION ITEMIZATION (Single Asset Tag Architecture)
     # Saves distinct DeviceAsset rows in PostgreSQL for each selected hardware piece
     # All components for this person share the exact same single asset tag
@@ -1830,9 +2178,234 @@ def api_generate_asset_id(request):
     return JsonResponse({'success': True, 'asset_id': candidate, 'seq_num': next_num})
 
 
+def serialize_device_for_mobile_edit(asset_id):
+    """
+    Serializes a complete workstation or standalone hardware device from PostgreSQL
+    for automatic pre-filling and editing in the Mobile Provisioning Portal.
+    Extracts all 24-column hardware specs across multi-component rows under this asset_id.
+    """
+    matching_devs = list(DeviceAsset.objects.filter(asset_id__iexact=asset_id).order_by('id'))
+    if not matching_devs:
+        return None
+
+    primary = matching_devs[0]
+
+    components = set()
+    other_type_name = ''
+
+    cpu_brand = ''
+    cpu_sn = ''
+    cpu_processor = primary.cpu_processor or ''
+    storage_ram = primary.storage_ram or ''
+    operating_system = primary.operating_system or 'Windows 11 Pro'
+    ip_address = primary.ip_address if primary.ip_address != '-' else ''
+    mac_address = primary.mac_address if primary.mac_address != '-' else ''
+
+    monitor_brand = ''
+    monitor_sn = ''
+    monitor_spec = primary.monitor_spec or ''
+
+    keyboard_brand = ''
+    keyboard_sn = ''
+    keyboard_spec = getattr(primary, 'keyboard_spec', '') or ''
+
+    mouse_brand = ''
+    mouse_sn = ''
+    mouse_spec = getattr(primary, 'mouse_spec', '') or ''
+
+    printer_brand = ''
+    printer_sn = ''
+    printer_spec = getattr(primary, 'printer_spec', '') or ''
+
+    ups_brand = ''
+    ups_sn = ''
+    ups_spec = getattr(primary, 'ups_spec', '') or ''
+
+    tablet_brand = ''
+    tablet_sn = ''
+    tablet_spec = getattr(primary, 'tablet_spec', '') or ''
+    tablet_device_id = primary.device_id or ''
+    tablet_anydesk_id = primary.anydesk_id or ''
+    tablet_mac = ''
+
+    other_brand = ''
+    other_sn = ''
+    other_model = ''
+
+    for d in matching_devs:
+        dt = (d.device_type or '').strip()
+        dt_up = dt.upper()
+
+        if 'CPU' in dt_up and 'WORKSTATION' not in dt_up:
+            components.add('CPU')
+            cpu_brand = d.brand_name or cpu_brand
+            cpu_sn = d.serial_number or cpu_sn
+            cpu_processor = d.cpu_processor or cpu_processor
+            storage_ram = d.storage_ram or storage_ram
+            operating_system = d.operating_system or operating_system
+            if d.ip_address and d.ip_address != '-':
+                ip_address = d.ip_address
+            if d.mac_address and d.mac_address != '-':
+                mac_address = d.mac_address
+        elif 'DISPLAY' in dt_up or 'MONITOR' in dt_up:
+            components.add('Display')
+            monitor_brand = d.brand_name or monitor_brand
+            monitor_sn = d.serial_number or monitor_sn
+            if d.cpu_processor and not monitor_spec:
+                monitor_spec = d.cpu_processor
+        elif 'KEYBOARD' in dt_up:
+            components.add('Keyboard')
+            keyboard_brand = d.brand_name or keyboard_brand
+            keyboard_sn = d.serial_number or keyboard_sn
+            if d.cpu_processor and not keyboard_spec:
+                keyboard_spec = d.cpu_processor
+        elif 'MOUSE' in dt_up:
+            components.add('Mouse')
+            mouse_brand = d.brand_name or mouse_brand
+            mouse_sn = d.serial_number or mouse_sn
+            if d.cpu_processor and not mouse_spec:
+                mouse_spec = d.cpu_processor
+        elif 'PRINTER' in dt_up and 'BARCODE' not in dt_up:
+            components.add('Printer')
+            printer_brand = d.brand_name or printer_brand
+            printer_sn = d.serial_number or printer_sn
+            if d.cpu_processor and not printer_spec:
+                printer_spec = d.cpu_processor
+        elif 'UPS' in dt_up:
+            components.add('UPS')
+            ups_brand = d.brand_name or ups_brand
+            ups_sn = d.serial_number or ups_sn
+            if d.cpu_processor and not ups_spec:
+                ups_spec = d.cpu_processor
+        elif 'TABLET' in dt_up:
+            components.add('Tablet')
+            tablet_brand = d.brand_name or tablet_brand
+            tablet_sn = d.serial_number or tablet_sn
+            if d.cpu_processor and not tablet_spec:
+                tablet_spec = d.cpu_processor
+            tablet_device_id = d.device_id or tablet_device_id
+            tablet_anydesk_id = d.anydesk_id or tablet_anydesk_id
+            if d.mac_address and d.mac_address != '-':
+                tablet_mac = d.mac_address
+        elif 'WORKSTATION' in dt_up:
+            if '(' in dt:
+                inner = dt[dt.find('(') + 1: dt.rfind(')')]
+                for part in inner.split(','):
+                    part_clean = part.strip()
+                    p_up = part_clean.upper()
+                    if p_up in ('CPU', 'DISPLAY', 'MONITOR', 'KEYBOARD', 'MOUSE', 'PRINTER', 'UPS', 'TABLET'):
+                        components.add(part_clean.capitalize() if p_up not in ('CPU', 'UPS') else p_up)
+                    elif part_clean:
+                        components.add('Other')
+                        other_type_name = part_clean
+            else:
+                components.add('CPU')
+            cpu_brand = d.brand_name or cpu_brand
+            cpu_sn = d.serial_number or cpu_sn
+        else:
+            components.add('Other')
+            other_type_name = dt
+            other_brand = d.brand_name or other_brand
+            other_sn = d.serial_number or other_sn
+            other_model = d.cpu_processor or other_model
+
+    # Check primary row specs if components didn't catch them
+    if primary.monitor_spec and not monitor_spec:
+        monitor_spec = primary.monitor_spec
+    if getattr(primary, 'keyboard_spec', '') and not keyboard_spec:
+        keyboard_spec = primary.keyboard_spec
+    if getattr(primary, 'mouse_spec', '') and not mouse_spec:
+        mouse_spec = primary.mouse_spec
+    if getattr(primary, 'printer_spec', '') and not printer_spec:
+        printer_spec = primary.printer_spec
+    if getattr(primary, 'ups_spec', '') and not ups_spec:
+        ups_spec = primary.ups_spec
+    if getattr(primary, 'tablet_spec', '') and not tablet_spec:
+        tablet_spec = primary.tablet_spec
+
+    if not components:
+        p_up = (primary.device_type or '').upper()
+        if 'CPU' in p_up:
+            components.add('CPU')
+        elif 'DISPLAY' in p_up or 'MONITOR' in p_up:
+            components.add('Display')
+        elif 'KEYBOARD' in p_up:
+            components.add('Keyboard')
+        elif 'MOUSE' in p_up:
+            components.add('Mouse')
+        elif 'PRINTER' in p_up:
+            components.add('Printer')
+        elif 'UPS' in p_up:
+            components.add('UPS')
+        elif 'TABLET' in p_up:
+            components.add('Tablet')
+        else:
+            components.add('Other')
+            other_type_name = primary.device_type or 'Scanner'
+
+    if 'CPU' in components and not cpu_brand and primary.brand_name:
+        cpu_brand = primary.brand_name
+    if 'CPU' in components and not cpu_sn and primary.serial_number:
+        cpu_sn = primary.serial_number
+    if 'Display' in components and not monitor_brand and ('DISPLAY' in (primary.device_type or '').upper() or 'MONITOR' in (primary.device_type or '').upper()):
+        monitor_brand = primary.brand_name
+    if 'Other' in components and not other_brand and primary.brand_name:
+        other_brand = primary.brand_name
+
+    return {
+        'asset_id': primary.asset_id,
+        'device_type': primary.device_type,
+        'status': primary.status,
+        'building_name': primary.building_name or 'PSM Hospital',
+        'floor_name': primary.floor_name or '2nd Floor',
+        'room_name': primary.room_name or '',
+        'assigned_user_name': primary.assigned_user_name or 'Unassigned',
+        'assigned_emp_id': primary.assigned_emp_id or '',
+        'assigned_designation': getattr(primary, 'assigned_designation', '') or '',
+        'assigned_department': getattr(primary, 'assigned_department', '') or '',
+        'assigned_phone': getattr(primary, 'assigned_phone', '') or '',
+        'assigned_email': getattr(primary, 'assigned_email', '') or '',
+        'components': sorted(list(components)),
+        'cpu_brand': cpu_brand,
+        'cpu_sn': cpu_sn,
+        'cpu_processor': cpu_processor,
+        'storage_ram': storage_ram,
+        'operating_system': operating_system,
+        'ip_address': ip_address,
+        'mac_address': mac_address,
+        'monitor_brand': monitor_brand,
+        'monitor_sn': monitor_sn,
+        'monitor_spec': monitor_spec,
+        'keyboard_brand': keyboard_brand,
+        'keyboard_sn': keyboard_sn,
+        'keyboard_spec': keyboard_spec,
+        'mouse_brand': mouse_brand,
+        'mouse_sn': mouse_sn,
+        'mouse_spec': mouse_spec,
+        'printer_brand': printer_brand,
+        'printer_sn': printer_sn,
+        'printer_spec': printer_spec,
+        'ups_brand': ups_brand,
+        'ups_sn': ups_sn,
+        'ups_spec': ups_spec,
+        'tablet_brand': tablet_brand,
+        'tablet_sn': tablet_sn,
+        'tablet_spec': tablet_spec,
+        'tablet_device_id': tablet_device_id,
+        'tablet_anydesk_id': tablet_anydesk_id,
+        'tablet_mac': tablet_mac,
+        'other_device_type': other_type_name or 'Scanner',
+        'other_brand': other_brand,
+        'other_model': other_model,
+        'other_sn': other_sn,
+        'purchase_date': primary.purchase_date or '',
+        'warranty_expiry_date': primary.warranty_expiry_date or '',
+    }
+
+
 @csrf_exempt
 def api_check_asset_id(request):
-    """Real-time validation API: checks if an asset_id already exists in PostgreSQL."""
+    """Real-time validation API: checks if an asset_id already exists in PostgreSQL and returns complete device payload for editing."""
     asset_id = (request.GET.get('asset_id') or request.POST.get('asset_id') or '').strip().upper()
     if not asset_id:
         return JsonResponse({'exists': False, 'valid': False, 'message': 'Empty ID'})
@@ -1849,17 +2422,19 @@ def api_check_asset_id(request):
                 'message': 'Sequence number cannot exceed 3 digits (e.g. 001 to 999).'
             })
 
-    dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
-    if dev:
+    dev_data = serialize_device_for_mobile_edit(asset_id)
+    if dev_data:
         return JsonResponse({
             'exists': True,
             'valid': True,
-            'asset_id': dev.asset_id,
-            'device_type': dev.device_type,
-            'location': f"{dev.room_name} ({dev.floor_name})",
-            'status': dev.status,
-            'message': f"Already registered to {dev.device_type} in {dev.room_name}."
+            'asset_id': dev_data['asset_id'],
+            'device_type': dev_data['device_type'],
+            'location': f"{dev_data['room_name']} ({dev_data['floor_name']})",
+            'status': dev_data['status'],
+            'message': f"Existing asset found: {dev_data['device_type']} in {dev_data['room_name']}.",
+            'device': dev_data
         })
+
     return JsonResponse({
         'exists': False,
         'valid': True,
