@@ -1112,15 +1112,21 @@
             <!-- Action Buttons -->
             <div class="space-y-2.5 pt-2">
                 <button type="button" onclick="continueEnrollNext()"
-                    class="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95">
+                    class="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>
                     <span id="modal-btn-next-text">Enroll Next Device Now</span>
                 </button>
 
-                <a href="{% url 'inventory' %}"
-                    class="w-full h-10 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all">
+                <a id="modal-btn-view-tag" href="/tag/"
+                    class="w-full h-11 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 active:from-teal-700 active:to-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer">
+                    <i data-lucide="qr-code" class="w-4 h-4"></i>
+                    <span>Generate Barcode & QR Tag</span>
+                </a>
+
+                <a id="modal-btn-view-inv" href="{% url 'inventory' %}"
+                    class="w-full h-10 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                     <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-                    <span>Back to Inventory Table</span>
+                    <span>View in Inventory Table</span>
                 </a>
             </div>
         </div>
@@ -2424,6 +2430,15 @@
                         ? `${assignedUserName} • ${assignedDesig}`
                         : assignedUserName;
                     document.getElementById('modal-saved-custodian').textContent = custodianSummary;
+
+                    const tagBtn = document.getElementById('modal-btn-view-tag');
+                    if (tagBtn) {
+                        tagBtn.href = `/tag/?asset_id=${encodeURIComponent(lastRegisteredAssetId)}`;
+                    }
+                    const invBtn = document.getElementById('modal-btn-view-inv');
+                    if (invBtn) {
+                        invBtn.href = `/inventory/?search=${encodeURIComponent(lastRegisteredAssetId)}`;
+                    }
 
                     // Show success modal
                     document.getElementById('modal-success').classList.remove('hidden');

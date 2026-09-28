@@ -742,10 +742,15 @@ def api_save_device(request):
                 dev.mouse_spec = mouse_spec
                 dev.printer_spec = printer_spec
                 dev.ups_spec = ups_spec
-                dev.tablet_spec = tablet_spec
-                dev.operating_system = operating_system
-                dev.ip_address = ip_address
-                dev.mac_address = tablet_mac if ('TABLET' in dtype_up and tablet_mac) else mac_address
+                if dtype_up in ('DISPLAY', 'KEYBOARD', 'MOUSE', 'UPS'):
+                    dev.ip_address = '-'
+                    dev.mac_address = '-'
+                elif dtype_up == 'PRINTER':
+                    dev.ip_address = ip_address if (ip_address and ip_address not in ('-', '—', 'N/A', 'n/a', 'NA')) else '-'
+                    dev.mac_address = mac_address if (mac_address and mac_address not in ('-', '—', 'N/A', 'n/a', 'NA')) else '-'
+                else:
+                    dev.ip_address = ip_address
+                    dev.mac_address = tablet_mac if ('TABLET' in dtype_up and tablet_mac) else mac_address
                 if 'TABLET' in dtype_up:
                     if tablet_device_id:
                         dev.device_id = tablet_device_id
@@ -2236,11 +2241,14 @@ def serialize_device_for_mobile_edit(asset_id):
 
     cpu_brand = ''
     cpu_sn = ''
-    cpu_processor = primary.cpu_processor or ''
-    storage_ram = primary.storage_ram or ''
-    operating_system = primary.operating_system or 'Windows 11 Pro'
-    ip_address = primary.ip_address if primary.ip_address != '-' else ''
-    mac_address = primary.mac_address if primary.mac_address != '-' else ''
+    cpu_dev = next((d for d in matching_devs if 'CPU' in (d.device_type or '').upper() or 'WORKSTATION' in (d.device_type or '').upper()), None)
+    base_dev = cpu_dev or primary
+    cpu_processor = (cpu_dev.cpu_processor if cpu_dev else primary.cpu_processor) or ''
+    storage_ram = (cpu_dev.storage_ram if cpu_dev else primary.storage_ram) or ''
+    operating_system = (cpu_dev.operating_system if cpu_dev else primary.operating_system) or 'Windows 11 Pro'
+    is_base_peripheral = (base_dev.device_type or '').upper() in ('DISPLAY', 'KEYBOARD', 'MOUSE', 'UPS')
+    ip_address = '' if is_base_peripheral else (base_dev.ip_address if base_dev.ip_address not in ('-', '—', 'N/A', 'n/a') else '')
+    mac_address = '' if is_base_peripheral else (base_dev.mac_address if base_dev.mac_address not in ('-', '—', 'N/A', 'n/a') else '')
 
     monitor_brand = ''
     monitor_sn = ''
@@ -3618,8 +3626,8 @@ def api_import_devices_excel(request):
                     c_cpu = c_prt
                     c_ram = ''
                     c_os = ''
-                    c_ip = ip_address
-                    c_mac = mac_address
+                    c_ip = ''
+                    c_mac = ''
                 elif c_upper == 'UPS':
                     c_type = 'UPS'
                     c_ups = ups_spec or model_specs or ''

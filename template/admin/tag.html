@@ -334,13 +334,13 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static 'js/data.js' %}?v=6.0"></script>
-<script src="{% static 'js/qrcode.min.js' %}?v=6.0"></script>
-<script src="{% static 'js/qr_generator.js' %}?v=7.7"></script>
-<script src="{% static 'js/app.js' %}?v=12.0_clean_no_m"></script>
+<script src="{% static 'js/data.js' %}?v=16.0_fix_printer_ip_and_tag_flow"></script>
+<script src="{% static 'js/qrcode.min.js' %}?v=16.0_fix_printer_ip_and_tag_flow"></script>
+<script src="{% static 'js/qr_generator.js' %}?v=16.0_fix_printer_ip_and_tag_flow"></script>
+<script src="{% static 'js/app.js' %}?v=16.0_fix_printer_ip_and_tag_flow"></script>
 <script>
     function handleTagFilterSearch(e) {
-        const val = (e.target.value || '').toLowerCase().trim();
+        const val = (e && e.target ? e.target.value : '').toLowerCase().trim();
         const cards = document.querySelectorAll('.sticker-card');
         cards.forEach(card => {
             const text = card.innerText.toLowerCase();
@@ -359,5 +359,18 @@
             });
         }
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetTag = urlParams.get('asset_id') || urlParams.get('tag') || urlParams.get('search') || urlParams.get('q');
+        if (targetTag) {
+            const searchInput = document.getElementById('tag-search-input');
+            if (searchInput) {
+                searchInput.value = targetTag;
+                setTimeout(() => handleTagFilterSearch({ target: searchInput }), 150);
+                setTimeout(() => handleTagFilterSearch({ target: searchInput }), 500);
+            }
+        }
+    });
 </script>
 {% endblock %}

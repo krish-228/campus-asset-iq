@@ -16,7 +16,7 @@ let appState = {
 function initAppState() {
     const urlParams = new URLSearchParams(window.location.search);
     let orgParam = urlParams.get('org');
-    const searchParam = urlParams.get('search');
+    const searchParam = urlParams.get('search') || urlParams.get('asset_id') || urlParams.get('tag') || urlParams.get('q');
 
     // Always start with complete PSM Hospital INITIAL_SAMPLE_DATA structure
     appState = {
@@ -28,7 +28,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v14.0_device_specific_spec_boxes";
+    const CURRENT_CACHE_VERSION = "v16.0_fix_printer_ip_and_tag_flow";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -1048,6 +1048,32 @@ function getStatusDisplayHtml(dev) {
     `;
 }
 
+function getNetworkIpCellHtml(dev) {
+    const rawIp = (dev.ipAddress || '').trim();
+    const hasValidIp = rawIp && rawIp !== '-' && rawIp !== '—' && rawIp !== 'N/A' && rawIp !== 'n/a' && rawIp.toLowerCase() !== 'unassigned';
+    
+    const rawMac = (dev.macAddress || '').trim();
+    const hasValidMac = rawMac && rawMac !== '-' && rawMac !== '—' && rawMac !== 'N/A' && rawMac !== 'n/a' && rawMac.toLowerCase() !== 'unassigned';
+
+    return `
+        <div class="space-y-0.5">
+            <div class="flex items-center gap-1.5 font-mono text-sm whitespace-nowrap">
+                ${hasValidIp 
+                    ? `<span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs"></span><span class="font-bold text-slate-900">${rawIp}</span>`
+                    : `<span class="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></span><span class="text-slate-400 font-normal">—</span>`
+                }
+            </div>
+            <div class="text-xs font-mono whitespace-nowrap">
+                <span class="text-slate-400 font-semibold">MAC:</span> 
+                ${hasValidMac 
+                    ? `<span class="text-slate-600 font-semibold">${rawMac}</span>`
+                    : `<span class="text-slate-400 font-normal">—</span>`
+                }
+            </div>
+        </div>
+    `;
+}
+
 function renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMultiDevice = false, multiCount = 0) {
     const meta = dev._meta || {};
     const custKey = meta.assignedName ? meta.assignedName.toLowerCase() : '';
@@ -1141,17 +1167,7 @@ function renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMultiDevice
                 </div>
             </td>
             <td class="py-3 px-3.5">${getDeviceSpecificationsHtml(dev)}</td>
-            <td class="py-3 px-3.5">
-                <div class="space-y-0.5">
-                    <div class="flex items-center gap-1.5 font-mono text-sm font-bold text-slate-900 whitespace-nowrap">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs"></span>
-                        <span>${dev.ipAddress || '—'}</span>
-                    </div>
-                    <div class="text-xs font-mono text-slate-500 whitespace-nowrap">
-                        <span class="text-slate-400 font-semibold">MAC:</span> ${dev.macAddress || '—'}
-                    </div>
-                </div>
-            </td>
+            <td class="py-3 px-3.5">${getNetworkIpCellHtml(dev)}</td>
             <td class="py-3 px-3.5">${getStatusDisplayHtml(dev)}</td>
             <td class="py-3 pr-4 pl-2 text-center w-16 min-w-[60px]">
                 <button onclick="toggleDeviceActionMenu('${dev.id}', event)" class="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-indigo-50 hover:border-indigo-400 text-slate-700 hover:text-indigo-700 inline-flex items-center justify-center transition-all shadow-2xs group cursor-pointer" title="Device Actions Menu">
@@ -1557,17 +1573,7 @@ function renderInventoryTable() {
                                 </div>
                             </td>
                             <td class="py-3 px-3.5">${getDeviceSpecificationsHtml(dev)}</td>
-                            <td class="py-3 px-3.5">
-                                <div class="space-y-0.5">
-                                    <div class="flex items-center gap-1.5 font-mono text-sm font-bold text-slate-900 whitespace-nowrap">
-                                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs"></span>
-                                        <span>${dev.ipAddress || '—'}</span>
-                                    </div>
-                                    <div class="text-xs font-mono text-slate-500 whitespace-nowrap">
-                                        <span class="text-slate-400 font-semibold">MAC:</span> ${dev.macAddress || '—'}
-                                    </div>
-                                </div>
-                            </td>
+                            <td class="py-3 px-3.5">${getNetworkIpCellHtml(dev)}</td>
                             <td class="py-3 px-3.5">${getStatusDisplayHtml(dev)}</td>
                             <td class="py-3 pr-4 pl-2 text-center w-16 min-w-[60px]">
                                 <button onclick="toggleDeviceActionMenu('${dev.id}', event)" class="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-indigo-50 hover:border-indigo-400 text-slate-700 hover:text-indigo-700 inline-flex items-center justify-center transition-all shadow-2xs group cursor-pointer" title="Device Actions Menu">
@@ -1711,6 +1717,16 @@ function executeDropdownAction(actionType, event) {
         openReassignModal(devId);
     } else if (actionType === 'inspect') {
         openDeviceDetailPopup(devId);
+    } else if (actionType === 'tag') {
+        const dev = (appState.devices || []).find(d => d.id === devId);
+        if (dev && dev.assetId) {
+            window.location.href = `/tag/?asset_id=${encodeURIComponent(dev.assetId)}`;
+        }
+    } else if (actionType === 'edit') {
+        const dev = (appState.devices || []).find(d => d.id === devId);
+        if (dev && dev.assetId) {
+            window.location.href = `/admin-add-device/?edit=${encodeURIComponent(dev.assetId)}`;
+        }
     }
 }
 
