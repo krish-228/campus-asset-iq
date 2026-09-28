@@ -7,6 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.conf import settings
 import json
+import re
 import urllib.parse
 import random
 from django.db import models, transaction
@@ -35,15 +36,14 @@ def normalize_device_type(code, asset_id=''):
     if c in ('U', 'UPS', 'INVERTER', 'POWER'):
         return 'UPS'
     
-    # Check asset_id format: PSM/IT/<TYPE>/<MMYY>/<NUM> or legacy PSM/IT/<FLOOR>/<TYPE>-<NUM>
+    # Check legacy type markers if explicitly embedded: PSM/IT/<FLOOR>/<TYPE>-<NUM>
     aid = asset_id.upper()
-    if '/C/' in aid or '/C-' in aid or '/C.' in aid: return 'CPU'
-    if '/D/' in aid or '/D-' in aid or '/D.' in aid or '/DISP-' in aid: return 'Display'
-    if '/K/' in aid or '/K-' in aid or '/K.' in aid or '/KB-' in aid: return 'Keyboard'
-    if '/M/' in aid or '/M-' in aid or '/M.' in aid: return 'Mouse'
-    if '/P/' in aid or '/P-' in aid or '/P.' in aid or '/PRT-' in aid: return 'Printer'
-    if '/T/' in aid or '/T-' in aid: return 'Tablet'
-    if '/U/' in aid or '/U-' in aid: return 'UPS'
+    if '/C-' in aid or '/C.' in aid: return 'CPU'
+    if '/D-' in aid or '/D.' in aid or '/DISP-' in aid: return 'Display'
+    if '/K-' in aid or '/K.' in aid or '/KB-' in aid: return 'Keyboard'
+    if '/PRT-' in aid: return 'Printer'
+    if '/T-' in aid: return 'Tablet'
+    if '/U-' in aid: return 'UPS'
     return code or 'CPU'
 
 def parse_and_normalize_components(components_input, device_type_str='', monitor_spec='', keyboard_spec='', mouse_spec='', tablet_spec='', printer_spec='', ups_spec='', other_spec='', other_type=''):
@@ -164,10 +164,11 @@ def api_get_devices(request):
     
     devices_data = []
     for d in qs:
+        clean_tag = re.sub(r'^PSM/IT/[A-Za-z]/', 'PSM/IT/', d.asset_id or '', flags=re.IGNORECASE).replace('/M/', '/').replace('/m/', '/')
         devices_data.append({
             'id': d.dev_id,
-            'assetId': d.asset_id,
-            'deviceType': d.device_type or normalize_device_type('', d.asset_id),
+            'assetId': clean_tag or d.asset_id,
+            'deviceType': d.device_type or normalize_device_type('', clean_tag or d.asset_id),
             'serialNumber': d.serial_number,
             'orgId': d.org_id,
             'orgName': d.org_name,
@@ -434,29 +435,25 @@ def api_save_device(request):
 
     edit_id = (data.get('editId') or data.get('edit_id') or data.get('id') or '').strip()
     is_edit_request = bool(data.get('is_edit') or edit_id or data.get('allow_overwrite'))
+
+    # Clean asset_id (purge any middle /M/ if user typed or pasted it)
+    asset_id = re.sub(r'^PSM/IT/[A-Za-z]/', 'PSM/IT/', asset_id, flags=re.IGNORECASE)
+
     if edit_id:
         dev = DeviceAsset.objects.filter(dev_id=edit_id).first() or DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
     else:
         dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
         if not dev and asset_id:
-            # Flexible variant lookup (e.g. PSM/IT/0826/001 <-> PSM/IT/M/0826/001)
-            parts = asset_id.split('/')
-            if len(parts) == 4 and parts[0].upper() == 'PSM' and parts[1].upper() == 'IT':
-                dev = DeviceAsset.objects.filter(asset_id__iexact=f"PSM/IT/M/{parts[2]}/{parts[3]}").first()
-                if not dev:
-                    dev = DeviceAsset.objects.filter(asset_id__iregex=rf"^PSM/IT/[A-Z]/{parts[2]}/{parts[3]}$").first()
-            elif len(parts) == 5 and parts[0].upper() == 'PSM' and parts[1].upper() == 'IT':
-                dev = DeviceAsset.objects.filter(asset_id__iexact=f"PSM/IT/{parts[3]}/{parts[4]}").first()
-
             # Global sequence lookup (e.g. sequence 007 is already registered as Device #7)
-            if not dev and parts:
+            parts = asset_id.split('/')
+            if parts:
                 last = parts[-1]
                 if last.isdigit():
                     seq_val = f"{int(last):03d}"
                     dev = DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}").first()
 
     if dev and is_edit_request:
-        # Align asset_id with the actual DB asset_id if it was resolved via variant or sequence
+        # Align asset_id with the actual DB asset_id
         asset_id = dev.asset_id
 
     if dev and not is_edit_request:
@@ -1079,7 +1076,7 @@ def api_save_device(request):
             'devices': [
                 {
                     'id': d.dev_id,
-                    'assetId': d.asset_id,
+                    'assetId': re.sub(r'^PSM/IT/[A-Za-z]/', 'PSM/IT/', d.asset_id or '', flags=re.IGNORECASE).replace('/M/', '/').replace('/m/', '/') or d.asset_id,
                     'deviceType': d.device_type,
                     'brandName': getattr(d, 'brand_name', '') or '',
                     'brand': getattr(d, 'brand_name', '') or '',
@@ -1967,10 +1964,11 @@ def get_serialized_devices_and_logs():
     devices_qs = DeviceAsset.objects.filter(org_id='HOSP').order_by('-id')
     devices_data = []
     for d in devices_qs:
+        clean_tag = re.sub(r'^PSM/IT/[A-Za-z]/', 'PSM/IT/', d.asset_id or '', flags=re.IGNORECASE).replace('/M/', '/').replace('/m/', '/')
         devices_data.append({
             'id': d.dev_id,
-            'assetId': d.asset_id,
-            'deviceType': d.device_type or normalize_device_type('', d.asset_id),
+            'assetId': clean_tag or d.asset_id,
+            'deviceType': d.device_type or normalize_device_type('', clean_tag or d.asset_id),
             'serialNumber': d.serial_number,
             'orgId': d.org_id,
             'orgName': d.org_name,
@@ -2205,37 +2203,18 @@ def serialize_device_for_mobile_edit(asset_id):
     Serializes a complete workstation or standalone hardware device from PostgreSQL
     for automatic pre-filling and editing in the Mobile Provisioning Portal.
     Extracts all 24-column hardware specs across multi-component rows under this asset_id.
-    Supports smart flexible matching for both 4-part (PSM/IT/0826/001) and 5-part (PSM/IT/M/0826/001) formats.
     """
     clean_id = (asset_id or '').strip()
     if not clean_id:
         return None
 
+    # Always strip legacy middle letter /M/, /C/, etc. if present
+    clean_id = re.sub(r'^PSM/IT/[A-Za-z]/', 'PSM/IT/', clean_id, flags=re.IGNORECASE)
+
     # 1. Direct exact match
     matching_devs = list(DeviceAsset.objects.filter(asset_id__iexact=clean_id).order_by('id'))
 
-    # 2. Smart variations match (e.g. PSM/IT/0826/001 <-> PSM/IT/M/0826/001)
-    if not matching_devs:
-        parts = clean_id.split('/')
-        candidates = []
-        if len(parts) == 4 and parts[0].upper() == 'PSM' and parts[1].upper() == 'IT':
-            mmyy, seq = parts[2], parts[3]
-            candidates.append(f"PSM/IT/M/{mmyy}/{seq}")
-            # Also search any single middle letter in DB
-            for row in DeviceAsset.objects.filter(asset_id__iregex=rf"^PSM/IT/[A-Z]/{mmyy}/{seq}$").order_by('id'):
-                if row.asset_id not in candidates:
-                    candidates.append(row.asset_id)
-        elif len(parts) == 5 and parts[0].upper() == 'PSM' and parts[1].upper() == 'IT':
-            mmyy, seq = parts[3], parts[4]
-            candidates.append(f"PSM/IT/{mmyy}/{seq}")
-
-        for cand in candidates:
-            devs = list(DeviceAsset.objects.filter(asset_id__iexact=cand).order_by('id'))
-            if devs:
-                matching_devs = devs
-                break
-
-    # 3. Global hardware sequence lookup (e.g. if user types PSM/IT/0926/007, 007, or 7, find existing Device #7)
+    # 2. Global hardware sequence lookup (e.g. if user types PSM/IT/0926/007, 007, or 7, find existing Device #7)
     if not matching_devs:
         parts = clean_id.split('/')
         if parts:
@@ -3454,6 +3433,9 @@ def api_import_devices_excel(request):
 
         if not asset_id and not serial_number:
             continue
+
+        if asset_id:
+            asset_id = re.sub(r'^PSM/IT/[A-Za-z]/', 'PSM/IT/', str(asset_id).strip(), flags=re.IGNORECASE).replace('/M/', '/').replace('/m/', '/')
 
         if not asset_id:
             now_str = timezone.localtime().strftime("%m%y")

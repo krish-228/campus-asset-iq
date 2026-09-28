@@ -28,7 +28,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v10.0_100_percent_fresh_slate";
+    const CURRENT_CACHE_VERSION = "v12.0_clean_no_m_asset_tags";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -61,7 +61,7 @@ function initAppState() {
             if (Array.isArray(parsed.devices)) {
                 parsed.devices.forEach(d => {
                     if (d.assetId) {
-                        d.assetId = d.assetId.replace(/^PSM\/IT\/[A-Z]\/(\d{4}\/\d+)$/i, 'PSM/IT/$1');
+                        d.assetId = d.assetId.replace(/^PSM\/IT\/[A-Za-z]\/(\d{4}\/\d+)$/i, 'PSM/IT/$1').replace(/\/M\//gi, '/');
                     }
                 });
             }
@@ -132,6 +132,9 @@ function initAppState() {
             const serverDevices = JSON.parse(serverDevicesEl.textContent);
             if (Array.isArray(serverDevices)) {
                 serverDevices.forEach(dbDev => {
+                    if (dbDev.assetId) {
+                        dbDev.assetId = dbDev.assetId.replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/');
+                    }
                     if (typeof isPlaceholderDetail === 'function') {
                         if (isPlaceholderDetail(dbDev.storageRam)) dbDev.storageRam = '';
                         if (isPlaceholderDetail(dbDev.operatingSystem)) dbDev.operatingSystem = '';
@@ -371,13 +374,12 @@ function getDeviceTypeBadge(dev) {
     let rawType = (dev.deviceType || '').trim();
     if (!rawType && dev.assetId) {
         const aid = dev.assetId.toUpperCase();
-        if (aid.includes('/C/') || aid.includes('/C-') || aid.includes('/C.')) rawType = 'CPU';
-        else if (aid.includes('/D/') || aid.includes('/D-') || aid.includes('/D.')) rawType = 'Display';
-        else if (aid.includes('/K/') || aid.includes('/K-') || aid.includes('/K.')) rawType = 'Keyboard';
-        else if (aid.includes('/M/') || aid.includes('/M-') || aid.includes('/M.')) rawType = 'Mouse';
-        else if (aid.includes('/P/') || aid.includes('/P-') || aid.includes('/P.')) rawType = 'Printer';
-        else if (aid.includes('/T/') || aid.includes('/T-') || aid.includes('/T.')) rawType = 'Tablet';
-        else if (aid.includes('/U/') || aid.includes('/U-') || aid.includes('/U.')) rawType = 'UPS';
+        if (aid.includes('/C-') || aid.includes('/C.')) rawType = 'CPU';
+        else if (aid.includes('/D-') || aid.includes('/D.')) rawType = 'Display';
+        else if (aid.includes('/K-') || aid.includes('/K.')) rawType = 'Keyboard';
+        else if (aid.includes('/P-') || aid.includes('/P.')) rawType = 'Printer';
+        else if (aid.includes('/T-') || aid.includes('/T.')) rawType = 'Tablet';
+        else if (aid.includes('/U-') || aid.includes('/U.')) rawType = 'UPS';
     }
     const t = (rawType || 'CPU').toUpperCase();
     let typeHtml = '';
@@ -1123,7 +1125,7 @@ function renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMultiDevice
                     <div>${getDeviceTypeBadge(dev)}</div>
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="font-mono font-black text-xs px-2 py-0.5 rounded-md border ${assetBadgeClass} shadow-3xs whitespace-nowrap inline-block">
-                            ${dev.assetId}
+                            ${(dev.assetId || '').replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/')}
                         </span>
                         <span class="text-xs text-slate-500 font-mono font-medium whitespace-nowrap flex items-center gap-1">
                             <span class="text-slate-400 font-semibold">SN:</span>
@@ -3537,7 +3539,7 @@ function renderDeviceLineRow(dev, room, floor) {
             <!-- 2. Device Asset ID & 3. Icon-only Specs Button -->
             <div class="flex items-center gap-2 shrink-0">
                 <span class="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 shadow-2xs">
-                    ${dev.assetId}
+                    ${(dev.assetId || '').replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/')}
                 </span>
                 <button onclick="openDeviceDetailPopup('${dev.id}')" 
                         title="View Full Specifications & Actions" 
@@ -4857,7 +4859,7 @@ function getDeviceExportData(d) {
     const anydeskId = (d.anydeskId && d.anydeskId !== '-' && d.anydeskId !== 'N/A') ? d.anydeskId : '—';
 
     return {
-        "Asset Tag": d.assetId || '—',
+        "Asset Tag": (d.assetId || '—').replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/'),
         "Device Type": devType,
         "Brand / Make": brand,
         "Hardware Model & Specs": modelSpec,

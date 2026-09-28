@@ -370,7 +370,7 @@
                 <div>
                     <div class="relative">
                         <input type="text" id="input-asset-id" name="asset_id" required
-                            placeholder="e.g. PSM/IT/M/0826/001 or PSM/IT/0926/001"
+                            placeholder="e.g. PSM/IT/0826/001 or PSM/IT/0926/076"
                             class="mobile-input uppercase font-mono font-bold tracking-wide pr-10 text-base"
                             oninput="handleAssetIdInput(this)"
                             list="existing-tags-datalist"
@@ -1612,24 +1612,21 @@
 
         function handleAssetIdInput(input) {
             let val = (input.value || '').toUpperCase();
+            // Automatically strip any legacy middle letter (e.g. PSM/IT/M/0826/001 -> PSM/IT/0826/001)
+            val = val.replace(/^PSM\/IT\/[A-Z]\/(\d{4}\/\d*)$/i, 'PSM/IT/$1');
             const parts = val.split('/');
             let exceeded = false;
 
-            // Determine sequence index:
-            // For 5 parts (e.g. PSM/IT/M/0826/001) -> seq is parts[4]
-            // For 4 parts (e.g. PSM/IT/0826/001) -> seq is parts[3]
-            const seqIndex = parts.length >= 5 ? 4 : (parts.length === 4 ? 3 : -1);
-
-            if (seqIndex !== -1 && parts[seqIndex] !== undefined) {
-                const rawSeq = parts[seqIndex];
+            if (parts.length >= 4) {
+                const rawSeq = parts[3];
                 const cleanSeq = rawSeq.replace(/[^0-9]/g, '');
                 if (cleanSeq.length > 3) {
-                    parts[seqIndex] = cleanSeq.slice(0, 3);
+                    parts[3] = cleanSeq.slice(0, 3);
                     exceeded = true;
                 } else {
-                    parts[seqIndex] = cleanSeq;
+                    parts[3] = cleanSeq;
                 }
-                val = parts.slice(0, seqIndex + 1).join('/');
+                val = parts.slice(0, 4).join('/');
                 input.value = val;
             }
 
@@ -1652,15 +1649,14 @@
 
                 const val = this.value;
                 const parts = val.split('/');
-                const seqIndex = parts.length >= 5 ? 4 : (parts.length === 4 ? 3 : -1);
-                if (seqIndex !== -1) {
+                if (parts.length >= 4) {
                     const selStart = this.selectionStart;
                     const selEnd = this.selectionEnd;
-                    const prefixLen = parts.slice(0, seqIndex).join('/').length + 1;
+                    const prefixLen = parts.slice(0, 3).join('/').length + 1;
 
                     // If typing inside or at the end of the sequence segment
                     if (selStart >= prefixLen && selStart === selEnd) {
-                        const curSeq = parts[seqIndex] || '';
+                        const curSeq = parts[3] || '';
                         if (curSeq.length >= 3 && e.key.length === 1) {
                             e.preventDefault();
                             showSequenceDigitWarning("Only 3 digits allowed in unique sequence (e.g. 001–999). More than 3 digits not accepted.");
@@ -1673,10 +1669,9 @@
             // On blur: auto-pad if 1 or 2 digits entered (e.g. 7 -> 007)
             assetInput.addEventListener('blur', function() {
                 const parts = this.value.trim().split('/');
-                const seqIndex = parts.length >= 5 ? 4 : (parts.length === 4 ? 3 : -1);
-                if (seqIndex !== -1 && parts[seqIndex] && /^\d+$/.test(parts[seqIndex])) {
-                    if (parts[seqIndex].length < 3) {
-                        parts[seqIndex] = parts[seqIndex].padStart(3, '0');
+                if (parts.length === 4 && parts[3] && /^\d+$/.test(parts[3])) {
+                    if (parts[3].length < 3) {
+                        parts[3] = parts[3].padStart(3, '0');
                         this.value = parts.join('/');
                         validateAssetId(this.value);
                         saveDraft();
@@ -1686,10 +1681,11 @@
         }
 
         function selectExistingAssetTag(tag) {
+            const cleanTag = (tag || '').replace(/^PSM\/IT\/[A-Z]\//i, 'PSM/IT/');
             const input = document.getElementById('input-asset-id');
             if (input) {
-                input.value = tag;
-                validateAssetId(tag);
+                input.value = cleanTag;
+                validateAssetId(cleanTag);
                 if (navigator.vibrate) navigator.vibrate([20, 20]);
             }
         }
@@ -1744,7 +1740,8 @@
 
         let validateDebounceTimer = null;
         async function validateAssetId(val) {
-            const clean = (val || '').trim().toUpperCase();
+            let clean = (val || '').trim().toUpperCase();
+            clean = clean.replace(/^PSM\/IT\/[A-Z]\/(\d{4}\/\d*)$/i, 'PSM/IT/$1');
             const statusIcon = document.getElementById('asset-id-status');
             const warningEl = document.getElementById('asset-id-warning');
             const infoEl = document.getElementById('asset-id-info');
@@ -1765,9 +1762,8 @@
 
             // Check if sequence part exceeds 3 digits
             const parts = clean.split('/');
-            const seqIndex = parts.length >= 5 ? 4 : (parts.length === 4 ? 3 : -1);
-            if (seqIndex !== -1 && parts[seqIndex]) {
-                const seq = parts[seqIndex];
+            if (parts.length >= 4 && parts[3]) {
+                const seq = parts[3];
                 if (seq.length > 3) {
                     if (statusIcon) {
                         statusIcon.classList.remove('hidden');
@@ -2166,6 +2162,9 @@
                     }
                     updateSelectedComponentsUI();
                     if (draft.floor) selectFloor(draft.floor);
+                    if (draft.asset_id) {
+                        draft.asset_id = draft.asset_id.replace(/^PSM\/IT\/[A-Z]\//i, 'PSM/IT/');
+                    }
                     if (draft.asset_id && !draft.asset_id.includes('/2F/') && !draft.asset_id.includes('/1F/') && !draft.asset_id.includes('/GF/') && !draft.asset_id.includes('-')) {
                         document.getElementById('input-asset-id').value = draft.asset_id;
                         validateAssetId(draft.asset_id);
