@@ -29,7 +29,9 @@ def normalize_device_type(code, asset_id=''):
         return 'Keyboard'
     if c in ('M', 'MOUSE'):
         return 'Mouse'
-    if c in ('P', 'PRT', 'PRINTER', 'BARCODE PRINTER', 'LASER PRINTER'):
+    if c in ('BARCODE PRINTER', 'LABEL PRINTER', 'BARCODE PRINT', 'THERMAL PRINTER'):
+        return 'Barcode Printer'
+    if c in ('P', 'PRT', 'PRINTER', 'LASER PRINTER'):
         return 'Printer'
     if c in ('T', 'TAB', 'TABLET', 'IPAD'):
         return 'Tablet'
@@ -41,6 +43,7 @@ def normalize_device_type(code, asset_id=''):
     if '/C-' in aid or '/C.' in aid: return 'CPU'
     if '/D-' in aid or '/D.' in aid or '/DISP-' in aid: return 'Display'
     if '/K-' in aid or '/K.' in aid or '/KB-' in aid: return 'Keyboard'
+    if '/BPR-' in aid or '/BARCODE-' in aid: return 'Barcode Printer'
     if '/PRT-' in aid: return 'Printer'
     if '/T-' in aid: return 'Tablet'
     if '/U-' in aid: return 'UPS'
@@ -100,7 +103,7 @@ def parse_and_normalize_components(components_input, device_type_str='', monitor
         else:
             canonical.append(c)
 
-    order = ['CPU', 'Display', 'Keyboard', 'Mouse', 'Tablet', 'Printer', 'UPS', 'Other']
+    order = ['CPU', 'Display', 'Keyboard', 'Mouse', 'Tablet', 'Barcode Printer', 'Printer', 'UPS', 'Other']
     unique_comps = []
     for o in order:
         if o in canonical and o not in unique_comps:
@@ -2362,6 +2365,12 @@ def serialize_device_for_mobile_edit(asset_id):
             mouse_sn = d.serial_number or mouse_sn
             if d.cpu_processor and not mouse_spec:
                 mouse_spec = d.cpu_processor
+        elif 'BARCODE PRINTER' in dt_up or 'LABEL PRINTER' in dt_up:
+            components.add('Barcode Printer')
+            other_type_name = dt or 'Barcode Printer'
+            other_brand = d.brand_name or other_brand
+            other_sn = d.serial_number or other_sn
+            other_model = d.cpu_processor or other_model
         elif 'PRINTER' in dt_up and 'BARCODE' not in dt_up:
             components.add('Printer')
             printer_brand = d.brand_name or printer_brand
@@ -2392,6 +2401,8 @@ def serialize_device_for_mobile_edit(asset_id):
                     p_up = part_clean.upper()
                     if p_up in ('CPU', 'DISPLAY', 'MONITOR', 'KEYBOARD', 'MOUSE', 'PRINTER', 'UPS', 'TABLET'):
                         components.add(part_clean.capitalize() if p_up not in ('CPU', 'UPS') else p_up)
+                    elif 'BARCODE PRINTER' in p_up or 'LABEL PRINTER' in p_up:
+                        components.add('Barcode Printer')
                     elif part_clean:
                         components.add('Other')
                         other_type_name = part_clean
@@ -2430,6 +2441,8 @@ def serialize_device_for_mobile_edit(asset_id):
             components.add('Keyboard')
         elif 'MOUSE' in p_up:
             components.add('Mouse')
+        elif 'BARCODE PRINTER' in p_up or 'LABEL PRINTER' in p_up:
+            components.add('Barcode Printer')
         elif 'PRINTER' in p_up:
             components.add('Printer')
         elif 'UPS' in p_up:

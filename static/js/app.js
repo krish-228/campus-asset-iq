@@ -382,6 +382,7 @@ function getDeviceTypeBadge(dev) {
         if (aid.includes('/C-') || aid.includes('/C.')) rawType = 'CPU';
         else if (aid.includes('/D-') || aid.includes('/D.')) rawType = 'Display';
         else if (aid.includes('/K-') || aid.includes('/K.')) rawType = 'Keyboard';
+        else if (aid.includes('/BPR-') || aid.includes('/BPR.') || aid.includes('/BARCODE-')) rawType = 'Barcode Printer';
         else if (aid.includes('/P-') || aid.includes('/P.')) rawType = 'Printer';
         else if (aid.includes('/T-') || aid.includes('/T.')) rawType = 'Tablet';
         else if (aid.includes('/U-') || aid.includes('/U.')) rawType = 'UPS';
@@ -413,6 +414,11 @@ function getDeviceTypeBadge(dev) {
             <i data-lucide="mouse" class="w-5 h-5 text-purple-600 shrink-0"></i>
             <span>Mouse</span>
         </span>`;
+    } else if (t.includes('BARCODE PRINTER') || t.includes('LABEL PRINTER') || t.includes('BARCODE PRINT') || t.includes('THERMAL PRINTER')) {
+        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-amber-800">
+            <i data-lucide="printer" class="w-5 h-5 text-amber-600 shrink-0"></i>
+            <span>${rawType || 'Barcode Printer'}</span>
+        </span>`;
     } else if (t === 'P' || t === 'PRT' || t === 'PRINTER' || t.includes('PRINT')) {
         typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-emerald-800">
             <i data-lucide="printer" class="w-5 h-5 text-emerald-600 shrink-0"></i>
@@ -437,11 +443,6 @@ function getDeviceTypeBadge(dev) {
         typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-cyan-800">
             <i data-lucide="eye" class="w-5 h-5 text-cyan-600 shrink-0"></i>
             <span>${rawType || 'Eye Scanner'}</span>
-        </span>`;
-    } else if (t.includes('BARCODE PRINTER') || t.includes('LABEL PRINTER')) {
-        typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-amber-800">
-            <i data-lucide="printer" class="w-5 h-5 text-amber-600 shrink-0"></i>
-            <span>${rawType || 'Barcode Printer'}</span>
         </span>`;
     } else if (t.includes('SCANNER') || t.includes('BARCODE')) {
         typeHtml = `<span class="inline-flex items-center gap-2 text-base font-bold text-rose-800">
@@ -526,6 +527,7 @@ const WORKSTATION_DEVICE_PRIORITY = {
     'DISPLAY': 2, 'MONITOR': 2, 'SCREEN': 2,
     'KEYBOARD': 3, 'KB': 3,
     'MOUSE': 4,
+    'BARCODE PRINTER': 5.5, 'LABEL PRINTER': 5.5, 'BARCODE PRINT': 5.5,
     'PRINTER': 5, 'PRT': 5,
     'UPS': 6, 'INVERTER': 6, 'POWER': 6,
     'TABLET': 7, 'TAB': 7, 'IPAD': 7,
@@ -593,6 +595,18 @@ function getWorkstationRoleBadge(dev, displayName) {
             </div>
         `;
     }
+    if (raw.includes('BARCODE PRINTER') || raw.includes('LABEL PRINTER') || raw.includes('BARCODE PRINT') || raw.includes('THERMAL PRINTER')) {
+        return `
+            <div class="space-y-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-3xs whitespace-nowrap">
+                    <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-600"></i> Barcode Printer
+                </span>
+                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
+                </div>
+            </div>
+        `;
+    }
     if (raw.includes('PRINTER') || raw.includes('PRT')) {
         return `
             <div class="space-y-0.5">
@@ -646,18 +660,6 @@ function getWorkstationRoleBadge(dev, displayName) {
             <div class="space-y-0.5">
                 <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-cyan-50 text-cyan-800 border border-cyan-200 shadow-3xs whitespace-nowrap">
                     <i data-lucide="eye" class="w-3.5 h-3.5 text-cyan-600"></i> Eye Scanner
-                </span>
-                <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
-                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
-                </div>
-            </div>
-        `;
-    }
-    if (raw.includes('BARCODE PRINTER') || raw.includes('LABEL PRINTER')) {
-        return `
-            <div class="space-y-0.5">
-                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-3xs whitespace-nowrap">
-                    <i data-lucide="printer" class="w-3.5 h-3.5 text-amber-600"></i> Barcode Printer
                 </span>
                 <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1">
                     <i data-lucide="user" class="w-3 h-3 text-slate-400"></i> ${displayName}
@@ -797,6 +799,8 @@ function getDeviceSpecificationsHtml(dev) {
         model = (dev.keyboardSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
     } else if (rawType.includes('MOUSE') || rawType === 'M') {
         model = (dev.mouseSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('BARCODE PRINTER') || rawType.includes('LABEL PRINTER') || rawType.includes('BARCODE PRINT') || rawType.includes('THERMAL PRINTER')) {
+        model = (dev.otherModel || dev.otherSpec || dev.printerSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
     } else if (rawType.includes('PRINTER') || rawType.includes('PRT') || rawType === 'P') {
         model = (dev.printerSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
     } else if (rawType.includes('UPS') || rawType.includes('POWER') || rawType.includes('INVERTER') || rawType === 'U') {
@@ -830,6 +834,7 @@ function getDeviceSpecificationsHtml(dev) {
         { key: 'CANON', name: 'Canon' },
         { key: 'ZEBRA', name: 'Zebra' },
         { key: 'HONEYWELL', name: 'Honeywell' },
+        { key: 'TSC', name: 'TSC' },
         { key: 'TVS', name: 'TVS' }
     ];
 
@@ -851,6 +856,8 @@ function getDeviceSpecificationsHtml(dev) {
             brand = (dev.keyboardBrand || '').trim();
         } else if (rawType.includes('MOUSE') || rawType === 'M') {
             brand = (dev.mouseBrand || '').trim();
+        } else if (rawType.includes('BARCODE PRINTER') || rawType.includes('LABEL PRINTER') || rawType.includes('BARCODE PRINT') || rawType.includes('THERMAL PRINTER')) {
+            brand = (dev.otherBrand || dev.printerBrand || dev.brandName || dev.brand || dev.brand_name || '').trim();
         } else if (rawType.includes('PRINTER') || rawType.includes('PRT') || rawType === 'P') {
             brand = (dev.printerBrand || dev.brandName || dev.brand || dev.brand_name || '').trim();
         } else if (rawType.includes('UPS') || rawType.includes('POWER') || rawType.includes('INVERTER') || rawType === 'U') {
@@ -887,7 +894,7 @@ function getDeviceSpecificationsHtml(dev) {
     let formattedBrand = brand;
     if (formattedBrand) {
         const up = formattedBrand.toUpperCase();
-        if (['HP', 'LG', 'APC', 'ASUS', 'TVS', 'IBM', 'MSI'].includes(up)) {
+        if (['HP', 'LG', 'APC', 'ASUS', 'TVS', 'IBM', 'MSI', 'TSC'].includes(up)) {
             formattedBrand = up;
         } else if (formattedBrand === up || formattedBrand === formattedBrand.toLowerCase()) {
             formattedBrand = formattedBrand.charAt(0).toUpperCase() + formattedBrand.slice(1).toLowerCase();
@@ -924,6 +931,10 @@ function getDeviceSpecificationsHtml(dev) {
         icon = 'mouse';
         iconColor = 'text-purple-600';
         defaultModelName = 'Optical Mouse';
+    } else if (rawType.includes('BARCODE PRINTER') || rawType.includes('LABEL PRINTER') || rawType.includes('BARCODE PRINT') || rawType.includes('THERMAL PRINTER')) {
+        icon = 'printer';
+        iconColor = 'text-amber-600';
+        defaultModelName = 'Barcode / Thermal Printer';
     } else if (rawType.includes('PRINTER') || rawType.includes('PRT') || rawType === 'P') {
         icon = 'printer';
         iconColor = 'text-emerald-600';
@@ -1247,6 +1258,7 @@ function expandCompositeWorkstation(dev, group) {
         else if (u.includes('KEYBOARD') || u.includes('KB')) normalized.push('Keyboard');
         else if (u.includes('MOUSE')) normalized.push('Mouse');
         else if (u.includes('TABLET') || u.includes('TAB') || u.includes('IPAD')) normalized.push('Tablet');
+        else if (u.includes('BARCODE PRINTER') || u.includes('LABEL PRINTER') || u.includes('BARCODE PRINT') || u.includes('THERMAL PRINTER')) normalized.push('Barcode Printer');
         else if (u.includes('PRINTER') || u.includes('PRT')) normalized.push('Printer');
         else if (u.includes('UPS') || u.includes('POWER') || u.includes('INVERTER')) normalized.push('UPS');
         else if (u.includes('OTHER')) normalized.push('Other');
@@ -1296,6 +1308,13 @@ function expandCompositeWorkstation(dev, group) {
             sub.ipAddress = '—';
             sub.macAddress = '—';
             sub.brandName = dev.tabletBrand || '';
+        } else if (compUpper === 'BARCODE PRINTER' || compUpper === 'LABEL PRINTER') {
+            sub.cpuProcessor = dev.otherModel || dev.otherSpec || dev.printerSpec || '';
+            sub.storageRam = '';
+            sub.operatingSystem = '';
+            sub.ipAddress = '—';
+            sub.macAddress = '—';
+            sub.brandName = dev.otherBrand || dev.printerBrand || dev.brandName || '';
         } else if (compUpper === 'PRINTER') {
             sub.cpuProcessor = dev.printerSpec || '';
             sub.storageRam = '';
@@ -3867,6 +3886,7 @@ function resolveDeviceDbBrand(dev) {
         if (rawType.includes('KEYBOARD')) b = (dev.keyboardBrand || '').trim();
         else if (rawType.includes('MOUSE')) b = (dev.mouseBrand || '').trim();
         else if (rawType.includes('DISPLAY') || rawType.includes('MONITOR')) b = (dev.monitorBrand || '').trim();
+        else if (rawType.includes('BARCODE PRINTER') || rawType.includes('LABEL PRINTER') || rawType.includes('BARCODE PRINT') || rawType.includes('THERMAL PRINTER')) b = (dev.otherBrand || dev.printerBrand || '').trim();
         else if (rawType.includes('PRINTER')) b = (dev.printerBrand || '').trim();
         else if (rawType.includes('UPS')) b = (dev.upsBrand || '').trim();
         else if (rawType.includes('TABLET')) b = (dev.tabletBrand || '').trim();
@@ -3881,6 +3901,7 @@ function resolveDeviceDbBrand(dev) {
             if (rawType.includes('KEYBOARD')) b = (parent.keyboardBrand || parent.brandName || '').trim();
             else if (rawType.includes('MOUSE')) b = (parent.mouseBrand || parent.brandName || '').trim();
             else if (rawType.includes('DISPLAY') || rawType.includes('MONITOR')) b = (parent.monitorBrand || parent.brandName || '').trim();
+            else if (rawType.includes('BARCODE PRINTER') || rawType.includes('LABEL PRINTER') || rawType.includes('BARCODE PRINT') || rawType.includes('THERMAL PRINTER')) b = (parent.otherBrand || parent.printerBrand || parent.brandName || '').trim();
             else if (rawType.includes('PRINTER')) b = (parent.printerBrand || parent.brandName || '').trim();
             else if (rawType.includes('UPS')) b = (parent.upsBrand || parent.brandName || '').trim();
             else if (rawType.includes('TABLET')) b = (parent.tabletBrand || parent.brandName || '').trim();
@@ -3902,6 +3923,8 @@ function resolveDeviceDbModel(dev) {
         m = (dev.mouseSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
     } else if (rawType.includes('DISPLAY') || rawType.includes('MONITOR') || rawType.includes('SCREEN') || rawType === 'D') {
         m = (dev.monitorSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
+    } else if (rawType.includes('BARCODE PRINTER') || rawType.includes('LABEL PRINTER') || rawType.includes('BARCODE PRINT') || rawType.includes('THERMAL PRINTER')) {
+        m = (dev.otherModel || dev.otherSpec || dev.printerSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
     } else if (rawType.includes('PRINTER') || rawType.includes('PRT') || rawType === 'P') {
         m = (dev.printerSpec || dev.cpuProcessor || dev.modelSpecs || '').trim();
     } else if (rawType.includes('UPS') || rawType.includes('POWER') || rawType === 'U') {
@@ -3985,7 +4008,19 @@ function buildDynamicDeviceSpecsGridHtml(dev, locationStr) {
         ].join('');
     }
 
-    // 4. PRINTER / BARCODE PRINTER
+    // 4. BARCODE PRINTER / LABEL PRINTER
+    if (t.includes('BARCODE PRINTER') || t.includes('LABEL PRINTER') || t.includes('BARCODE PRINT') || t.includes('THERMAL PRINTER')) {
+        const cards = [
+            makeCard('tag', 'text-amber-600', 'Brand Name', brand, 'font-extrabold text-slate-900'),
+            makeCard('printer', 'text-amber-600', 'Barcode Printer Model / Specs', model, 'font-extrabold text-slate-900'),
+            makeCard('barcode', 'text-slate-600', 'Serial Number (S/N)', serial, 'font-mono font-bold text-slate-800'),
+            makeCard('check-circle-2', isStatusActive ? 'text-emerald-600' : 'text-amber-600', 'Device Status', status, statusClass),
+            makeCard('map-pin', 'text-rose-600', 'Campus Location', locationStr, 'font-bold text-slate-900', 'sm:col-span-2')
+        ];
+        return cards.join('');
+    }
+
+    // 5. PRINTER / DOCUMENT PRINTER
     if (t.includes('PRINTER') || t.includes('PRT') || t === 'P') {
         const hasIp = dev.ipAddress && dev.ipAddress !== '—' && dev.ipAddress !== '-' && dev.ipAddress !== 'N/A';
         const hasMac = dev.macAddress && dev.macAddress !== '—' && dev.macAddress !== '-' && dev.macAddress !== 'N/A';
@@ -5077,6 +5112,7 @@ function getDeviceExportData(d) {
         if (typeUpper.includes('CPU') || typeUpper.includes('DESKTOP') || typeUpper.includes('PC')) brand = 'Dell';
         else if (typeUpper.includes('DISPLAY')) brand = 'Dell';
         else if (typeUpper.includes('KEYBOARD') || typeUpper.includes('MOUSE')) brand = 'Dell';
+        else if (typeUpper.includes('BARCODE PRINTER') || typeUpper.includes('LABEL PRINTER') || typeUpper.includes('BARCODE PRINT')) brand = 'Zebra';
         else if (typeUpper.includes('PRINTER')) brand = 'HP';
         else if (typeUpper.includes('UPS')) brand = 'APC';
         else if (typeUpper.includes('TABLET')) brand = 'Samsung';
@@ -5091,6 +5127,8 @@ function getDeviceExportData(d) {
         modelSpec = d.keyboardSpec || d.cpuProcessor || 'Dell KB216 USB Wired Keyboard';
     } else if (typeUpper.includes('MOUSE')) {
         modelSpec = d.mouseSpec || d.cpuProcessor || 'Dell MS116 USB Optical Cleanable Mouse';
+    } else if (typeUpper.includes('BARCODE PRINTER') || typeUpper.includes('LABEL PRINTER') || typeUpper.includes('BARCODE PRINT')) {
+        modelSpec = d.otherModel || d.otherSpec || d.printerSpec || d.cpuProcessor || 'Zebra ZD230 Thermal Barcode Printer';
     } else if (typeUpper.includes('PRINTER')) {
         modelSpec = d.printerSpec || d.cpuProcessor || 'HP LaserJet Pro Network Printer';
     } else if (typeUpper.includes('UPS')) {
