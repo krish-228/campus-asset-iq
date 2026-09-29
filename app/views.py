@@ -976,41 +976,89 @@ def api_save_device(request):
                     item_ip = '-'
                     item_mac = '-'
 
-                item_dev = DeviceAsset.objects.create(
-                    dev_id=comp_dev_id,
-                    asset_id=comp_tag,
-                    device_type=item_dev_type,
-                    brand_name=item_brand,
-                    serial_number=comp_sn,
-                    device_id=tablet_device_id if comp_upper == 'TABLET' else (device_id if comp_upper == 'CPU' else ''),
-                    anydesk_id=tablet_anydesk_id if comp_upper == 'TABLET' else anydesk_id,
-                    org_id=org_id,
-                    org_name=org_name,
-                    building_name=building_name,
-                    floor_name=floor_name,
-                    room_name=room_name,
-                    assigned_user_id=assigned_user_id,
-                    assigned_user_name=assigned_user_name,
-                    assigned_emp_id=assigned_emp_id,
-                    assigned_designation=assigned_designation,
-                    assigned_department=assigned_department,
-                    assigned_email=assigned_email,
-                    assigned_phone=assigned_phone,
-                    cpu_processor=item_cpu,
-                    storage_ram=item_ram,
-                    monitor_spec=monitor_spec if comp_upper in ('CPU', 'DISPLAY') else '',
-                    keyboard_spec=keyboard_spec if comp_upper in ('CPU', 'KEYBOARD') else '',
-                    mouse_spec=mouse_spec if comp_upper in ('CPU', 'MOUSE') else '',
-                    printer_spec=printer_spec if comp_upper in ('CPU', 'PRINTER') else '',
-                    ups_spec=ups_spec if comp_upper in ('CPU', 'UPS') else '',
-                    tablet_spec=tablet_spec if comp_upper in ('CPU', 'TABLET') else '',
-                    operating_system=item_os,
-                    ip_address=item_ip,
-                    mac_address=item_mac,
-                    purchase_date=purchase_date,
-                    warranty_expiry_date=warranty_expiry_date,
-                    status=status
-                )
+                # Deduplication check: check if a component of this type already exists under this asset_id or custodian
+                existing_comp = None
+                # 1. Match by asset_id + device_type
+                existing_comp = DeviceAsset.objects.filter(asset_id__iexact=comp_tag, device_type__iexact=item_dev_type).first()
+                # 2. Match by serial_number if genuine
+                if not existing_comp and comp_sn and not comp_sn.startswith('SN-PSM-') and comp_sn.upper() not in ('NA', 'N/A', '-'):
+                    existing_comp = DeviceAsset.objects.filter(serial_number__iexact=comp_sn).first()
+                # 3. Match by custodian + room + device_type if same person
+                if not existing_comp and assigned_user_name and assigned_user_name.lower() != 'unassigned':
+                    existing_comp = DeviceAsset.objects.filter(
+                        assigned_user_name__iexact=assigned_user_name,
+                        room_name__iexact=room_name,
+                        device_type__iexact=item_dev_type
+                    ).first()
+
+                if existing_comp:
+                    # Update existing component instead of duplicating
+                    existing_comp.asset_id = comp_tag
+                    existing_comp.device_type = item_dev_type
+                    if item_brand: existing_comp.brand_name = item_brand
+                    if comp_sn: existing_comp.serial_number = comp_sn
+                    existing_comp.building_name = building_name
+                    existing_comp.floor_name = floor_name
+                    existing_comp.room_name = room_name
+                    existing_comp.assigned_user_id = assigned_user_id
+                    existing_comp.assigned_user_name = assigned_user_name
+                    existing_comp.assigned_emp_id = assigned_emp_id
+                    existing_comp.assigned_designation = assigned_designation
+                    existing_comp.assigned_department = assigned_department
+                    existing_comp.assigned_email = assigned_email
+                    existing_comp.assigned_phone = assigned_phone
+                    existing_comp.cpu_processor = item_cpu
+                    existing_comp.storage_ram = item_ram
+                    existing_comp.monitor_spec = monitor_spec if comp_upper in ('CPU', 'DISPLAY') else ''
+                    existing_comp.keyboard_spec = keyboard_spec if comp_upper in ('CPU', 'KEYBOARD') else ''
+                    existing_comp.mouse_spec = mouse_spec if comp_upper in ('CPU', 'MOUSE') else ''
+                    existing_comp.printer_spec = printer_spec if comp_upper in ('CPU', 'PRINTER') else ''
+                    existing_comp.ups_spec = ups_spec if comp_upper in ('CPU', 'UPS') else ''
+                    existing_comp.tablet_spec = tablet_spec if comp_upper in ('CPU', 'TABLET') else ''
+                    existing_comp.operating_system = item_os
+                    existing_comp.ip_address = item_ip
+                    existing_comp.mac_address = item_mac
+                    existing_comp.purchase_date = purchase_date
+                    existing_comp.warranty_expiry_date = warranty_expiry_date
+                    existing_comp.status = status
+                    existing_comp.save()
+                    item_dev = existing_comp
+                else:
+                    item_dev = DeviceAsset.objects.create(
+                        dev_id=comp_dev_id,
+                        asset_id=comp_tag,
+                        device_type=item_dev_type,
+                        brand_name=item_brand,
+                        serial_number=comp_sn,
+                        device_id=tablet_device_id if comp_upper == 'TABLET' else (device_id if comp_upper == 'CPU' else ''),
+                        anydesk_id=tablet_anydesk_id if comp_upper == 'TABLET' else anydesk_id,
+                        org_id=org_id,
+                        org_name=org_name,
+                        building_name=building_name,
+                        floor_name=floor_name,
+                        room_name=room_name,
+                        assigned_user_id=assigned_user_id,
+                        assigned_user_name=assigned_user_name,
+                        assigned_emp_id=assigned_emp_id,
+                        assigned_designation=assigned_designation,
+                        assigned_department=assigned_department,
+                        assigned_email=assigned_email,
+                        assigned_phone=assigned_phone,
+                        cpu_processor=item_cpu,
+                        storage_ram=item_ram,
+                        monitor_spec=monitor_spec if comp_upper in ('CPU', 'DISPLAY') else '',
+                        keyboard_spec=keyboard_spec if comp_upper in ('CPU', 'KEYBOARD') else '',
+                        mouse_spec=mouse_spec if comp_upper in ('CPU', 'MOUSE') else '',
+                        printer_spec=printer_spec if comp_upper in ('CPU', 'PRINTER') else '',
+                        ups_spec=ups_spec if comp_upper in ('CPU', 'UPS') else '',
+                        tablet_spec=tablet_spec if comp_upper in ('CPU', 'TABLET') else '',
+                        operating_system=item_os,
+                        ip_address=item_ip,
+                        mac_address=item_mac,
+                        purchase_date=purchase_date,
+                        warranty_expiry_date=warranty_expiry_date,
+                        status=status
+                    )
                 created_devices.append(item_dev)
 
                 if assigned_user_name and assigned_user_name.lower() != 'unassigned':
@@ -3645,6 +3693,10 @@ def api_import_devices_excel(request):
                     c_mac = ''
 
                 c_dev = DeviceAsset.objects.filter(asset_id__iexact=c_tag, device_type__iexact=c_type).first()
+                if not c_dev and c_sn and not c_sn.startswith('SN-PSM-') and c_sn.upper() not in ('NA', 'N/A', '-'):
+                    c_dev = DeviceAsset.objects.filter(serial_number__iexact=c_sn).first()
+                if not c_dev and c_type == 'CPU':
+                    c_dev = DeviceAsset.objects.filter(asset_id__iexact=c_tag, device_type__iexact='CPU').first()
                 if c_dev:
                     c_dev.device_type = c_type
                     c_dev.brand_name = c_brand
@@ -3755,10 +3807,12 @@ def api_import_devices_excel(request):
 
         # Look up existing record by asset_id + device_type OR serial_number
         dev = None
-        if serial_number and not serial_number.startswith('SN-PSM-'):
+        if serial_number and not serial_number.startswith('SN-PSM-') and serial_number.upper() not in ('NA', 'N/A', '-'):
             dev = DeviceAsset.objects.filter(serial_number__iexact=serial_number).first()
         if not dev:
             dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id, device_type__iexact=device_type).first()
+        if not dev and device_type.upper() == 'CPU':
+            dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id, device_type__iexact='CPU').first()
 
         if dev:
             dev.device_type = device_type

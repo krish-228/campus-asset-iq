@@ -2282,15 +2282,21 @@
         }
 
         // Form Submission via AJAX to /api/devices/save/
+        let isFormSubmitting = false;
         async function handleFormSubmit(e) {
-            e.preventDefault();
+            if (e) e.preventDefault();
+            if (isFormSubmitting) {
+                console.warn("Duplicate form submission intercepted and blocked.");
+                return;
+            }
+
             const errorBanner = document.getElementById('form-error-banner');
             const errorText = document.getElementById('form-error-text');
-            errorBanner.classList.add('hidden');
+            if (errorBanner) errorBanner.classList.add('hidden');
 
             if (selectedComponents.size === 0) {
-                errorText.textContent = "Please select at least one hardware component (e.g. CPU, Monitor, etc.) for this system.";
-                errorBanner.classList.remove('hidden');
+                if (errorText) errorText.textContent = "Please select at least one hardware component (e.g. CPU, Monitor, etc.) for this system.";
+                if (errorBanner) errorBanner.classList.remove('hidden');
                 return;
             }
 
@@ -2298,8 +2304,8 @@
             const roomName = document.getElementById('input-room').value.trim();
 
             if (!assetId) {
-                errorText.textContent = "Please provide or auto-generate an Asset Tag / ID.";
-                errorBanner.classList.remove('hidden');
+                if (errorText) errorText.textContent = "Please provide or auto-generate an Asset Tag / ID.";
+                if (errorBanner) errorBanner.classList.remove('hidden');
                 document.getElementById('input-asset-id').focus();
                 return;
             }
@@ -2308,25 +2314,30 @@
             if (tagParts.length >= 4) {
                 const seq = tagParts[tagParts.length === 4 ? 3 : 4];
                 if (seq.length > 3 || (seq.length > 0 && !/^\d+$/.test(seq))) {
-                    errorText.textContent = "Invalid Asset Tag: The unique sequence number allows only 3 digits (e.g. 001 to 999).";
-                    errorBanner.classList.remove('hidden');
+                    if (errorText) errorText.textContent = "Invalid Asset Tag: The unique sequence number allows only 3 digits (e.g. 001 to 999).";
+                    if (errorBanner) errorBanner.classList.remove('hidden');
                     document.getElementById('input-asset-id').focus();
                     return;
                 }
             }
 
             if (!roomName) {
-                errorText.textContent = "Please specify a Room, Ward, or Clinic location.";
-                errorBanner.classList.remove('hidden');
+                if (errorText) errorText.textContent = "Please specify a Room, Ward, or Clinic location.";
+                if (errorBanner) errorBanner.classList.remove('hidden');
                 document.getElementById('input-room').focus();
                 return;
             }
 
             const submitBtn = document.getElementById('btn-submit');
             const submitText = document.getElementById('btn-submit-text');
-            submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-75');
-            submitText.textContent = isEditMode ? "Updating PostgreSQL Database..." : "Saving to PostgreSQL Database...";
+            isFormSubmitting = true;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            }
+            if (submitText) {
+                submitText.textContent = isEditMode ? "Updating PostgreSQL Database..." : "Saving to PostgreSQL Database...";
+            }
 
             // Assemble payload
             const assignedUserName = document.getElementById('input-user-name').value.trim() || 'Unassigned';
@@ -2455,12 +2466,17 @@
                 errorText.textContent = "Network error. Please check your connection and try again.";
                 errorBanner.classList.remove('hidden');
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-75');
-                if (isEditMode) {
-                    submitText.textContent = `Update Device (${assetId})`;
-                } else {
-                    submitText.textContent = "Save Device to Inventory";
+                isFormSubmitting = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                }
+                if (submitText) {
+                    if (isEditMode) {
+                        submitText.textContent = `Update Device (${assetId})`;
+                    } else {
+                        submitText.textContent = "Save Device to Inventory";
+                    }
                 }
             }
         }

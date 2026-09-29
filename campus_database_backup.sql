@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict hEKQgPQNaBNsOrcmXvIk9HSNfugLM0Ih2ym9SgtadvclXThU6bcHamTZGVeGABK
+\restrict Lg0nUpnU5Fomi3Z7m3iOJdixp66O3B44Ij6P04HZOXlWtxd3gCkYfRZoPG7axND
 
 -- Dumped from database version 18.6
 -- Dumped by pg_dump version 18.6
@@ -926,6 +926,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 39	app	0020_cleanup_auto_defaulted_brands	2026-09-26 12:17:34.050763+05:30
 40	app	0021_cleanup_dummy_specs	2026-09-26 14:57:17.166346+05:30
 41	app	0022_purge_legacy_m_asset_tags	2026-09-28 12:18:28.015438+05:30
+42	app	0023_deduplicate_device_assets	2026-09-29 15:53:25.561336+05:30
 \.
 
 
@@ -1041,7 +1042,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 12, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 41, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 42, true);
 
 
 --
@@ -1515,5 +1516,5 @@ ALTER TABLE ONLY public.django_admin_log
 -- PostgreSQL database dump complete
 --
 
-\unrestrict hEKQgPQNaBNsOrcmXvIk9HSNfugLM0Ih2ym9SgtadvclXThU6bcHamTZGVeGABK
+\unrestrict Lg0nUpnU5Fomi3Z7m3iOJdixp66O3B44Ij6P04HZOXlWtxd3gCkYfRZoPG7axND
 
