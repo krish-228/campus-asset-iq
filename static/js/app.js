@@ -16,7 +16,10 @@ let appState = {
 function initAppState() {
     const urlParams = new URLSearchParams(window.location.search);
     let orgParam = urlParams.get('org');
-    const searchParam = urlParams.get('search') || urlParams.get('asset_id') || urlParams.get('tag') || urlParams.get('q');
+    const isInventoryPage = window.location.pathname.includes('/inventory') || window.location.pathname === '/' || window.location.pathname.endsWith('inventory.html');
+    const searchParam = isInventoryPage 
+        ? (urlParams.get('search') || '') 
+        : (urlParams.get('search') || urlParams.get('asset_id') || urlParams.get('tag') || urlParams.get('q') || '');
 
     // Always start with complete PSM Hospital INITIAL_SAMPLE_DATA structure
     appState = {
@@ -28,7 +31,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v16.0_fix_printer_ip_and_tag_flow";
+    const CURRENT_CACHE_VERSION = "v17.0_clean_inventory_open";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -189,6 +192,8 @@ function initAppState() {
 
     if (searchParam) {
         appState.searchQuery = searchParam;
+    } else {
+        appState.searchQuery = "";
     }
 }
 
@@ -1962,6 +1967,9 @@ function clearSearch() {
     const iInput = document.getElementById("inventory-search-input");
     if (gInput) gInput.value = "";
     if (iInput) iInput.value = "";
+    if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
     applyInventoryFilters();
 }
 
@@ -1978,6 +1986,9 @@ function clearAllFilters() {
     if (bSelect) bSelect.value = "ALL";
     if (sSelect) sSelect.value = "ALL";
     if (oSelect) oSelect.value = "ALL";
+    if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
     applyInventoryFilters();
 }
 
@@ -5270,6 +5281,10 @@ function renderAll() {
 
     // 1. Devices Inventory Page Elements
     if (document.getElementById("inventory-table-tbody")) {
+        const invSearchInput = document.getElementById("inventory-search-input");
+        if (invSearchInput) {
+            invSearchInput.value = appState.searchQuery || "";
+        }
         populateFilterDropdowns();
         renderInventoryTable();
         renderStats();

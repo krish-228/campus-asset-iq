@@ -1126,7 +1126,7 @@
                 <a id="modal-btn-view-inv" href="{% url 'inventory' %}"
                     class="w-full h-10 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                     <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-                    <span>View in Inventory Table</span>
+                    <span>Open Full Inventory Table</span>
                 </a>
             </div>
         </div>
@@ -2437,7 +2437,7 @@
                     }
                     const invBtn = document.getElementById('modal-btn-view-inv');
                     if (invBtn) {
-                        invBtn.href = `/inventory/?search=${encodeURIComponent(lastRegisteredAssetId)}`;
+                        invBtn.href = '/inventory/';
                     }
 
                     // Show success modal
