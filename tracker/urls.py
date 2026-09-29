@@ -55,6 +55,7 @@ urlpatterns = [
     # Existing Admin Hardware Lifecycle Routes
     path('inventory/', views.inventory, name='inventory'),
     path('inventory/add/', views.mobile_add_device_view, name='mobile_add_device'),
+    path('admin-add-device/', views.mobile_add_device_view, name='admin_add_device'),
     path('api/devices/quick-generate-id/', views.api_generate_asset_id, name='api_generate_asset_id'),
     path('api/devices/check-asset-id/', views.api_check_asset_id, name='api_check_asset_id'),
     path('user/', views.user, name='user'),

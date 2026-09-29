@@ -2143,6 +2143,7 @@ def mobile_add_device_view(request):
         ]
 
     # PSM Hospital clinical and administrative staff
+    staff_list = []
     staff_qs = UserProfile.objects.filter(org_id='HOSP').select_related('user')[:50]
     if staff_qs.exists():
         staff_list = [
@@ -2158,8 +2159,15 @@ def mobile_add_device_view(request):
             for prof in staff_qs
         ]
 
-
     existing_tags = sorted(list(set(DeviceAsset.objects.values_list('asset_id', flat=True))))
+
+    # Check for Edit Mode via query parameters (?edit=<tag> or ?asset_id=<tag>)
+    from urllib.parse import unquote
+    edit_tag = (request.GET.get('edit') or request.GET.get('asset_id') or request.GET.get('tag') or '').strip()
+    edit_device = None
+    if edit_tag:
+        edit_tag = unquote(edit_tag).strip()
+        edit_device = serialize_device_for_mobile_edit(edit_tag)
 
     context = {
         'today_str': today_str,
@@ -2172,6 +2180,10 @@ def mobile_add_device_view(request):
         'existing_tags': existing_tags,
         'existing_tags_json': json.dumps(existing_tags),
         'selected_org': 'HOSP',
+        'edit_tag': edit_tag,
+        'edit_device': edit_device,
+        'edit_device_json': json.dumps(edit_device, default=str) if edit_device else 'null',
+        'is_edit_mode': bool(edit_device),
     }
     response = render(request, "admin/mobile_add_device.html", context)
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate'

@@ -1134,6 +1134,8 @@
 
     <!-- Staff Lookup Data Payload (Clean JSON Ingestion, Zero Script Syntax Errors) -->
     <script type="application/json" id="staff-lookup-payload">{{ staff_list_json|safe }}</script>
+    <!-- Edit Device Payload (if opened via ?edit=<tag> or direct admin edit) -->
+    <script type="application/json" id="edit-device-payload">{{ edit_device_json|safe }}</script>
 
     <!-- Client-Side JavaScript Application Logic -->
     <script>
@@ -1163,7 +1165,6 @@
             updateSelectedComponentsUI();
             updateCustodianStatusUI();
             lucide.createIcons();
-            loadDraftFromStorage();
             setupAutoSaveListeners();
             setupAssetIdValidationListeners();
 
@@ -1175,10 +1176,35 @@
                 }
             });
 
-            // Always ensure valid new format tag is present
-            const tagInput = document.getElementById('input-asset-id');
-            if (tagInput && (!tagInput.value || tagInput.value.includes('/2F/') || tagInput.value.includes('/1F/') || tagInput.value.includes('/GF/') || tagInput.value.includes('-'))) {
-                autoGenerateTag();
+            // Check if initial edit device was passed by server or URL query params
+            let initialEditDev = null;
+            try {
+                const editPayloadEl = document.getElementById('edit-device-payload');
+                if (editPayloadEl && editPayloadEl.textContent && editPayloadEl.textContent.trim() !== 'null') {
+                    initialEditDev = JSON.parse(editPayloadEl.textContent);
+                }
+            } catch (e) {
+                console.warn("Failed to parse edit-device-payload", e);
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const editParam = (urlParams.get('edit') || urlParams.get('asset_id') || urlParams.get('tag') || '').trim();
+
+            if (initialEditDev && initialEditDev.asset_id) {
+                // Instantly pre-fill device into full Edit Mode from server-rendered payload
+                enterEditModeWithDevice(initialEditDev);
+            } else if (editParam) {
+                // Client-side fallback if routed via client navigation with query param
+                const tagInput = document.getElementById('input-asset-id');
+                if (tagInput) tagInput.value = editParam;
+                validateAssetId(editParam);
+            } else {
+                // Normal workflow for brand-new device registration
+                loadDraftFromStorage();
+                const tagInput = document.getElementById('input-asset-id');
+                if (tagInput && (!tagInput.value || tagInput.value.includes('/2F/') || tagInput.value.includes('/1F/') || tagInput.value.includes('/GF/') || tagInput.value.includes('-'))) {
+                    autoGenerateTag();
+                }
             }
         });
 
@@ -1407,9 +1433,12 @@
         // Floor selection
         function selectFloor(floor) {
             currentFloor = floor;
-            document.getElementById('input-floor').value = floor;
+            const inputFloor = document.getElementById('input-floor');
+            if (inputFloor) inputFloor.value = floor;
+            const normTarget = (floor || '').trim().toLowerCase();
             document.querySelectorAll('.floor-pill').forEach(btn => {
-                if (btn.dataset.floor === floor) {
+                const normBtn = (btn.dataset.floor || '').trim().toLowerCase();
+                if (normBtn === normTarget || (normTarget && normBtn.startsWith(normTarget.slice(0, 3)))) {
                     btn.className = "floor-pill px-3 py-1.5 rounded-xl border text-xs font-bold transition-all bg-emerald-600/25 border-emerald-500 text-emerald-300 shadow-sm";
                 } else {
                     btn.className = "floor-pill px-3 py-1.5 rounded-xl border text-xs font-bold transition-all bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200";
@@ -1946,8 +1975,13 @@
             // 7. Pre-fill Section 4: Hardware Components
             if (dev.components && Array.isArray(dev.components) && dev.components.length > 0) {
                 selectedComponents = new Set(dev.components);
+            } else if (dev.device_type) {
+                selectedComponents = new Set([dev.device_type]);
             } else {
                 selectedComponents = new Set(['CPU']);
+            }
+            if (dev.device_type) {
+                currentCategory = dev.device_type;
             }
 
             // 8. Pre-fill Section 5: Hardware Specifications

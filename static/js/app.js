@@ -1702,7 +1702,7 @@ function toggleDeviceActionMenu(deviceId, event) {
     // Position dropdown precisely near the 3-dot button
     const btnRect = event.currentTarget.getBoundingClientRect();
     const dropdownWidth = 256;
-    const dropdownHeight = 190;
+    const dropdownHeight = dropdown.offsetHeight || 190;
 
     let left = btnRect.right - dropdownWidth;
     let top = btnRect.bottom + 6;
@@ -5454,7 +5454,11 @@ function initCampusTrackerApp() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get("openAddModal") === "true") {
-            setTimeout(() => openAddDeviceModal(), 180);
+            const editId = urlParams.get("edit");
+            setTimeout(() => openAddDeviceModal(editId), 180);
+        } else if (urlParams.get("editModal") === "true") {
+            const editId = urlParams.get("edit");
+            setTimeout(() => openAddDeviceModal(editId), 180);
         }
     } catch (e) { }
 }
