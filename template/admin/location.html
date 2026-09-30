@@ -229,14 +229,33 @@
                         <div class="flex items-center gap-3.5 flex-wrap">
                             <h3 class="text-base sm:text-lg font-black tracking-tight text-white leading-tight">Hardware Specs & Workstation Profile</h3>
                             <span id="devmodal-header-status-badge" class="px-3 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs">Active Duty</span>
+                            <span id="devmodal-header-edit-badge" class="hidden px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-500/25 text-amber-300 border border-amber-400/50 shadow-xs animate-pulse flex items-center gap-1.5">
+                                <i data-lucide="edit-3" class="w-3 h-3 text-amber-400"></i>
+                                <span>In-Page Edit Mode</span>
+                            </span>
                         </div>
                         <div class="flex items-center gap-2.5 text-xs text-slate-300 pt-0.5">
                             <span class="text-slate-400 font-medium">Asset Tag:</span>
                             <span id="devmodal-header-asset-id" class="font-mono font-bold text-cyan-300 tracking-wide text-xs sm:text-[13px]">—</span>
-                            <button type="button" id="devmodal-btn-copy-asset" onclick="copyModalAssetId(this)" title="Copy Asset Tag" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white px-2.5 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-all cursor-pointer active:scale-95 shadow-2xs">
-                                <i data-lucide="copy" class="w-3.5 h-3.5 text-cyan-400"></i>
-                                <span>Copy</span>
-                            </button>
+                            
+                            <!-- View mode controls -->
+                            <div id="devmodal-header-view-controls" class="inline-flex items-center gap-2">
+                                <button type="button" id="devmodal-btn-edit-asset" onclick="triggerEditFromDetailModal()" title="Edit Hardware Specs & Custodian Details" class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-white px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/40 transition-all cursor-pointer active:scale-95 shadow-2xs group">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5 text-amber-400 group-hover:text-amber-200"></i>
+                                    <span>Edit</span>
+                                </button>
+                            </div>
+
+                            <!-- Edit mode controls -->
+                            <div id="devmodal-header-edit-controls" class="hidden inline-flex items-center gap-1.5">
+                                <button type="button" onclick="saveDetailModalEdits()" title="Save Changes" class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 hover:text-white px-2.5 py-1 rounded-lg bg-emerald-500/25 hover:bg-emerald-500/40 border border-emerald-400/50 transition-all cursor-pointer active:scale-95 shadow-2xs">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                    <span>Save Changes</span>
+                                </button>
+                                <button type="button" onclick="toggleDetailModalEditMode(false)" title="Cancel Edits" class="inline-flex items-center gap-1 text-xs font-semibold text-slate-300 hover:text-white px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 transition-all cursor-pointer active:scale-95">
+                                    <span>Cancel</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -251,7 +270,8 @@
             <div class="p-5 sm:p-6 space-y-5 overflow-y-auto max-h-[calc(92vh-140px)] text-slate-800 bg-slate-50/50">
                 
                 <!-- SECTION 1: ASSIGNED EMPLOYEE / CUSTODIAN PROFILE CARD -->
-                <div class="bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/40 rounded-2xl border border-indigo-100/90 p-5 shadow-xs transition-all">
+                <!-- Read-only View Card -->
+                <div id="devmodal-custodian-view-wrap" class="bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/40 rounded-2xl border border-indigo-100/90 p-5 shadow-xs transition-all">
                     <div class="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-indigo-100/70">
                         <div class="flex items-center gap-2">
                             <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-2xs">
@@ -349,6 +369,94 @@
                     </div>
                 </div>
 
+                <!-- In-Page Custodian Edit Form Card -->
+                <div id="devmodal-custodian-edit-wrap" class="hidden bg-white rounded-2xl border border-indigo-200 p-5 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between gap-3 pb-3 border-b border-indigo-100">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-2xs">
+                                <i data-lucide="user-cog" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-black uppercase tracking-wider text-indigo-950">Edit Assigned Custodian & Campus Location</span>
+                                <p class="text-[11px] text-slate-500">Update custodian identity, department, contact info, and campus location</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                            Live Editing
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                        <!-- Custodian Name with user datalist -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">
+                                Custodian Full Name <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="text" id="devmodal-edit-user-fullname" list="devmodal-users-datalist" oninput="handleDetailModalCustodianSelect(this.value)" placeholder="e.g. Sahil Rathod or Unassigned" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs" />
+                                <datalist id="devmodal-users-datalist"></datalist>
+                            </div>
+                        </div>
+
+                        <!-- Employee ID -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Employee ID</label>
+                            <input type="text" id="devmodal-edit-user-empid" placeholder="e.g. EMP-00125" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- Designation -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Designation</label>
+                            <input type="text" id="devmodal-edit-user-designation" placeholder="e.g. Systems Administrator" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- Department -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Department</label>
+                            <input type="text" id="devmodal-edit-user-department" placeholder="e.g. IT Infrastructure" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- Official Email -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Official Email</label>
+                            <input type="email" id="devmodal-edit-user-email" placeholder="e.g. sahil@hospital.org" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- Phone / Ext -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Phone / Ext</label>
+                            <input type="text" id="devmodal-edit-user-phone" placeholder="e.g. 9811223344" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- Campus Organization -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Campus Organization</label>
+                            <select id="devmodal-edit-org" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs">
+                                <option value="HOSP">PSM Hospital</option>
+                                <option value="CAMPUS">Swaminarayan University</option>
+                            </select>
+                        </div>
+
+                        <!-- Building -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Building</label>
+                            <input type="text" id="devmodal-edit-building" placeholder="e.g. Main Hospital Complex" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- Floor -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Floor</label>
+                            <input type="text" id="devmodal-edit-floor" placeholder="e.g. 2nd Floor" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- Room / Location -->
+                        <div class="space-y-1 sm:col-span-2 md:col-span-3">
+                            <label class="block text-[11px] font-bold text-slate-700">Room / Facility Location</label>
+                            <input type="text" id="devmodal-edit-room" placeholder="e.g. Room 201 (ICU Bedside Pod A)" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs" />
+                        </div>
+                    </div>
+                </div>
+
                 <!-- SECTION 2: WORKSTATION LINKED DEVICES / ALL HARDWARE IN USE -->
                 <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-3.5">
                     <div class="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-200/80">
@@ -378,7 +486,8 @@
                 </div>
 
                 <!-- SECTION 3: HARDWARE TECHNICAL SPECIFICATIONS (SELECTED ITEM) -->
-                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
+                <!-- Read-only View Card -->
+                <div id="devmodal-specs-view-wrap" class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
                     <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
                         <div class="flex items-center gap-2.5">
                             <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-2xs">
@@ -402,60 +511,124 @@
 
                     <!-- High Contrast Spec Grid (Simple DB Labels) -->
                     <div id="devmodal-specs-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-                        <!-- Brand Name -->
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-600"></i> Brand Name
+                        <!-- Dynamic rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- In-Page Specs Edit Form Card -->
+                <div id="devmodal-specs-edit-wrap" class="hidden bg-white rounded-2xl border border-blue-200/90 p-5 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between gap-3 pb-3 border-b border-blue-100">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-2xs">
+                                <i data-lucide="sliders" class="w-4 h-4"></i>
                             </div>
-                            <div id="devmodal-brand" class="font-extrabold text-slate-900 text-xs">—</div>
+                            <div>
+                                <span class="text-xs font-black uppercase tracking-wider text-slate-900">Edit Hardware Technical Specifications</span>
+                                <span id="devmodal-edit-target-spec-name" class="text-xs font-extrabold text-blue-600 ml-1.5">(CPU Workstation)</span>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 font-mono">
+                            Asset Tag: <span id="devmodal-edit-spec-tag">—</span>
+                        </span>
+                    </div>
+
+                    <!-- Specs Input Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                        <!-- Device Type -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Device Type</label>
+                            <select id="devmodal-edit-type" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs">
+                                <option value="CPU">CPU / Desktop PC</option>
+                                <option value="Display">Display / Monitor</option>
+                                <option value="Keyboard">Keyboard</option>
+                                <option value="Mouse">Mouse</option>
+                                <option value="Printer">Printer</option>
+                                <option value="Barcode Printer">Barcode Printer</option>
+                                <option value="UPS">UPS (Power Backup)</option>
+                                <option value="Tablet">Tablet / iPad</option>
+                                <option value="Barcode Scanner">Barcode Scanner</option>
+                                <option value="Biometric Machine">Biometric Machine</option>
+                                <option value="Eye Scanner">Eye Scanner</option>
+                                <option value="Other">Other Hardware</option>
+                            </select>
                         </div>
 
-                        <!-- Processor (CPU) -->
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-600"></i> Processor (CPU)
-                            </div>
-                            <div id="devmodal-cpu" class="font-extrabold text-slate-900 text-xs">—</div>
+                        <!-- Brand / Make -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Brand / Make</label>
+                            <input type="text" id="devmodal-edit-brand" placeholder="e.g. Dell, HP, Lenovo" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- Model & Processor Specs -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Model / Processor / Specs</label>
+                            <input type="text" id="devmodal-edit-model" placeholder="e.g. OptiPlex 7000 / Intel Core i7-12700" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs" />
                         </div>
 
                         <!-- Serial Number -->
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="barcode" class="w-3.5 h-3.5 text-slate-600"></i> Serial Number (S/N)
-                            </div>
-                            <div id="devmodal-serial" class="font-mono font-bold text-slate-800 text-xs">—</div>
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Serial Number (S/N)</label>
+                            <input type="text" id="devmodal-edit-serial" placeholder="e.g. SN-4424-DL" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs" />
                         </div>
 
                         <!-- RAM & Storage -->
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-indigo-600"></i> RAM & Storage
-                            </div>
-                            <div id="devmodal-ram" class="font-mono font-bold text-slate-900 text-xs">—</div>
+                        <div class="space-y-1" id="devmodal-field-ram-wrap">
+                            <label class="block text-[11px] font-bold text-slate-700">RAM & Storage</label>
+                            <input type="text" id="devmodal-edit-ram" placeholder="e.g. 16GB RAM / 512GB NVMe SSD" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs" />
                         </div>
 
-                        <!-- OS -->
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="terminal" class="w-3.5 h-3.5 text-teal-600"></i> Operating System
-                            </div>
-                            <div id="devmodal-os" class="font-bold text-slate-900 text-xs">—</div>
+                        <!-- Operating System -->
+                        <div class="space-y-1" id="devmodal-field-os-wrap">
+                            <label class="block text-[11px] font-bold text-slate-700">Operating System</label>
+                            <input type="text" id="devmodal-edit-os" placeholder="e.g. Windows 11 Pro" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs" />
                         </div>
 
                         <!-- Device Status -->
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i> Device Status
-                            </div>
-                            <div id="devmodal-status" class="font-bold text-emerald-700 text-xs">Active</div>
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Device Status</label>
+                            <select id="devmodal-edit-status" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs">
+                                <option value="Active">Active Duty</option>
+                                <option value="In Maintenance">In Maintenance</option>
+                                <option value="Spare">Spare / Ready for Deployment</option>
+                                <option value="Damaged">Damaged / Defective</option>
+                                <option value="Decommissioned">Decommissioned</option>
+                            </select>
                         </div>
 
-                        <!-- Campus Location -->
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-colors sm:col-span-2">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-1">
-                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-600"></i> Campus Location
-                            </div>
-                            <div id="devmodal-location-text" class="font-bold text-slate-900 text-xs">—</div>
+                        <!-- Network IP Address -->
+                        <div class="space-y-1" id="devmodal-field-ip-wrap">
+                            <label class="block text-[11px] font-bold text-slate-700">Network IP Address</label>
+                            <input type="text" id="devmodal-edit-ip" placeholder="e.g. 192.168.1.105" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-blue-700 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- MAC Address -->
+                        <div class="space-y-1" id="devmodal-field-mac-wrap">
+                            <label class="block text-[11px] font-bold text-slate-700">MAC Address</label>
+                            <input type="text" id="devmodal-edit-mac" placeholder="e.g. 3C:D9:2B:51:7A:4E" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- AnyDesk Remote ID -->
+                        <div class="space-y-1" id="devmodal-field-anydesk-wrap">
+                            <label class="block text-[11px] font-bold text-slate-700">AnyDesk Remote ID</label>
+                            <input type="text" id="devmodal-edit-anydesk" placeholder="e.g. 982 451 012" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- Connected Monitor Spec -->
+                        <div class="space-y-1" id="devmodal-field-monitor-wrap">
+                            <label class="block text-[11px] font-bold text-slate-700">Connected Monitor Spec</label>
+                            <input type="text" id="devmodal-edit-monitor" placeholder="e.g. Dell 24 FHD IPS" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- Warranty Expiry -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Warranty Expiry Date</label>
+                            <input type="text" id="devmodal-edit-warranty" placeholder="e.g. 15-Oct-2027" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs" />
+                        </div>
+
+                        <!-- Purchase Date -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Purchase Date</label>
+                            <input type="text" id="devmodal-edit-purchase-date" placeholder="e.g. 15-Oct-2024" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-xs" />
                         </div>
                     </div>
                 </div>
@@ -464,7 +637,12 @@
 
             <!-- Modal Sticky Footer Actions -->
             <div class="px-6 py-4 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-                <div class="flex items-center gap-2 w-full sm:w-auto">
+                <!-- View Mode Footer Actions -->
+                <div id="devmodal-footer-view-actions" class="flex items-center gap-2 w-full sm:w-auto">
+                    <button type="button" id="devmodal-btn-edit-footer" onclick="triggerEditFromDetailModal()" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-2xs">
+                        <i data-lucide="edit-3" class="w-3.5 h-3.5 text-amber-600"></i>
+                        <span>Edit Specifications</span>
+                    </button>
                     <button type="button" id="devmodal-btn-move-loc" onclick="triggerMoveLocationFromDetailModal()" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/90 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-2xs">
                         <i data-lucide="truck" class="w-3.5 h-3.5"></i>
                         <span>Change Location</span>
@@ -475,9 +653,21 @@
                     </button>
                 </div>
 
-                <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div id="devmodal-footer-view-close" class="flex items-center gap-2 w-full sm:w-auto justify-end">
                     <button type="button" onclick="closeDeviceDetailPopup()" class="w-full sm:w-auto px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95">
                         Close Details
+                    </button>
+                </div>
+
+                <!-- Edit Mode Footer Actions -->
+                <div id="devmodal-footer-edit-actions" class="hidden flex items-center justify-between w-full">
+                    <button type="button" onclick="toggleDetailModalEditMode(false)" class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                        <span>Discard Changes</span>
+                    </button>
+                    <button type="button" id="devmodal-btn-save-footer" onclick="saveDetailModalEdits()" class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white rounded-xl text-xs font-black shadow-lg shadow-emerald-950/20 active:scale-95 transition-all cursor-pointer">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                        <span id="devmodal-save-footer-text">Save All Changes</span>
                     </button>
                 </div>
             </div>

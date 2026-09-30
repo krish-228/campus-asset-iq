@@ -764,12 +764,30 @@ def api_save_device(request):
                         dev.device_id = device_id
                     if anydesk_id:
                         dev.anydesk_id = anydesk_id
+                dev.operating_system = operating_system
                 dev.purchase_date = purchase_date
                 dev.warranty_expiry_date = warranty_expiry_date
                 dev.status = status
                 dev.save()
 
-                DeviceAsset.objects.filter(asset_id__iexact=asset_id).exclude(id=dev.id).delete()
+                if data.get('inline_edit') or data.get('preserve_linked_devices') or not data.get('replace_all_components'):
+                    # Synchronize custodian and location across all hardware components sharing this asset_id
+                    DeviceAsset.objects.filter(asset_id__iexact=asset_id).update(
+                        assigned_user_id=assigned_user_id,
+                        assigned_user_name=assigned_user_name,
+                        assigned_emp_id=assigned_emp_id,
+                        assigned_designation=assigned_designation,
+                        assigned_department=assigned_department,
+                        assigned_email=assigned_email,
+                        assigned_phone=assigned_phone,
+                        org_id=org_id,
+                        org_name=org_name,
+                        building_name=building_name,
+                        floor_name=floor_name,
+                        room_name=room_name
+                    )
+                else:
+                    DeviceAsset.objects.filter(asset_id__iexact=asset_id).exclude(id=dev.id).delete()
 
             if old_user_name and old_user_name.lower() != assigned_user_name.lower() and assigned_user_name.lower() != 'unassigned':
                 CustodyTransferLog.objects.create(
