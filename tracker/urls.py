@@ -80,6 +80,7 @@ urlpatterns = [
 
     # Central Database Synchronization & Admin Maintenance APIs
     path('api/devices/', views.api_get_devices, name='api_get_devices'),
+    path('api/devices/delete/', views.api_delete_device, name='api_delete_device'),
     path('api/devices/import-excel/', views.api_import_devices_excel, name='api_import_devices_excel'),
     path('api/devices/reassign/', views.api_reassign_device, name='api_reassign_device'),
     path('api/devices/save/', views.api_save_device, name='api_save_device'),

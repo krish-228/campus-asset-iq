@@ -446,18 +446,16 @@ def api_save_device(request):
         dev = DeviceAsset.objects.filter(dev_id=edit_id).first() or DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
     else:
         dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
-        if not dev and asset_id:
-            # Global sequence lookup (e.g. sequence 007 is already registered as Device #7)
-            parts = asset_id.split('/')
-            if parts:
-                last = parts[-1]
-                if last.isdigit():
-                    seq_val = f"{int(last):03d}"
-                    dev = DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}").first()
+        if not dev and asset_id and (not asset_id.upper().startswith('PSM/IT/') or '/' not in asset_id):
+            # Sequence lookup only for raw numbers without full canonical tag
+            last = asset_id.split('/')[-1].strip()
+            if last.isdigit():
+                seq_val = f"{int(last):03d}"
+                dev = DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}").first()
 
     if dev and is_edit_request:
-        # Align asset_id with the actual DB asset_id
-        asset_id = dev.asset_id
+        # Align asset_id with provided target tag if valid, otherwise preserve existing DB tag
+        asset_id = asset_id or dev.asset_id
 
     if dev and not is_edit_request:
         return JsonResponse({
@@ -508,7 +506,7 @@ def api_save_device(request):
 
         with transaction.atomic():
             if len(components) > 1:
-                existing_rows = list(DeviceAsset.objects.filter(asset_id__iexact=asset_id))
+                existing_rows = list(DeviceAsset.objects.filter(Q(asset_id__iexact=asset_id) | Q(asset_id__iexact=dev.asset_id)))
                 used_row_ids = set()
 
                 for comp in components:
@@ -635,6 +633,7 @@ def api_save_device(request):
                         elif comp_upper == 'CPU':
                             row.device_id = device_id
                             row.anydesk_id = anydesk_id
+                        row.asset_id = asset_id
                         row.save()
                     else:
                         new_dev_id = f"dev-{uuid.uuid4().hex[:8]}"
@@ -2300,17 +2299,15 @@ def serialize_device_for_mobile_edit(asset_id):
     # 1. Direct exact match
     matching_devs = list(DeviceAsset.objects.filter(asset_id__iexact=clean_id).order_by('id'))
 
-    # 2. Global hardware sequence lookup (e.g. if user types PSM/IT/0926/007, 007, or 7, find existing Device #7)
-    if not matching_devs:
-        parts = clean_id.split('/')
-        if parts:
-            last = parts[-1].strip()
-            if last.isdigit():
-                seq_num = int(last)
-                seq_val = f"{seq_num:03d}"
-                devs = list(DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}").order_by('id'))
-                if devs:
-                    matching_devs = devs
+    # 2. Sequence lookup ONLY IF the query was not a full canonical path (e.g. user typed raw sequence '077' or '77')
+    if not matching_devs and (not clean_id.upper().startswith('PSM/IT/') or '/' not in clean_id):
+        last = clean_id.split('/')[-1].strip()
+        if last.isdigit():
+            seq_num = int(last)
+            seq_val = f"{seq_num:03d}"
+            devs = list(DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}").order_by('id'))
+            if devs:
+                matching_devs = devs
 
     if not matching_devs:
         return None
@@ -3973,4 +3970,70 @@ def api_import_devices_excel(request):
         'updated': updated_count,
         'message': f'Successfully imported {saved_count} device(s) ({created_count} registered, {updated_count} updated) into Inventory!'
     })
+
+
+@csrf_exempt
+def api_delete_device(request):
+    """
+    Deletes a hardware device or an entire workstation group by asset_id or dev_id.
+    Ensures complete removal from PostgreSQL database.
+    """
+    if request.method not in ('POST', 'DELETE'):
+        return JsonResponse({'success': False, 'message': 'POST or DELETE method required.'}, status=405)
+
+    import json
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except Exception:
+            data = {}
+    else:
+        data = request.POST
+
+    dev_id = (data.get('deviceId') or data.get('device_id') or data.get('id') or '').strip()
+    asset_id = (data.get('assetId') or data.get('asset_id') or '').strip()
+    delete_group = data.get('deleteGroup') or data.get('delete_group') or False
+
+    if not dev_id and not asset_id:
+        return JsonResponse({'success': False, 'message': 'Device ID or Asset Tag is required.'}, status=400)
+
+    deleted_count = 0
+    deleted_asset_id = asset_id
+
+    # If delete_group or asset_id is provided without specific dev_id, delete all devices sharing asset_id
+    if asset_id and (delete_group or not dev_id):
+        qs = DeviceAsset.objects.filter(asset_id__iexact=asset_id)
+        if not qs.exists():
+            if '/' in asset_id:
+                parts = asset_id.split('/')
+                last = parts[-1]
+                if last.isdigit():
+                    qs = DeviceAsset.objects.filter(asset_id__iendswith=f"/{int(last):03d}")
+            else:
+                qs = DeviceAsset.objects.filter(asset_id__icontains=asset_id)
+        deleted_count = qs.count()
+        qs.delete()
+    elif dev_id:
+        dev = DeviceAsset.objects.filter(dev_id=dev_id).first()
+        if not dev:
+            dev = DeviceAsset.objects.filter(asset_id__iexact=dev_id).first()
+        if dev:
+            deleted_asset_id = dev.asset_id
+            if delete_group and dev.asset_id:
+                qs = DeviceAsset.objects.filter(asset_id__iexact=dev.asset_id)
+                deleted_count = qs.count()
+                qs.delete()
+            else:
+                dev.delete()
+                deleted_count = 1
+        else:
+            deleted_count = 0
+
+    return JsonResponse({
+        'success': True,
+        'deleted_count': deleted_count,
+        'asset_id': deleted_asset_id,
+        'message': f'Device/Workstation {deleted_asset_id or dev_id} successfully removed from database.'
+    })
+
 

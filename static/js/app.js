@@ -30,8 +30,22 @@ function initAppState() {
         ...INITIAL_SAMPLE_DATA
     };
 
+    // Purge validator to permanently eliminate 079 / Lalshing / obsolete test records
+    function isPurgedDevice(d) {
+        if (!d) return true;
+        const aid = (d.assetId || d.asset_id || '').toUpperCase();
+        const user = (d.assignedUserName || d.assigned_user_name || '').toLowerCase();
+        const emp = (d.empId || d.assignedEmpId || d.assigned_emp_id || '').toLowerCase();
+        const sn = (d.serialNumber || d.serial_number || '').toUpperCase();
+        if (aid.includes('079') || aid.includes('PSM/IT/0926/079')) return true;
+        if (user.includes('lalsing') || user.includes('lalshing') || user.includes('lal shing')) return true;
+        if (emp === '68127' || emp === '860127') return true;
+        if (sn.includes('079') || sn.includes('CN-0W41TY')) return true;
+        return false;
+    }
+
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v17.0_clean_inventory_open";
+    const CURRENT_CACHE_VERSION = "v18.0_purge_079_lalshing";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -108,7 +122,7 @@ function initAppState() {
                             if (isPlaceholderDetail(d.operatingSystem)) d.operatingSystem = '';
                         }
                     });
-                    appState.devices = parsed.devices;
+                    appState.devices = parsed.devices.filter(d => !isPurgedDevice(d));
                 }
                 if (Array.isArray(parsed.locationHistories)) {
                     appState.locationHistories = parsed.locationHistories;
@@ -154,7 +168,7 @@ function initAppState() {
                         }
                     }
                 });
-                appState.devices = serverDevices;
+                appState.devices = serverDevices.filter(d => !isPurgedDevice(d));
                 saveAppState();
             }
         } catch (e) {
@@ -198,6 +212,9 @@ function initAppState() {
 }
 
 function saveAppState() {
+    if (Array.isArray(appState.devices)) {
+        appState.devices = appState.devices.filter(d => !isPurgedDevice(d));
+    }
     localStorage.setItem("CAMPUS_SELECTED_ORG", "HOSP");
     localStorage.setItem("CAMPUS_DEVICE_TRACKER_DATA", JSON.stringify({
         selectedOrg: appState.selectedOrg,
@@ -1552,6 +1569,11 @@ function renderInventoryTable() {
                                     title="${isCollapsed ? 'Expand Workstation Devices' : 'Collapse Workstation Devices'}">
                                     <i data-lucide="${isCollapsed ? 'chevron-right' : 'chevron-down'}" class="w-4 h-4 text-indigo-600"></i>
                                 </button>
+                                <button type="button" onclick="event.stopPropagation(); deleteDevice('${group.devices[0]?.id}', '${primaryAssetId}', true)" 
+                                    class="w-7 h-7 rounded-lg bg-white border border-rose-200 hover:bg-rose-50 hover:border-rose-400 text-rose-600 flex items-center justify-center transition-all shadow-3xs cursor-pointer group" 
+                                    title="Delete Entire Workstation Set (${primaryAssetId})">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500 group-hover:scale-110 transition-transform"></i>
+                                </button>
                             </div>
                         </div>
                     </td>
@@ -1751,6 +1773,55 @@ function executeDropdownAction(actionType, event) {
         if (dev && dev.assetId) {
             window.location.href = `/admin-add-device/?edit=${encodeURIComponent(dev.assetId)}`;
         }
+    } else if (actionType === 'delete') {
+        const dev = (appState.devices || []).find(d => d.id === devId);
+        deleteDevice(devId, dev ? dev.assetId : '', false);
+    }
+}
+
+async function deleteDevice(deviceId, assetId, isWorkstationGroup = false) {
+    const targetName = isWorkstationGroup ? `Workstation Set (${assetId || deviceId})` : `Hardware Device (${assetId || deviceId})`;
+    if (!confirm(`Are you sure you want to permanently delete ${targetName} from the database? This action cannot be undone.`)) {
+        return;
+    }
+
+    // 1. Optimistic removal from in-memory appState
+    if (isWorkstationGroup && assetId) {
+        appState.devices = (appState.devices || []).filter(d => (d.assetId || '') !== assetId && !d.assetId?.includes(assetId));
+    } else if (deviceId) {
+        appState.devices = (appState.devices || []).filter(d => d.id !== deviceId);
+    } else if (assetId) {
+        appState.devices = (appState.devices || []).filter(d => (d.assetId || '') !== assetId);
+    }
+
+    saveAppState();
+    if (typeof renderAll === 'function') renderAll();
+    if (typeof renderInventoryTable === 'function') renderInventoryTable();
+    if (typeof renderLocationView === 'function') renderLocationView();
+
+    // 2. Persist delete to PostgreSQL backend
+    try {
+        const resp = await fetch('/api/devices/delete/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                deviceId: deviceId,
+                assetId: assetId,
+                deleteGroup: isWorkstationGroup
+            })
+        });
+        const res = await resp.json();
+        if (res.success) {
+            showToast(`${targetName} successfully deleted from database!`, 'success');
+        } else {
+            showToast(res.message || 'Notice on server delete.', 'error');
+        }
+    } catch (err) {
+        console.warn('Backend delete notification:', err);
+        showToast(`${targetName} removed from view.`, 'info');
     }
 }
 
@@ -5777,7 +5848,7 @@ async function syncDevicesFromDatabase() {
                     }
                 }
             });
-            appState.devices = data.devices;
+            appState.devices = data.devices.filter(d => !isPurgedDevice(d));
             saveAppState();
             renderAll();
         }

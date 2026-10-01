@@ -133,14 +133,23 @@
             </div>
         </div>
 
-        <!-- PSM Hospital Brand Pill (Dedicated Clinical Wing) -->
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700/80 shadow-xs">
-            <div class="h-4 px-1 rounded bg-white flex items-center shrink-0 shadow-2xs">
-                <img src="{% static 'images/psm_hospital_logo.png' %}" alt="PSM Hospital" class="h-3.5 w-auto object-contain">
+        <div class="flex items-center gap-2">
+            <!-- Reset / Start Fresh Button -->
+            <button type="button" onclick="resetAllFormInputs(false)" title="Clear form & start new hardware"
+                class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 hover:text-white text-xs font-bold border border-slate-700/80 flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-cyan-400"></i>
+                <span class="hidden sm:inline">Start Fresh</span>
+            </button>
+
+            <!-- PSM Hospital Brand Pill (Dedicated Clinical Wing) -->
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700/80 shadow-xs">
+                <div class="h-4 px-1 rounded bg-white flex items-center shrink-0 shadow-2xs">
+                    <img src="{% static 'images/psm_hospital_logo.png' %}" alt="PSM Hospital" class="h-3.5 w-auto object-contain">
+                </div>
+                <span class="text-xs font-bold text-slate-200 tracking-wide">
+                    PSM Hospital
+                </span>
             </div>
-            <span class="text-xs font-bold text-slate-200 tracking-wide">
-                PSM Hospital
-            </span>
         </div>
     </header>
 
@@ -153,7 +162,7 @@
                 <i data-lucide="sparkles" class="w-4 h-4 text-blue-400 shrink-0"></i>
                 <span>Restored unsaved draft from phone storage.</span>
             </div>
-            <button type="button" onclick="discardDraft()" class="text-xs font-bold underline text-blue-200 hover:text-white shrink-0 ml-2">
+            <button type="button" onclick="discardDraft()" class="text-xs font-bold underline text-blue-200 hover:text-white shrink-0 ml-2 cursor-pointer">
                 Discard
             </button>
         </div>
@@ -171,6 +180,10 @@
                             1. Custodian & Holder Assignment <span class="text-rose-400">*</span>
                         </h2>
                     </div>
+                    <button type="button" onclick="setUnassigned()" class="text-xs font-bold text-violet-300 hover:text-white flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-950/60 border border-violet-800/60 transition-all active:scale-95 shadow-sm cursor-pointer" title="Reset Custodian to Unassigned">
+                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                        <span>Reset Custodian</span>
+                    </button>
                 </div>
 
                 <!-- Symmetrical 2x3 Grid (Balanced 2-Column Pairs) -->
@@ -405,13 +418,14 @@
                     <div id="asset-id-info" class="text-[11px] text-emerald-400 font-medium mt-1.5 hidden flex items-center gap-1.5"></div>
 
                     <!-- Existing Asset Edit Mode Banner -->
-                    <div id="asset-id-edit-badge" class="hidden mt-2 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs flex items-center justify-between animate-in fade-in duration-200">
+                    <div id="asset-id-edit-badge" class="hidden mt-2 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs flex items-center justify-between gap-2 animate-in fade-in duration-200">
                         <div class="flex items-center gap-2">
                             <i data-lucide="file-edit" class="w-4 h-4 text-amber-400 shrink-0"></i>
                             <span id="asset-id-edit-desc"><strong>Existing Asset Found:</strong> Loaded details for editing & updating.</span>
                         </div>
-                        <button type="button" onclick="switchToNewDeviceMode()" class="text-[11px] font-bold text-amber-300 underline hover:text-white shrink-0 ml-2 cursor-pointer">
-                            New Device
+                        <button type="button" onclick="switchToNewDeviceMode()" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-extrabold border border-amber-400/40 flex items-center gap-1 transition-all active:scale-95 shrink-0 cursor-pointer" title="Reset form and enroll fresh hardware">
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-amber-400"></i>
+                            <span>Register as New</span>
                         </button>
                     </div>
                 </div>
@@ -1145,7 +1159,7 @@
         let lastRegisteredAssetId = '';
         let isEditMode = false;
         let loadedAssetId = '';
-        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v9';
+        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v10';
 
         // Multi-select components state (Default: CPU only)
         let selectedComponents = new Set(['CPU']);
@@ -1160,6 +1174,8 @@
                 localStorage.removeItem('campus_asset_draft_v5');
                 localStorage.removeItem('campus_asset_draft_v6');
                 localStorage.removeItem('campus_asset_draft_v7');
+                localStorage.removeItem('campus_asset_draft_v8');
+                localStorage.removeItem('campus_asset_draft_v9');
             } catch (e) {}
 
             updateSelectedComponentsUI();
@@ -1862,7 +1878,7 @@
                     } else {
                         // 100% Unique and available for new enrollment!
                         if (isEditMode) {
-                            exitEditMode();
+                            exitEditMode(true);
                         }
                         if (statusIcon) {
                             statusIcon.classList.remove('hidden');
@@ -2080,7 +2096,7 @@
             saveDraft();
         }
 
-        function exitEditMode() {
+        function exitEditMode(clearLoadedCustodian = false) {
             isEditMode = false;
             loadedAssetId = '';
 
@@ -2103,17 +2119,73 @@
             const submitIcon = document.getElementById('btn-submit-icon');
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'from-amber-500', 'to-amber-600', 'hover:from-amber-600', 'hover:to-amber-700', 'shadow-amber-600/30');
                 submitBtn.className = "flex-1 h-12 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-sm font-extrabold shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]";
             }
             if (submitText) submitText.textContent = "Save Device to Inventory";
             if (submitIcon) submitIcon.setAttribute('data-lucide', 'check');
             if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            if (clearLoadedCustodian) {
+                setUnassigned();
+            }
         }
 
-        function switchToNewDeviceMode() {
-            exitEditMode();
-            autoGenerateTag(true);
+        function resetAllFormInputs(clearLocation = false) {
+            exitEditMode(false);
+            try {
+                localStorage.removeItem(DRAFT_STORAGE_KEY);
+            } catch (e) {}
+
+            const draftBanner = document.getElementById('draft-banner');
+            if (draftBanner) draftBanner.classList.add('hidden');
+
+            // Reset Custodian fields
+            const userNameEl = document.getElementById('input-user-name');
+            if (userNameEl) userNameEl.value = 'Unassigned';
+            const empIdEl = document.getElementById('input-emp-id');
+            if (empIdEl) empIdEl.value = '';
+            const desigEl = document.getElementById('input-designation');
+            if (desigEl) desigEl.value = '';
+            const deptEl = document.getElementById('input-department');
+            if (deptEl) deptEl.value = '';
+            const contactEl = document.getElementById('input-contact');
+            if (contactEl) contactEl.value = '';
+            const emailEl = document.getElementById('input-email');
+            if (emailEl) emailEl.value = '';
+
+            // Reset Location if requested
+            if (clearLocation) {
+                const roomEl = document.getElementById('input-room');
+                if (roomEl) roomEl.value = '';
+            }
+
+            // Reset all hardware specifications and serial numbers
+            const fieldsToClear = [
+                'input-cpu-brand', 'input-cpu-sn', 'input-cpu', 'input-ram', 'input-ip', 'input-mac',
+                'input-monitor-brand', 'input-monitor-sn', 'input-monitor',
+                'input-keyboard-brand', 'input-keyboard-sn', 'input-keyboard',
+                'input-mouse-brand', 'input-mouse-sn', 'input-mouse',
+                'input-printer-brand', 'input-printer-sn', 'input-printer',
+                'input-ups-brand', 'input-ups-sn', 'input-ups',
+                'input-tablet-brand', 'input-tablet-sn', 'input-tablet', 'input-tablet-device-id', 'input-tablet-anydesk-id', 'input-tablet-mac',
+                'input-other-brand', 'input-other-model', 'input-other-sn'
+            ];
+            fieldsToClear.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+
+            const osEl = document.getElementById('input-os');
+            if (osEl) osEl.value = 'Windows 11 Pro';
+
+            if (document.getElementById('input-other-type')) document.getElementById('input-other-type').value = 'Scanner';
+
+            selectedComponents = new Set(['CPU']);
+            updateSelectedComponentsUI();
+            updateCustodianStatusUI();
+            highlightActiveStaffChip('Unassigned');
+
             const warningEl = document.getElementById('asset-id-warning');
             if (warningEl) {
                 warningEl.classList.add('hidden');
@@ -2124,6 +2196,12 @@
                 infoEl.classList.add('hidden');
                 infoEl.innerHTML = '';
             }
+
+            autoGenerateTag(true);
+        }
+
+        function switchToNewDeviceMode() {
+            resetAllFormInputs(false);
             if (navigator.vibrate) navigator.vibrate(20);
         }
 
