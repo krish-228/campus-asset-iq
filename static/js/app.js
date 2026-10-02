@@ -1248,6 +1248,20 @@ function isCompositeWorkstation(dev) {
     return false;
 }
 
+function getCanonicalDeviceType(raw) {
+    const u = (raw || '').trim().toUpperCase();
+    if (u.includes('CPU') || u.includes('DESKTOP') || u.includes('PC') || u.includes('TOWER')) return 'CPU';
+    if (u.includes('DISPLAY') || u.includes('MONITOR') || u.includes('SCREEN')) return 'Display';
+    if (u.includes('KEYBOARD') || u.includes('KB')) return 'Keyboard';
+    if (u.includes('MOUSE')) return 'Mouse';
+    if (u.includes('TABLET') || u.includes('TAB') || u.includes('IPAD')) return 'Tablet';
+    if (u.includes('BARCODE PRINTER') || u.includes('LABEL PRINTER') || u.includes('BARCODE PRINT') || u.includes('THERMAL PRINTER')) return 'Barcode Printer';
+    if (u.includes('PRINTER') || u.includes('PRT')) return 'Printer';
+    if (u.includes('UPS') || u.includes('POWER') || u.includes('INVERTER')) return 'UPS';
+    if (u.includes('SCANNER')) return 'Scanner';
+    return raw || 'Other';
+}
+
 function expandCompositeWorkstation(dev, group) {
     const rawType = (dev.deviceType || dev.device_type || '').trim();
     let components = [];
@@ -1444,10 +1458,14 @@ function renderInventoryTable() {
         if (isUnassigned) {
             unassignedDevices.push(dev);
         } else {
-            const key = assignedName.toLowerCase();
+            const cleanTag = (dev.assetId || '').trim().toUpperCase();
+            // Group primarily by shared Asset Tag so different workstations are never conflated,
+            // with fallback to assigned custodian name
+            const key = cleanTag ? `${cleanTag}__${assignedName.toLowerCase()}` : assignedName.toLowerCase();
             if (!groupsMap[key]) {
                 groupsMap[key] = {
                     key,
+                    assetId: cleanTag,
                     displayName: user ? user.fullName : assignedName,
                     displayEmp: assignedEmp || (user ? user.empId : ''),
                     desigText: assignedDesig || (user ? (user.designation || user.department) : '') || 'Assigned Custodian',
@@ -1467,7 +1485,7 @@ function renderInventoryTable() {
     });
 
     // Automatically expand composite Workstations (e.g. "Workstation (CPU, Display, Keyboard, Mouse, Tablet)")
-    // so single-holder workstations get full WORKSTATION SET headers and sub-bundle component rows just like multi-device sets
+    // and seamlessly deduplicate redundant components so 2x CPU, 2x Keyboard, etc. never occur
     Object.values(groupsMap).forEach(group => {
         const expanded = [];
         group.devices.forEach(dev => {
@@ -1477,7 +1495,64 @@ function renderInventoryTable() {
                 expanded.push(dev);
             }
         });
-        group.devices = expanded;
+
+        // Deduplicate devices inside workstation set: keep the single best item per component type
+        const deduped = [];
+        const seenTypes = new Map();
+
+        expanded.forEach(dev => {
+            const rawType = (dev.deviceType || dev.device_type || 'Device').trim();
+            const normType = getCanonicalDeviceType(rawType);
+
+            if (normType === 'Display') {
+                const existingDisplays = deduped.filter(d => getCanonicalDeviceType(d.deviceType || d.device_type) === 'Display');
+                if (existingDisplays.length === 0) {
+                    deduped.push(dev);
+                } else {
+                    const firstDisp = existingDisplays[0];
+                    const sn1 = (firstDisp.serialNumber || '').trim().toUpperCase();
+                    const sn2 = (dev.serialNumber || '').trim().toUpperCase();
+                    const isReal1 = sn1 && !sn1.startsWith('SN-PSM-') && sn1 !== 'NA' && sn1 !== 'N/A' && sn1 !== '-';
+                    const isReal2 = sn2 && !sn2.startsWith('SN-PSM-') && sn2 !== 'NA' && sn2 !== 'N/A' && sn2 !== '-';
+
+                    if (isReal1 && isReal2 && sn1 !== sn2) {
+                        // Legitimate physical dual-monitor setup!
+                        deduped.push(dev);
+                    } else if (isReal2 && !isReal1) {
+                        const idx = deduped.indexOf(firstDisp);
+                        if (idx !== -1) deduped[idx] = dev;
+                    } else if (!isReal1 && !isReal2 && (dev.cpuProcessor || dev.monitorSpec || '').length > (firstDisp.cpuProcessor || firstDisp.monitorSpec || '').length) {
+                        const idx = deduped.indexOf(firstDisp);
+                        if (idx !== -1) deduped[idx] = dev;
+                    }
+                }
+                return;
+            }
+
+            if (!seenTypes.has(normType)) {
+                seenTypes.set(normType, dev);
+                deduped.push(dev);
+            } else {
+                const existing = seenTypes.get(normType);
+                const snExisting = (existing.serialNumber || '').trim().toUpperCase();
+                const snNew = (dev.serialNumber || '').trim().toUpperCase();
+                const isRealExisting = snExisting && !snExisting.startsWith('SN-PSM-') && snExisting !== 'NA' && snExisting !== 'N/A' && snExisting !== '-';
+                const isRealNew = snNew && !snNew.startsWith('SN-PSM-') && snNew !== 'NA' && snNew !== 'N/A' && snNew !== '-';
+
+                // Prefer the device with real physical serial number and richer specs
+                if (isRealNew && !isRealExisting) {
+                    const idx = deduped.indexOf(existing);
+                    if (idx !== -1) deduped[idx] = dev;
+                    seenTypes.set(normType, dev);
+                } else if ((dev.cpuProcessor || dev.brandName || '').length > (existing.cpuProcessor || existing.brandName || '').length && (!isRealExisting || isRealNew)) {
+                    const idx = deduped.indexOf(existing);
+                    if (idx !== -1) deduped[idx] = dev;
+                    seenTypes.set(normType, dev);
+                }
+            }
+        });
+
+        group.devices = deduped;
     });
 
     const multiDeviceWorkstations = Object.values(groupsMap).filter(g => g.devices.length > 1);
@@ -1683,9 +1758,10 @@ function renderInventoryTable() {
             const assetBadgeClass = isHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
             const roomBadgeClass = isHosp ? 'bg-violet-50 text-violet-800 border-violet-200' : 'bg-indigo-50 text-indigo-800 border-indigo-200';
 
-            const custKey = dev._meta.assignedName ? dev._meta.assignedName.toLowerCase() : '';
-            const isMulti = custKey && groupsMap[custKey] && groupsMap[custKey].devices.length > 1;
-            const multiCount = isMulti ? groupsMap[custKey].devices.length : 0;
+            const cleanTag = (dev.assetId || '').trim().toUpperCase();
+            const groupKey = cleanTag ? `${cleanTag}__${(dev._meta.assignedName || '').toLowerCase()}` : (dev._meta.assignedName || '').toLowerCase();
+            const isMulti = groupKey && groupsMap[groupKey] && groupsMap[groupKey].devices.length > 1;
+            const multiCount = isMulti ? groupsMap[groupKey].devices.length : 0;
 
             return renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMulti, multiCount);
         }).join('');

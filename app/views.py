@@ -507,6 +507,15 @@ def api_save_device(request):
         with transaction.atomic():
             if len(components) > 1:
                 existing_rows = list(DeviceAsset.objects.filter(Q(asset_id__iexact=asset_id) | Q(asset_id__iexact=dev.asset_id)))
+                if assigned_user_name and assigned_user_name.lower() != 'unassigned':
+                    cust_q = Q(assigned_user_name__iexact=assigned_user_name)
+                    if assigned_emp_id:
+                        cust_q = cust_q | Q(assigned_emp_id=assigned_emp_id)
+                    cust_matches = list(DeviceAsset.objects.filter(cust_q))
+                    for cm in cust_matches:
+                        if cm not in existing_rows:
+                            existing_rows.append(cm)
+
                 used_row_ids = set()
 
                 for comp in components:
@@ -1003,15 +1012,27 @@ def api_save_device(request):
                 # 2. Match by serial_number if genuine
                 if not existing_comp and comp_sn and not comp_sn.startswith('SN-PSM-') and comp_sn.upper() not in ('NA', 'N/A', '-'):
                     existing_comp = DeviceAsset.objects.filter(serial_number__iexact=comp_sn).first()
-                # 3. Match by custodian + room + device_type if same person
+                # 3. Match by custodian + device_type if same person
+                cust_query = None
                 if not existing_comp and assigned_user_name and assigned_user_name.lower() != 'unassigned':
+                    cust_query = Q(assigned_user_name__iexact=assigned_user_name)
+                    if assigned_emp_id:
+                        cust_query = cust_query | Q(assigned_emp_id=assigned_emp_id)
                     existing_comp = DeviceAsset.objects.filter(
-                        assigned_user_name__iexact=assigned_user_name,
-                        room_name__iexact=room_name,
+                        cust_query,
                         device_type__iexact=item_dev_type
                     ).first()
 
+                is_new_record = (existing_comp is None)
+                old_custodian_name = existing_comp.assigned_user_name if existing_comp else None
+
                 if existing_comp:
+                    # Clean up any redundant duplicate rows with the same device_type for this custodian/asset
+                    dup_filter = Q(asset_id__iexact=comp_tag)
+                    if cust_query is not None:
+                        dup_filter = dup_filter | cust_query
+                    DeviceAsset.objects.filter(dup_filter, device_type__iexact=item_dev_type).exclude(id=existing_comp.id).delete()
+
                     # Update existing component instead of duplicating
                     existing_comp.asset_id = comp_tag
                     existing_comp.device_type = item_dev_type
@@ -1081,7 +1102,7 @@ def api_save_device(request):
                     )
                 created_devices.append(item_dev)
 
-                if assigned_user_name and assigned_user_name.lower() != 'unassigned':
+                if is_new_record and assigned_user_name and assigned_user_name.lower() != 'unassigned':
                     CustodyTransferLog.objects.create(
                         device=item_dev,
                         device_asset_id=item_dev.asset_id,
@@ -1092,6 +1113,18 @@ def api_save_device(request):
                         handover_date=purchase_date,
                         assigned_by=request.session.get('staff_name', 'IT Admin Desk') if hasattr(request, 'session') else 'IT Admin Desk',
                         remarks=f"Initial Workstation assignment ({item_dev.device_type}) to {assigned_user_name}"
+                    )
+                elif not is_new_record and old_custodian_name and old_custodian_name.lower() != assigned_user_name.lower() and assigned_user_name.lower() != 'unassigned':
+                    CustodyTransferLog.objects.create(
+                        device=item_dev,
+                        device_asset_id=item_dev.asset_id,
+                        from_user_name=old_custodian_name,
+                        from_emp_id="",
+                        to_user_name=assigned_user_name,
+                        to_emp_id=assigned_emp_id,
+                        handover_date=timezone.now().strftime('%d-%b-%Y'),
+                        assigned_by=request.session.get('staff_name', 'IT Admin Desk') if hasattr(request, 'session') else 'IT Admin Desk',
+                        remarks=f"Workstation reassignment ({item_dev.device_type}) from {old_custodian_name} to {assigned_user_name}"
                     )
 
             if assigned_emp_id:
