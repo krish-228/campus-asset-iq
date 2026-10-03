@@ -554,6 +554,15 @@ const WORKSTATION_DEVICE_PRIORITY = {
     'OTHER': 11
 };
 
+function getAssetTagSequence(tag) {
+    if (!tag) return 999999;
+    const clean = String(tag).trim();
+    const parts = clean.split('/');
+    const last = parts[parts.length - 1];
+    const match = last.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 999999;
+}
+
 function getWorkstationDevicePriority(dev) {
     const raw = (dev.deviceType || dev.device_type || '').toUpperCase();
     for (const [key, prio] of Object.entries(WORKSTATION_DEVICE_PRIORITY)) {
@@ -1455,25 +1464,42 @@ function renderInventoryTable() {
             roomName
         };
 
-        if (isUnassigned) {
-            unassignedDevices.push(dev);
-        } else {
-            const cleanTag = (dev.assetId || '').trim().toUpperCase();
-            // Group primarily by shared Asset Tag so different workstations are never conflated,
-            // with fallback to assigned custodian name
-            const key = cleanTag ? `${cleanTag}__${assignedName.toLowerCase()}` : assignedName.toLowerCase();
+        const cleanTag = (dev.assetId || '').trim().toUpperCase();
+
+        if (cleanTag) {
+            // Group primarily by physical Asset Tag so all workstations 1 to 74 are organized in order
+            const key = cleanTag;
+            const seq = getAssetTagSequence(cleanTag);
+            const isCustUnassigned = isUnassigned;
+
+            let displayName = isCustUnassigned
+                ? (roomName ? `${roomName} Desk` : `Workstation #${seq < 999999 ? String(seq).padStart(3, '0') : cleanTag}`)
+                : (user ? user.fullName : assignedName);
+            let desigText = isCustUnassigned
+                ? 'Hospital Facility Desk'
+                : (assignedDesig || (user ? (user.designation || user.department) : '') || 'Assigned Custodian');
+
             if (!groupsMap[key]) {
                 groupsMap[key] = {
                     key,
                     assetId: cleanTag,
-                    displayName: user ? user.fullName : assignedName,
-                    displayEmp: assignedEmp || (user ? user.empId : ''),
-                    desigText: assignedDesig || (user ? (user.designation || user.department) : '') || 'Assigned Custodian',
+                    sequenceNum: seq,
+                    isUnassigned: isCustUnassigned,
+                    displayName,
+                    displayEmp: isCustUnassigned ? '' : (assignedEmp || (user ? user.empId : '')),
+                    desigText,
                     bldgName,
                     floorName,
                     roomName,
                     devices: []
                 };
+            } else {
+                if (groupsMap[key].isUnassigned && !isCustUnassigned) {
+                    groupsMap[key].isUnassigned = false;
+                    groupsMap[key].displayName = user ? user.fullName : assignedName;
+                    groupsMap[key].displayEmp = assignedEmp || (user ? user.empId : '');
+                    groupsMap[key].desigText = assignedDesig || (user ? (user.designation || user.department) : '') || 'Assigned Custodian';
+                }
             }
             groupsMap[key].devices.push(dev);
             if (roomName && !groupsMap[key].roomName) {
@@ -1481,6 +1507,28 @@ function renderInventoryTable() {
                 groupsMap[key].floorName = floorName;
                 groupsMap[key].bldgName = bldgName;
             }
+        } else if (!isUnassigned) {
+            // Custodian assigned but no asset tag
+            const key = `NO_TAG__${assignedName.toLowerCase()}`;
+            if (!groupsMap[key]) {
+                groupsMap[key] = {
+                    key,
+                    assetId: 'NO TAG',
+                    sequenceNum: 999999,
+                    isUnassigned: false,
+                    displayName: user ? user.fullName : assignedName,
+                    displayEmp: assignedEmp || (user ? user.empId : ''),
+                    desigText: assignedDesig || 'Assigned Custodian',
+                    bldgName,
+                    floorName,
+                    roomName,
+                    devices: []
+                };
+            }
+            groupsMap[key].devices.push(dev);
+        } else {
+            // Truly unassigned and untagged spares
+            unassignedDevices.push(dev);
         }
     });
 
@@ -1552,13 +1600,27 @@ function renderInventoryTable() {
             }
         });
 
+        // Sort components inside this workstation bundle in strict hierarchy order:
+        // CPU (1) -> Display (2) -> Keyboard (3) -> Mouse (4) -> Printer (5) -> UPS (6) -> Tablet (7) -> Other (8+)
+        deduped.sort((a, b) => {
+            const pA = getWorkstationDevicePriority(a);
+            const pB = getWorkstationDevicePriority(b);
+            if (pA !== pB) return pA - pB;
+            return (a.deviceType || '').localeCompare(b.deviceType || '');
+        });
+
         group.devices = deduped;
     });
 
-    const multiDeviceWorkstations = Object.values(groupsMap).filter(g => g.devices.length > 1);
-    const singleDeviceWorkstations = Object.values(groupsMap).filter(g => g.devices.length === 1);
-    const totalWorkstations = Object.values(groupsMap).length;
+    // SORT ALL WORKSTATIONS STRICTLY IN ASCENDING NUMERICAL SEQUENCE: 1 TO 74, 75, 76, etc.
+    const allWorkstations = Object.values(groupsMap).sort((a, b) => {
+        const seqA = a.sequenceNum !== undefined ? a.sequenceNum : getAssetTagSequence(a.assetId);
+        const seqB = b.sequenceNum !== undefined ? b.sequenceNum : getAssetTagSequence(b.assetId);
+        if (seqA !== seqB) return seqA - seqB;
+        return (a.assetId || '').localeCompare(b.assetId || '');
+    });
 
+    const totalWorkstations = allWorkstations.length;
     const wsBadge = document.getElementById('badge-workstation-count');
     if (wsBadge) {
         wsBadge.textContent = totalWorkstations;
@@ -1570,156 +1632,136 @@ function renderInventoryTable() {
     // MODE A: WORKSTATION SETS (GROUPED VIEW)
     // ========================================================================
     if (inventoryViewMode === 'grouped') {
-        // 1. Multi-Device Workstations (e.g. Khushali with CPU, Display, Keyboard, Mouse, Printer, UPS)
-        multiDeviceWorkstations.forEach(group => {
-            // Sort devices inside workstation logically: CPU -> Display -> Keyboard -> Mouse -> Printer -> UPS
-            group.devices.sort((a, b) => getWorkstationDevicePriority(a) - getWorkstationDevicePriority(b));
+        allWorkstations.forEach(group => {
+            if (group.devices.length > 1) {
+                // Multi-Device Workstation Bundle in Sequence
+                const isCollapsed = collapsedWorkstations.has(group.key);
 
-            const isCollapsed = collapsedWorkstations.has(group.key);
-
-            // Workstation Header Row
-            const typeCounts = {};
-            group.devices.forEach(d => {
-                const t = (d.deviceType || d.device_type || 'Device').trim();
-                typeCounts[t] = (typeCounts[t] || 0) + 1;
-            });
-            const typeChips = Object.entries(typeCounts).map(([type, count]) => {
-                return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-white text-slate-700 border border-slate-200/90 shadow-3xs">
-                    <span class="font-extrabold text-indigo-600">${count > 1 ? `${count}x ` : ''}</span>${type}
-                </span>`;
-            }).join(' ');
-
-            const primaryAssetId = group.devices[0]?.assetId || '—';
-            const isGroupHosp = group.devices[0]?.orgId === 'HOSP';
-            const groupAssetBadgeClass = isGroupHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
-
-            html += `
-                <tr class="bg-gradient-to-r from-indigo-50/95 via-slate-50 to-indigo-50/50 border-t-2 border-indigo-500/80 shadow-2xs group-header-row cursor-pointer select-none" onclick="toggleWorkstationCollapse('${group.key}')">
-                    <td colspan="5" class="py-3 px-5">
-                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                            <!-- Left: Workstation Title, Custodian Details & Location -->
-                            <div class="flex items-center gap-3.5 min-w-0">
-                                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-xs shadow-sm shrink-0">
-                                    <i data-lucide="monitor" class="w-4 h-4"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <span class="text-[11px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-100/90 border border-indigo-200/80 px-2 py-0.5 rounded-md shadow-3xs">
-                                            Workstation Set
-                                        </span>
-                                        <span class="font-extrabold text-slate-900 text-sm truncate hover:text-indigo-600 transition-colors" title="Click to collapse/expand">${group.displayName}</span>
-                                        ${group.displayEmp ? `<span class="text-xs font-mono text-slate-500 font-semibold">(${group.displayEmp})</span>` : ''}
-                                        <span class="text-xs font-bold text-indigo-600 px-2 py-0.5 rounded-md bg-white border border-indigo-200/60 shadow-3xs">${group.desigText}</span>
-                                        <span class="font-mono font-black text-xs px-2.5 py-0.5 rounded-md border ${groupAssetBadgeClass} shadow-3xs whitespace-nowrap inline-flex items-center gap-1.5 bg-white" title="Workstation Shared Asset Tag">
-                                            <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-600"></i>
-                                            <span>${primaryAssetId}</span>
-                                        </span>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-xs text-slate-600 font-medium mt-1 flex-wrap">
-                                        <span class="flex items-center gap-1">
-                                            <i data-lucide="building-2" class="w-3.5 h-3.5 text-slate-400"></i>
-                                            ${group.bldgName}
-                                        </span>
-                                        <span class="text-slate-300">&bull;</span>
-                                        <span class="text-slate-500">${group.floorName}</span>
-                                        <span class="text-slate-300">&bull;</span>
-                                        <span class="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                                            ${group.roomName || 'Assigned Desk'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Right: Hardware Chips Summary & Total Badge & Collapse Chevron -->
-                            <div class="flex items-center gap-2 self-start md:self-center shrink-0">
-                                <div class="hidden lg:flex items-center gap-1.5">
-                                    ${typeChips}
-                                </div>
-                                <span class="px-2.5 py-1 rounded-full text-xs font-black bg-indigo-600 text-white shadow-2xs flex items-center gap-1.5">
-                                    <i data-lucide="layers" class="w-3.5 h-3.5"></i>
-                                    <span>${group.devices.length} Devices Linked</span>
-                                </span>
-                                <button type="button" onclick="event.stopPropagation(); toggleWorkstationCollapse('${group.key}')" 
-                                    class="w-7 h-7 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition-all shadow-3xs cursor-pointer" 
-                                    title="${isCollapsed ? 'Expand Workstation Devices' : 'Collapse Workstation Devices'}">
-                                    <i data-lucide="${isCollapsed ? 'chevron-right' : 'chevron-down'}" class="w-4 h-4 text-indigo-600"></i>
-                                </button>
-                                <button type="button" onclick="event.stopPropagation(); deleteDevice('${group.devices[0]?.id}', '${primaryAssetId}', true)" 
-                                    class="w-7 h-7 rounded-lg bg-white border border-rose-200 hover:bg-rose-50 hover:border-rose-400 text-rose-600 flex items-center justify-center transition-all shadow-3xs cursor-pointer group" 
-                                    title="Delete Entire Workstation Set (${primaryAssetId})">
-                                    <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500 group-hover:scale-110 transition-transform"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            `;
-
-            // If not collapsed, render child rows with connected left accent border
-            if (!isCollapsed) {
-                group.devices.forEach((dev) => {
-                    const isHosp = dev.orgId === 'HOSP';
-                    const assetBadgeClass = isHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
-
-                    const devRoom = dev._meta.roomName || group.roomName;
-                    const devFloor = dev._meta.floorName || group.floorName;
-                    const locationDisplay = `
-                        <div class="space-y-0.5">
-                            <div class="font-bold text-slate-800 text-xs flex items-center gap-1 truncate">
-                                <i data-lucide="map-pin" class="w-3 h-3 text-indigo-500 shrink-0"></i>
-                                <span class="font-bold text-indigo-800 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 text-xs truncate">
-                                    ${devRoom}
-                                </span>
-                            </div>
-                            <div class="text-[11px] text-slate-400 font-medium truncate">${devFloor} &bull; Workstation Desk</div>
-                        </div>
-                    `;
-
-                    html += `
-                        <tr class="hover:bg-indigo-50/50 transition-colors divide-x divide-slate-100 text-slate-800 border-l-4 border-indigo-500/80 bg-slate-50/20" data-custodian-key="${group.key}">
-                            <td class="py-3.5 pl-5 pr-3.5 whitespace-nowrap">
-                                <div class="space-y-1">
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        ${getDeviceTypeBadge(dev)}
-                                        ${dev._isCompositeSubItem ? `
-                                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded shadow-3xs ${dev.deviceType === 'CPU' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}">
-                                                ${dev.deviceType === 'CPU' ? 'Core' : 'Linked'}
-                                            </span>
-                                        ` : ''}
-                                    </div>
-                                    <div class="text-xs text-slate-500 font-mono font-medium whitespace-nowrap flex items-center gap-1">
-                                        <span class="text-slate-400 font-semibold">SN:</span>
-                                        <span class="text-slate-700 font-semibold">${dev.serialNumber || (dev._isCompositeSubItem ? 'Bundled with Workstation' : '—')}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="py-3 px-3.5">${getDeviceSpecificationsHtml(dev)}</td>
-                            <td class="py-3 px-3.5">${getNetworkIpCellHtml(dev)}</td>
-                            <td class="py-3 px-3.5">${getStatusDisplayHtml(dev)}</td>
-                            <td class="py-3 pr-4 pl-2 text-center w-16 min-w-[60px]">
-                                <button onclick="toggleDeviceActionMenu('${dev.id}', event)" class="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-indigo-50 hover:border-indigo-400 text-slate-700 hover:text-indigo-700 inline-flex items-center justify-center transition-all shadow-2xs group cursor-pointer" title="Device Actions Menu">
-                                    <i data-lucide="more-vertical" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
+                // Workstation Header Row
+                const typeCounts = {};
+                group.devices.forEach(d => {
+                    const t = (d.deviceType || d.device_type || 'Device').trim();
+                    typeCounts[t] = (typeCounts[t] || 0) + 1;
                 });
-            }
-        });
+                const typeChips = Object.entries(typeCounts).map(([type, count]) => {
+                    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-white text-slate-700 border border-slate-200/90 shadow-3xs">
+                        <span class="font-extrabold text-indigo-600">${count > 1 ? `${count}x ` : ''}</span>${type}
+                    </span>`;
+                }).join(' ');
 
-        // 2. Single-Device Assignments
-        if (singleDeviceWorkstations.length > 0) {
-            singleDeviceWorkstations.forEach(group => {
+                const primaryAssetId = group.assetId || group.devices[0]?.assetId || '—';
+                const isGroupHosp = group.devices[0]?.orgId === 'HOSP';
+                const groupAssetBadgeClass = isGroupHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
+
+                html += `
+                    <tr class="bg-gradient-to-r from-indigo-50/95 via-slate-50 to-indigo-50/50 border-t-2 border-indigo-500/80 shadow-2xs group-header-row cursor-pointer select-none" onclick="toggleWorkstationCollapse('${group.key}')">
+                        <td colspan="5" class="py-3 px-5">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <!-- Left: Workstation Title, Custodian Details & Location -->
+                                <div class="flex items-center gap-3.5 min-w-0">
+                                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-xs shadow-sm shrink-0">
+                                        <i data-lucide="monitor" class="w-4 h-4"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="text-[11px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-100/90 border border-indigo-200/80 px-2 py-0.5 rounded-md shadow-3xs">
+                                                Workstation Set
+                                            </span>
+                                            <span class="font-extrabold text-slate-900 text-sm truncate hover:text-indigo-600 transition-colors" title="Click to collapse/expand">${group.displayName}</span>
+                                            ${group.displayEmp ? `<span class="text-xs font-mono text-slate-500 font-semibold">(${group.displayEmp})</span>` : ''}
+                                            <span class="text-xs font-bold ${group.isUnassigned ? 'text-slate-500 bg-slate-100 border-slate-200' : 'text-indigo-600 bg-white border-indigo-200/60'} px-2 py-0.5 rounded-md border shadow-3xs">${group.desigText}</span>
+                                            <span class="font-mono font-black text-xs px-2.5 py-0.5 rounded-md border ${groupAssetBadgeClass} shadow-3xs whitespace-nowrap inline-flex items-center gap-1.5 bg-white" title="Workstation Shared Asset Tag">
+                                                <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-600"></i>
+                                                <span>${primaryAssetId}</span>
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-xs text-slate-600 font-medium mt-1 flex-wrap">
+                                            <span class="flex items-center gap-1">
+                                                <i data-lucide="building-2" class="w-3.5 h-3.5 text-slate-400"></i>
+                                                ${group.bldgName}
+                                            </span>
+                                            <span class="text-slate-300">&bull;</span>
+                                            <span class="text-slate-500">${group.floorName}</span>
+                                            <span class="text-slate-300">&bull;</span>
+                                            <span class="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                                                ${group.roomName || 'Assigned Desk'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Hardware Chips Summary & Total Badge & Collapse Chevron -->
+                                <div class="flex items-center gap-2 self-start md:self-center shrink-0">
+                                    <div class="hidden lg:flex items-center gap-1.5">
+                                        ${typeChips}
+                                    </div>
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-black bg-indigo-600 text-white shadow-2xs flex items-center gap-1.5">
+                                        <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                                        <span>${group.devices.length} Devices Linked</span>
+                                    </span>
+                                    <button type="button" onclick="event.stopPropagation(); toggleWorkstationCollapse('${group.key}')" 
+                                        class="w-7 h-7 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition-all shadow-3xs cursor-pointer" 
+                                        title="${isCollapsed ? 'Expand Workstation Devices' : 'Collapse Workstation Devices'}">
+                                        <i data-lucide="${isCollapsed ? 'chevron-right' : 'chevron-down'}" class="w-4 h-4 text-indigo-600"></i>
+                                    </button>
+                                    <button type="button" onclick="event.stopPropagation(); deleteDevice('${group.devices[0]?.id}', '${primaryAssetId}', true)" 
+                                        class="w-7 h-7 rounded-lg bg-white border border-rose-200 hover:bg-rose-50 hover:border-rose-400 text-rose-600 flex items-center justify-center transition-all shadow-3xs cursor-pointer group" 
+                                        title="Delete Entire Workstation Set (${primaryAssetId})">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500 group-hover:scale-110 transition-transform"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                // If not collapsed, render child rows with connected left accent border
+                if (!isCollapsed) {
+                    group.devices.forEach((dev) => {
+                        const devRoom = dev._meta.roomName || group.roomName;
+                        const devFloor = dev._meta.floorName || group.floorName;
+                        html += `
+                            <tr class="hover:bg-indigo-50/50 transition-colors divide-x divide-slate-100 text-slate-800 border-l-4 border-indigo-500/80 bg-slate-50/20" data-custodian-key="${group.key}">
+                                <td class="py-3.5 pl-5 pr-3.5 whitespace-nowrap">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            ${getDeviceTypeBadge(dev)}
+                                            ${dev._isCompositeSubItem ? `
+                                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded shadow-3xs ${dev.deviceType === 'CPU' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}">
+                                                    ${dev.deviceType === 'CPU' ? 'Core' : 'Linked'}
+                                                </span>
+                                            ` : ''}
+                                        </div>
+                                        <div class="text-xs text-slate-500 font-mono font-medium whitespace-nowrap flex items-center gap-1">
+                                            <span class="text-slate-400 font-semibold">SN:</span>
+                                            <span class="text-slate-700 font-semibold">${dev.serialNumber || (dev._isCompositeSubItem ? 'Bundled with Workstation' : '—')}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-3.5">${getDeviceSpecificationsHtml(dev)}</td>
+                                <td class="py-3 px-3.5">${getNetworkIpCellHtml(dev)}</td>
+                                <td class="py-3 px-3.5">${getStatusDisplayHtml(dev)}</td>
+                                <td class="py-3 pr-4 pl-2 text-center w-16 min-w-[60px]">
+                                    <button onclick="toggleDeviceActionMenu('${dev.id}', event)" class="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-indigo-50 hover:border-indigo-400 text-slate-700 hover:text-indigo-700 inline-flex items-center justify-center transition-all shadow-2xs group cursor-pointer" title="Device Actions Menu">
+                                        <i data-lucide="more-vertical" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            } else if (group.devices.length === 1) {
+                // Standalone Single Device in sequence
                 const dev = group.devices[0];
                 const isHosp = dev.orgId === 'HOSP';
                 const assetBadgeClass = isHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
                 const roomBadgeClass = isHosp ? 'bg-violet-50 text-violet-800 border-violet-200' : 'bg-indigo-50 text-indigo-800 border-indigo-200';
 
                 html += renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, false, 1);
-            });
-        }
+            }
+        });
 
-        // 3. Unassigned / Spares Section
+        // Untagged and unassigned backup spares at the end
         if (unassignedDevices.length > 0) {
             html += `
                 <tr class="bg-slate-100/90 border-t-2 border-slate-300/80 shadow-2xs">
@@ -1730,7 +1772,7 @@ function renderInventoryTable() {
                                     <i data-lucide="archive" class="w-4 h-4"></i>
                                 </span>
                                 <span class="font-extrabold text-slate-700 text-xs uppercase tracking-wider">
-                                    Unassigned / Backup Spares
+                                    Untagged Spares & Standalone Devices
                                 </span>
                                 <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200/90 text-slate-700">
                                     ${unassignedDevices.length} Available Devices
@@ -1753,13 +1795,23 @@ function renderInventoryTable() {
     // MODE B: ALL DEVICES (FLAT VIEW)
     // ========================================================================
     else {
-        html = devices.map(dev => {
+        const flatSortedDevices = [...devices].sort((a, b) => {
+            const seqA = getAssetTagSequence(a.assetId);
+            const seqB = getAssetTagSequence(b.assetId);
+            if (seqA !== seqB) return seqA - seqB;
+            const pA = getWorkstationDevicePriority(a);
+            const pB = getWorkstationDevicePriority(b);
+            if (pA !== pB) return pA - pB;
+            return (a.assetId || '').localeCompare(b.assetId || '');
+        });
+
+        html = flatSortedDevices.map(dev => {
             const isHosp = dev.orgId === 'HOSP';
             const assetBadgeClass = isHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
             const roomBadgeClass = isHosp ? 'bg-violet-50 text-violet-800 border-violet-200' : 'bg-indigo-50 text-indigo-800 border-indigo-200';
 
             const cleanTag = (dev.assetId || '').trim().toUpperCase();
-            const groupKey = cleanTag ? `${cleanTag}__${(dev._meta.assignedName || '').toLowerCase()}` : (dev._meta.assignedName || '').toLowerCase();
+            const groupKey = cleanTag || (dev._meta.assignedName || '').toLowerCase();
             const isMulti = groupKey && groupsMap[groupKey] && groupsMap[groupKey].devices.length > 1;
             const multiCount = isMulti ? groupsMap[groupKey].devices.length : 0;
 

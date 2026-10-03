@@ -50,6 +50,23 @@ def normalize_device_type(code, asset_id=''):
     if '/U-' in aid: return 'UPS'
     return code or 'CPU'
 
+def get_asset_sequence_tuple(item):
+    aid = item.get('assetId') or ''
+    parts = aid.split('/')
+    last = parts[-1] if parts else aid
+    m = re.search(r'(\d+)', last)
+    seq = int(m.group(1)) if m else 999999
+    type_prio = 10
+    t = (item.get('deviceType') or '').upper()
+    if 'CPU' in t or 'WORKSTATION' in t or 'COMPUTER' in t: type_prio = 1
+    elif 'DISPLAY' in t or 'MONITOR' in t: type_prio = 2
+    elif 'KEYBOARD' in t: type_prio = 3
+    elif 'MOUSE' in t: type_prio = 4
+    elif 'PRINTER' in t: type_prio = 5
+    elif 'UPS' in t: type_prio = 6
+    elif 'TABLET' in t: type_prio = 7
+    return (seq, aid, type_prio)
+
 def parse_and_normalize_components(components_input, device_type_str='', monitor_spec='', keyboard_spec='', mouse_spec='', tablet_spec='', printer_spec='', ups_spec='', other_spec='', other_type=''):
     """
     Parses and normalizes a list of hardware components selected for a workstation.
@@ -209,6 +226,7 @@ def api_get_devices(request):
             'hardwareDeviceId': getattr(d, 'device_id', '') or '',
             'anydeskId': getattr(d, 'anydesk_id', '') or '',
         })
+    devices_data.sort(key=get_asset_sequence_tuple)
     return JsonResponse({'success': True, 'devices': devices_data})
 
 @csrf_exempt
@@ -2140,6 +2158,8 @@ def get_serialized_devices_and_logs():
             'warrantyExpiryDate': d.warranty_expiry_date,
             'status': d.status,
         })
+
+    devices_data.sort(key=get_asset_sequence_tuple)
 
     logs_qs = CustodyTransferLog.objects.all().order_by('-created_at')
     logs_data = []
