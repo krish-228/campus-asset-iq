@@ -2424,7 +2424,7 @@
 
             const tagParts = assetId.split('/');
             if (tagParts.length >= 4) {
-                const seq = tagParts[tagParts.length === 4 ? 3 : 4];
+                const seq = tagParts[tagParts.length - 1];
                 if (seq.length > 3 || (seq.length > 0 && !/^\d+$/.test(seq))) {
                     if (errorText) errorText.textContent = "Invalid Asset Tag: The unique sequence number allows only 3 digits (e.g. 001 to 999).";
                     if (errorBanner) errorBanner.classList.remove('hidden');
@@ -2522,8 +2522,14 @@
                     body: JSON.stringify(payload)
                 });
 
-                const data = await res.json();
-                if (data.success) {
+                let data;
+                try {
+                    data = await res.json();
+                } catch (parseErr) {
+                    throw new Error(`Server returned status ${res.status}. Please check connection.`);
+                }
+
+                if (res.ok && data.success) {
                     lastRegisteredAssetId = data.asset_id || assetId;
 
                     // Adapt modal header for update vs enrollment
@@ -2575,7 +2581,7 @@
                 }
             } catch (err) {
                 console.error("Submission failed", err);
-                errorText.textContent = "Network error. Please check your connection and try again.";
+                errorText.textContent = err.message || "Network error. Please check your connection and try again.";
                 errorBanner.classList.remove('hidden');
             } finally {
                 isFormSubmitting = false;

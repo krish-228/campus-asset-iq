@@ -11,6 +11,7 @@ import re
 import urllib.parse
 import random
 from django.db import models, transaction
+from django.db.models import Q
 from .models import DeviceComplaint, UserProfile, DeviceAsset, CustodyTransferLog, EquipmentPMS, EquipmentBreakdown
 
 
@@ -507,14 +508,14 @@ def api_save_device(request):
         with transaction.atomic():
             if len(components) > 1:
                 existing_rows = list(DeviceAsset.objects.filter(Q(asset_id__iexact=asset_id) | Q(asset_id__iexact=dev.asset_id)))
-                if assigned_user_name and assigned_user_name.lower() != 'unassigned':
-                    cust_q = Q(assigned_user_name__iexact=assigned_user_name)
-                    if assigned_emp_id:
-                        cust_q = cust_q | Q(assigned_emp_id=assigned_emp_id)
-                    cust_matches = list(DeviceAsset.objects.filter(cust_q))
-                    for cm in cust_matches:
-                        if cm not in existing_rows:
-                            existing_rows.append(cm)
+                seq_val = None
+                parts = dev.asset_id.split('/')
+                if parts and parts[-1].isdigit():
+                    seq_val = f"{int(parts[-1]):03d}"
+                if seq_val:
+                    for sm in DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}"):
+                        if sm not in existing_rows:
+                            existing_rows.append(sm)
 
                 used_row_ids = set()
 
@@ -811,7 +812,37 @@ def api_save_device(request):
                 )
 
             if assigned_emp_id:
-                UserProfile.objects.filter(emp_id=assigned_emp_id).update(assigned_asset_id=dev.asset_id)
+                prof = UserProfile.objects.filter(emp_id__iexact=assigned_emp_id).first()
+                if prof:
+                    prof.assigned_asset_id = dev.asset_id
+                    if assigned_designation and not prof.designation: prof.designation = assigned_designation
+                    if assigned_department and not prof.department: prof.department = assigned_department
+                    if assigned_phone and not prof.phone: prof.phone = assigned_phone
+                    prof.save()
+                elif assigned_user_name and assigned_user_name.lower() != 'unassigned':
+                    clean_u = assigned_emp_id.lower().replace(' ', '_').replace('/', '_')
+                    base_u = clean_u
+                    cntr = 1
+                    while User.objects.filter(username=clean_u).exists():
+                        clean_u = f"{base_u}_{cntr}"
+                        cntr += 1
+                    em_val = assigned_email or f"{clean_u}@psm.hospital"
+                    new_u = User.objects.create_user(
+                        username=clean_u,
+                        email=em_val,
+                        first_name=assigned_user_name.split()[0] if assigned_user_name else 'Staff',
+                        last_name=" ".join(assigned_user_name.split()[1:]) if len(assigned_user_name.split()) > 1 else ''
+                    )
+                    UserProfile.objects.create(
+                        user=new_u,
+                        emp_id=assigned_emp_id,
+                        full_name=assigned_user_name,
+                        org_id=org_id or 'HOSP',
+                        department=assigned_department,
+                        designation=assigned_designation,
+                        phone=assigned_phone,
+                        assigned_asset_id=dev.asset_id
+                    )
 
         return JsonResponse({
             'success': True,
