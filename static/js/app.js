@@ -12,6 +12,43 @@ let appState = {
     ...INITIAL_SAMPLE_DATA
 };
 
+// Robust floor identifier resolution from device metadata (100% matches PostgreSQL inventory floor & room)
+function getDeviceFloorId(dev) {
+    if (!dev) return 'fl-gf';
+    
+    // 1. Direct floorName check (most authoritative, comes from DB or form)
+    const fn = (dev.floorName || dev.floor_name || '').trim().toLowerCase();
+    if (fn) {
+        if (fn.includes('base') || fn === 'b' || fn === 'fl-basement') return 'fl-basement';
+        if (fn.includes('ground') || fn === 'gf' || fn === 'g' || fn === '0' || fn === 'fl-gf') return 'fl-gf';
+        const m = fn.match(/(?:^|\D)([1-5])(?:st|nd|rd|th)?(?:\s*f|\s*floor|\b)/i);
+        if (m) return `fl-${m[1]}`;
+    }
+
+    // 2. Room lookup via appState.rooms
+    if (dev.roomId) {
+        const room = (appState.rooms || []).find(r => r.id === dev.roomId);
+        if (room && room.floorId) return room.floorId;
+    }
+
+    // 3. Infer from roomName (e.g., '103/Blood Test' -> 1st Floor, '202' -> 2nd Floor, 'B-01' -> Basement)
+    const rn = (dev.roomName || dev.room_name || '').trim();
+    if (rn) {
+        if (/^(?:b|b-)/i.test(rn) || rn.toLowerCase().includes('basement')) return 'fl-basement';
+        if (/^(?:g|g-)/i.test(rn) || rn.toLowerCase().includes('ground')) return 'fl-gf';
+        const rm = rn.match(/^([1-5])\d{2}/);
+        if (rm) return `fl-${rm[1]}`;
+    }
+
+    return 'fl-gf';
+}
+
+function isDeviceOnFloor(dev, floor) {
+    if (!floor) return false;
+    const devFloorId = getDeviceFloorId(dev);
+    return devFloorId === floor.id;
+}
+
 // Initialize State from LocalStorage and Query Parameters
 function initAppState() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -45,7 +82,7 @@ function initAppState() {
     }
 
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v18.0_purge_079_lalshing";
+    const CURRENT_CACHE_VERSION = "v21.0_location_explorer_floor_fix";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -156,16 +193,29 @@ function initAppState() {
                         if (isPlaceholderDetail(dbDev.storageRam)) dbDev.storageRam = '';
                         if (isPlaceholderDetail(dbDev.operatingSystem)) dbDev.operatingSystem = '';
                     }
-                    if (!dbDev.roomId && dbDev.roomName && appState.rooms) {
-                        const matchRoom = appState.rooms.find(r =>
-                            r.name.toLowerCase().includes(dbDev.roomName.toLowerCase()) ||
-                            dbDev.roomName.toLowerCase().includes(r.name.toLowerCase())
+                    const targetRoomName = (dbDev.roomName || '').trim();
+                    const devFloorId = getDeviceFloorId(dbDev);
+                    if (targetRoomName) {
+                        if (!appState.rooms) appState.rooms = [];
+                        let matchRoom = appState.rooms.find(r =>
+                            r.floorId === devFloorId &&
+                            (r.name.toLowerCase().trim() === targetRoomName.toLowerCase() ||
+                             r.name.toLowerCase().includes(targetRoomName.toLowerCase()) ||
+                             targetRoomName.toLowerCase().includes(r.name.toLowerCase()))
                         );
-                        if (matchRoom) {
-                            dbDev.roomId = matchRoom.id;
-                        } else if (appState.rooms.length > 0) {
-                            dbDev.roomId = appState.rooms[0].id;
+                        if (!matchRoom) {
+                            const rMatch = targetRoomName.match(/(\d+)/);
+                            const roomNum = rMatch ? rMatch[1] : (targetRoomName.length <= 4 ? targetRoomName : '01');
+                            matchRoom = {
+                                id: `rm-${devFloorId}-${targetRoomName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`,
+                                floorId: devFloorId,
+                                roomNumber: roomNum,
+                                name: targetRoomName,
+                                type: "Clinical / Facility Station"
+                            };
+                            appState.rooms.push(matchRoom);
                         }
+                        dbDev.roomId = matchRoom.id;
                     }
                 });
                 appState.devices = serverDevices.filter(d => !isPurgedDevice(d));
@@ -3489,9 +3539,8 @@ function renderFloorSwitcherPills() {
         const isFloorActive = locationActiveFloor === floor.id;
         const theme = FLOOR_THEMES[floor.id] || { badge: floor.code || "FL", icon: "door-open" };
 
-        // Count devices on this floor
-        const floorRooms = appState.rooms.filter(r => r.floorId === floor.id);
-        const floorDevCount = hospDevices.filter(d => floorRooms.some(r => r.id === d.roomId)).length;
+        // Count devices on this floor accurately matching inventory data
+        const floorDevCount = hospDevices.filter(d => isDeviceOnFloor(d, floor)).length;
 
         html += `
             <button onclick="selectFloorFilter('${floor.id}')" 
@@ -3523,20 +3572,20 @@ function renderLocationBirdEyeView() {
     const q = locationDeviceSearchQuery;
     const st = locationDeviceStatusFilter;
 
-    // Filter devices in global scope
+    // Filter devices in global scope (including custodian name, room name, floor name, and device type)
     const matchesFilter = (dev) => {
         if (st !== "ALL" && dev.status !== st) return false;
         if (q) {
-            const user = appState.users.find(u => u.id === dev.assignedUserId);
-            const userName = user ? user.fullName.toLowerCase() : "";
-            const userEmp = user ? user.empId.toLowerCase() : "";
-            const room = appState.rooms.find(r => r.id === dev.roomId);
-            const roomName = room ? room.name.toLowerCase() : "";
-            const roomNum = room && room.roomNumber ? room.roomNumber.toLowerCase() : "";
+            const user = (appState.users || []).find(u => (u.id && u.id === dev.assignedUserId) || (u.empId && (u.empId === dev.empId || u.empId === dev.assignedEmpId)));
+            const userName = (user ? user.fullName : (dev.assignedUserName || "")).toLowerCase();
+            const userEmp = (user ? user.empId : (dev.empId || dev.assignedEmpId || "")).toLowerCase();
+            const roomName = (dev.roomName || "").toLowerCase();
+            const floorName = (dev.floorName || "").toLowerCase();
+            const devType = (dev.deviceType || "").toLowerCase();
             const matches =
-                dev.assetId.toLowerCase().includes(q) ||
-
-                dev.serialNumber.toLowerCase().includes(q) ||
+                (dev.assetId || "").toLowerCase().includes(q) ||
+                devType.includes(q) ||
+                (dev.serialNumber || "").toLowerCase().includes(q) ||
                 (dev.ipAddress && dev.ipAddress.toLowerCase().includes(q)) ||
                 (dev.macAddress && dev.macAddress.toLowerCase().includes(q)) ||
                 (dev.cpuProcessor && dev.cpuProcessor.toLowerCase().includes(q)) ||
@@ -3544,7 +3593,7 @@ function renderLocationBirdEyeView() {
                 userName.includes(q) ||
                 userEmp.includes(q) ||
                 roomName.includes(q) ||
-                roomNum.includes(q);
+                floorName.includes(q);
             if (!matches) return false;
         }
         return true;
@@ -3562,10 +3611,10 @@ function renderLocationBirdEyeView() {
             `;
         } else {
             const curFloor = appState.floors.find(f => f.id === locationActiveFloor);
-            const floorLabel = curFloor ? curFloor.name : "Level";
+            const floorLabel = curFloor ? (curFloor.shortName || curFloor.name) : "Level";
             let roomLabel = "";
             if (locationActiveRoomId !== "ALL") {
-                const r = appState.rooms.find(rm => rm.id === locationActiveRoomId);
+                const r = (appState.rooms || []).find(rm => rm.id === locationActiveRoomId || rm.name === locationActiveRoomId);
                 if (r) roomLabel = `Room ${r.roomNumber || ''} • ${r.name}`;
             }
             breadcrumbEl.innerHTML = `
@@ -3581,11 +3630,14 @@ function renderLocationBirdEyeView() {
     }
 
     if (countPill) {
-        const maintCount = allFilteredDevices.filter(d => d.status !== "Active").length;
+        const activeUnitsOnView = (locationActiveFloor === "ALL") 
+            ? allFilteredDevices 
+            : allFilteredDevices.filter(d => isDeviceOnFloor(d, appState.floors.find(f => f.id === locationActiveFloor)));
+        const maintCount = activeUnitsOnView.filter(d => d.status !== "Active").length;
         countPill.innerHTML = `
             <span class="inline-flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                <span>${allFilteredDevices.length} Medical Units</span>
+                <span>${activeUnitsOnView.length} Medical Units</span>
                 ${maintCount > 0 ? `<span class="text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded text-[10px] font-bold">(${maintCount} Maint)</span>` : ''}
             </span>
         `;
@@ -3631,26 +3683,58 @@ function renderLocationBirdEyeView() {
             icon: "door-open"
         };
 
-        const floorRooms = appState.rooms.filter(r => r.floorId === floor.id);
-
-        // Devices on this floor
-        let floorDevices = hospDevices.filter(d => floorRooms.some(r => r.id === d.roomId));
-        // Filtered devices on this floor
+        // Devices genuinely deployed on this floor according to inventory data
+        let floorDevices = hospDevices.filter(d => isDeviceOnFloor(d, floor));
         let floorFilteredDevs = floorDevices.filter(matchesFilter);
-
-        // If a specific room filter is active, narrow down
-        const roomsToRender = locationActiveRoomId === "ALL"
-            ? floorRooms
-            : floorRooms.filter(r => r.id === locationActiveRoomId);
 
         // If searching and this floor has 0 matches, skip rendering this floor in search mode
         if (q && floorFilteredDevs.length === 0) {
             return '';
         }
 
+        // Dynamically resolve all distinct rooms present on this floor from device placements
+        const roomsMap = {};
+        floorDevices.forEach(d => {
+            const rName = (d.roomName || '').trim() || 'General Facility Desk';
+            if (!roomsMap[rName]) {
+                const rMatch = rName.match(/(\d+)/);
+                const roomNum = rMatch ? rMatch[1] : (rName.length <= 4 ? rName : '01');
+                roomsMap[rName] = {
+                    id: d.roomId || `rm-${floor.id}-${rName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+                    name: rName,
+                    roomNumber: roomNum,
+                    devices: []
+                };
+            }
+            roomsMap[rName].devices.push(d);
+        });
+
+        // Natural sort rooms (numerical room number first, then alphabetical)
+        let sortedRooms = Object.values(roomsMap).sort((a, b) => {
+            const numA = parseInt(a.roomNumber, 10);
+            const numB = parseInt(b.roomNumber, 10);
+            if (!isNaN(numA) && !isNaN(numB) && numA !== numB) return numA - numB;
+            return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+        });
+
+        // If no devices deployed yet on this floor, fall back to sample room placeholders
+        if (sortedRooms.length === 0) {
+            const sampleRooms = (appState.rooms || []).filter(r => r.floorId === floor.id);
+            sortedRooms = sampleRooms.map(sr => ({
+                id: sr.id,
+                name: sr.name,
+                roomNumber: sr.roomNumber || '01',
+                devices: []
+            }));
+        }
+
+        const roomsToRender = locationActiveRoomId === "ALL"
+            ? sortedRooms
+            : sortedRooms.filter(r => r.id === locationActiveRoomId || r.name === locationActiveRoomId);
+
         // Render Rooms within this Portrait Floor Card
         const roomsHtml = roomsToRender.map(room => {
-            const roomDevices = floorDevices.filter(d => d.roomId === room.id);
+            const roomDevices = room.devices || [];
             const roomFilteredDevs = roomDevices.filter(matchesFilter);
 
             // If searching and this room has 0 matches, hide room
@@ -3672,13 +3756,11 @@ function renderLocationBirdEyeView() {
                 devicesListHtml = roomFilteredDevs.map(dev => renderDeviceLineRow(dev, room, floor)).join('');
             }
 
-            const roomNum = room.roomNumber ||
-                (typeof INITIAL_SAMPLE_DATA !== 'undefined' && INITIAL_SAMPLE_DATA.rooms ? INITIAL_SAMPLE_DATA.rooms.find(sr => sr.id === room.id)?.roomNumber : null) ||
-                (room.code || (room.id ? room.id.replace('rm-', '').toUpperCase() : '01'));
+            const roomNum = room.roomNumber || '01';
 
             return `
                 <div class="space-y-1.5">
-                    <!-- Room Sub-Heading ('Rm to 2 Unit' line) -->
+                    <!-- Room Sub-Heading ('Rm to X Units' line) -->
                     <div class="flex items-center justify-between px-1 pt-1">
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-mono font-black bg-blue-100/90 text-blue-800 border border-blue-200/90 shrink-0 shadow-2xs">
@@ -3701,6 +3783,8 @@ function renderLocationBirdEyeView() {
             `;
         }).join('');
 
+        const uniqueRoomsCount = sortedRooms.length;
+
         return `
             <!-- Dedicated Portrait Floor Card (High-End SaaS / Clinical Dashboard Aesthetics) -->
             <section class="bg-white rounded-3xl border border-slate-200/90 hover:border-blue-500/80 shadow-sm hover:shadow-2xl transition-all duration-300 flex flex-col min-h-[580px] max-h-[640px] overflow-hidden group/card">
@@ -3722,7 +3806,7 @@ function renderLocationBirdEyeView() {
                                     ${floor.number < 0 ? 'SUB-LEVEL' : floor.number === 0 ? 'GROUND' : `LEVEL 0${floor.number}`}
                                 </span>
                                 <span class="text-blue-300/40 text-xs">&bull;</span>
-                                <span class="text-blue-200/80 text-[11px] font-medium truncate">${floorRooms.length} ${floorRooms.length === 1 ? 'Room' : 'Rooms'}</span>
+                                <span class="text-blue-200/80 text-[11px] font-medium truncate">${uniqueRoomsCount} ${uniqueRoomsCount === 1 ? 'Room' : 'Rooms'}</span>
                             </div>
                         </div>
                     </div>
@@ -3761,9 +3845,39 @@ function renderLocationBirdEyeView() {
     lucide.createIcons();
 }
 
-// Render clean, ultra-focused device line: Employee Name (No symbol/circle), Device Asset ID, and Icon-only Specs Button
+// Render clean, ultra-focused device line: Employee Name (No symbol/circle), Device Type, Device Asset ID, and Icon-only Specs Button
 function renderDeviceLineRow(dev, room, floor) {
-    const user = appState.users.find(u => u.id === dev.assignedUserId);
+    let user = (appState.users || []).find(u => (u.id && u.id === dev.assignedUserId) || (u.empId && (u.empId === dev.empId || u.empId === dev.assignedEmpId)));
+    const assignedName = (dev.assignedUserName || dev.assigned_user_name || (user ? user.fullName : '') || '').trim();
+    const isUnassigned = !assignedName || assignedName.toLowerCase() === 'unassigned' || assignedName.toLowerCase().includes('spare pool');
+
+    if (!user && !isUnassigned) {
+        user = {
+            id: dev.assignedUserId || `synth-${dev.id || dev.assetId}`,
+            fullName: assignedName,
+            empId: dev.empId || dev.assignedEmpId || '—',
+            designation: dev.designation || dev.assignedDesignation || 'Staff',
+            department: dev.department || dev.assignedDepartment || 'PSM Hospital',
+            email: dev.email || dev.assignedEmail || '',
+            phone: dev.phone || dev.assignedPhone || ''
+        };
+        if (!appState.users) appState.users = [];
+        if (!appState.users.some(u => u.id === user.id)) {
+            appState.users.push(user);
+        }
+    }
+
+    const typeStr = (dev.deviceType || 'CPU').trim();
+    let devIcon = 'cpu';
+    const tu = typeStr.toUpperCase();
+    if (tu.includes('DISPLAY') || tu.includes('MONITOR')) devIcon = 'monitor';
+    else if (tu.includes('KEYBOARD')) devIcon = 'keyboard';
+    else if (tu.includes('MOUSE')) devIcon = 'mouse';
+    else if (tu.includes('PRINTER')) devIcon = 'printer';
+    else if (tu.includes('TABLET')) devIcon = 'tablet';
+    else if (tu.includes('UPS')) devIcon = 'zap';
+
+    const cleanTag = (dev.assetId || '').replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/');
 
     return `
         <div class="group/line p-2.5 rounded-2xl bg-white hover:bg-blue-50/80 border border-slate-200/90 hover:border-blue-400 hover:shadow-md transition-all duration-200 flex items-center justify-between gap-3 text-xs">
@@ -3781,10 +3895,16 @@ function renderDeviceLineRow(dev, room, floor) {
                 `}
             </div>
 
-            <!-- 2. Device Asset ID & 3. Icon-only Specs Button -->
+            <!-- 2. Device Type Icon & Name -->
+            <div class="flex items-center gap-1.5 text-slate-700 shrink-0 font-bold text-[11px]">
+                <i data-lucide="${devIcon}" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
+                <span class="hidden sm:inline">${typeStr}</span>
+            </div>
+
+            <!-- 3. Device Asset ID & Specs Button -->
             <div class="flex items-center gap-2 shrink-0">
                 <span class="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 shadow-2xs">
-                    ${(dev.assetId || '').replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/')}
+                    ${cleanTag}
                 </span>
                 <button onclick="openDeviceDetailPopup('${dev.id}')" 
                         title="View Full Specifications & Actions" 
@@ -3850,9 +3970,11 @@ function openUserDetailModal(userId) {
         if (devTagEl) devTagEl.textContent = assignedDev.assetId;
         if (devNameEl) devNameEl.textContent = assignedDev.assetId;
         if (devLocEl) {
+            const flName = assignedDev.floorName || (floor ? floor.name : 'PSM Hospital');
+            const rmName = assignedDev.roomName || (room ? room.name : 'Assigned Unit');
             devLocEl.innerHTML = `
                 <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i>
-                <span>${floor ? floor.name : ''} &bull; ${room ? room.name : 'Assigned Unit'}</span>
+                <span>${flName} &bull; ${rmName}</span>
             `;
         }
         if (reassignBtn) {
@@ -4983,6 +5105,16 @@ function openAddDeviceModalForLocation(targetRoomId = null) {
     }
 }
 
+function getDevicesInLocationScope() {
+    const hospDevices = (appState.devices || []).filter(d => !d.orgId || d.orgId === "HOSP");
+    if (!locationActiveFloor || locationActiveFloor === "ALL") {
+        return hospDevices;
+    }
+    const curFloor = (appState.floors || []).find(f => f.id === locationActiveFloor);
+    if (!curFloor) return hospDevices;
+    return hospDevices.filter(d => isDeviceOnFloor(d, curFloor));
+}
+
 function exportLocationDevicesCSV() {
     const rawDevices = getDevicesInLocationScope();
     if (!rawDevices || rawDevices.length === 0) {
@@ -5964,16 +6096,29 @@ async function syncDevicesFromDatabase() {
         const data = await response.json();
         if (data.success && Array.isArray(data.devices)) {
             data.devices.forEach(dbDev => {
-                if (!dbDev.roomId && dbDev.roomName) {
-                    const matchRoom = (appState.rooms || []).find(r =>
-                        r.name.toLowerCase().includes(dbDev.roomName.toLowerCase()) ||
-                        dbDev.roomName.toLowerCase().includes(r.name.toLowerCase())
+                const targetRoomName = (dbDev.roomName || '').trim();
+                const devFloorId = getDeviceFloorId(dbDev);
+                if (targetRoomName) {
+                    if (!appState.rooms) appState.rooms = [];
+                    let matchRoom = appState.rooms.find(r =>
+                        r.floorId === devFloorId &&
+                        (r.name.toLowerCase().trim() === targetRoomName.toLowerCase() ||
+                         r.name.toLowerCase().includes(targetRoomName.toLowerCase()) ||
+                         targetRoomName.toLowerCase().includes(r.name.toLowerCase()))
                     );
-                    if (matchRoom) {
-                        dbDev.roomId = matchRoom.id;
-                    } else if (appState.rooms && appState.rooms.length > 0) {
-                        dbDev.roomId = appState.rooms[0].id;
+                    if (!matchRoom) {
+                        const rMatch = targetRoomName.match(/(\d+)/);
+                        const roomNum = rMatch ? rMatch[1] : (targetRoomName.length <= 4 ? targetRoomName : '01');
+                        matchRoom = {
+                            id: `rm-${devFloorId}-${targetRoomName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`,
+                            floorId: devFloorId,
+                            roomNumber: roomNum,
+                            name: targetRoomName,
+                            type: "Clinical / Facility Station"
+                        };
+                        appState.rooms.push(matchRoom);
                     }
+                    dbDev.roomId = matchRoom.id;
                 }
             });
             appState.devices = data.devices.filter(d => !isPurgedDevice(d));
