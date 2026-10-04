@@ -3877,39 +3877,50 @@ function renderDeviceLineRow(dev, room, floor) {
     else if (tu.includes('TABLET')) devIcon = 'tablet';
     else if (tu.includes('UPS')) devIcon = 'zap';
 
-    const cleanTag = (dev.assetId || '').replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/');
+    const cleanTag = (dev.assetId || dev.id || 'N/A').replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/');
+    const isMaintenance = dev.status && dev.status.toLowerCase().includes('maintenance');
 
     return `
-        <div class="group/line p-2.5 rounded-2xl bg-white hover:bg-blue-50/80 border border-slate-200/90 hover:border-blue-400 hover:shadow-md transition-all duration-200 flex items-center justify-between gap-3 text-xs">
+        <div class="group/line p-2.5 rounded-2xl bg-white hover:bg-blue-50/50 border border-slate-200/90 hover:border-blue-400 hover:shadow-md transition-all duration-200 flex flex-col gap-1.5 text-xs relative">
             
-            <!-- 1. Employee Name (No symbol/avatar circle, full text visible) -->
-            <div class="min-w-0 flex-1">
-                ${user ? `
-                    <button onclick="openUserDetailModal('${user.id}')" 
-                            title="Staff: ${user.fullName} (${user.designation || 'Staff'}) - Click for Profile" 
-                            class="text-xs font-bold text-slate-900 hover:text-blue-600 transition-colors truncate block text-left cursor-pointer">
-                        ${user.fullName}
+            <!-- Row 1: Custodian Identity & Specs Action (Full horizontal space, zero text collision) -->
+            <div class="flex items-center justify-between gap-2 min-w-0">
+                <div class="min-w-0 flex-1 overflow-hidden">
+                    ${user ? `
+                        <button onclick="openUserDetailModal('${user.id}')" 
+                                title="Staff: ${user.fullName} (${user.designation || 'Staff'}) • ${user.department || 'Hospital'} — Click to view profile" 
+                                class="w-full text-xs font-bold text-slate-900 hover:text-blue-600 transition-colors truncate block text-left cursor-pointer tracking-tight">
+                            ${user.fullName}
+                        </button>
+                    ` : `
+                        <span class="text-xs font-semibold text-slate-400 italic truncate block">Unassigned (Spare Pool)</span>
+                    `}
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    ${isMaintenance ? `
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Hardware Under Maintenance"></span>
+                    ` : ''}
+                    <button onclick="openDeviceDetailPopup('${dev.id}')" 
+                            title="View Full Specifications & Actions for ${cleanTag}" 
+                            class="w-7 h-7 rounded-xl bg-blue-50/80 hover:bg-blue-600 text-blue-600 hover:text-white border border-blue-200/80 hover:border-blue-600 transition-all flex items-center justify-center cursor-pointer shadow-2xs hover:shadow-xs group">
+                        <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
                     </button>
-                ` : `
-                    <span class="text-xs font-semibold text-slate-400 italic">Unassigned (Spare Pool)</span>
-                `}
+                </div>
             </div>
 
-            <!-- 2. Device Type Icon & Name -->
-            <div class="flex items-center gap-1.5 text-slate-700 shrink-0 font-bold text-[11px]">
-                <i data-lucide="${devIcon}" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
-                <span class="hidden sm:inline">${typeStr}</span>
-            </div>
+            <!-- Row 2: Hardware Component Type & Single Identifier Asset Tag -->
+            <div class="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-100">
+                <!-- Device Component Type with Clean Unboxed Lucide Vector Icon -->
+                <div class="flex items-center gap-1.5 text-slate-700 font-bold text-[11px] shrink-0">
+                    <i data-lucide="${devIcon}" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
+                    <span class="tracking-tight text-slate-700">${typeStr}</span>
+                </div>
 
-            <!-- 3. Device Asset ID & Specs Button -->
-            <div class="flex items-center gap-2 shrink-0">
-                <span class="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 shadow-2xs">
-                    ${cleanTag}
-                </span>
+                <!-- Single Source of Truth Asset ID Tag -->
                 <button onclick="openDeviceDetailPopup('${dev.id}')" 
-                        title="View Full Specifications & Actions" 
-                        class="w-8 h-8 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white border border-blue-200/80 hover:border-blue-600 transition-all flex items-center justify-center cursor-pointer shadow-2xs hover:shadow-xs group">
-                    <i data-lucide="sliders" class="w-4 h-4"></i>
+                        title="View Specifications & Telemetry for ${cleanTag}" 
+                        class="font-mono text-[11px] font-bold px-2 py-0.5 rounded-lg bg-slate-50 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 border border-slate-200 text-slate-800 shadow-2xs shrink-0 tracking-tight transition-all cursor-pointer">
+                    ${cleanTag}
                 </button>
             </div>
 
