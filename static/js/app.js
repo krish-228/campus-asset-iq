@@ -3753,7 +3753,8 @@ function renderLocationBirdEyeView() {
                     </div>
                 `;
             } else {
-                devicesListHtml = roomFilteredDevs.map(dev => renderDeviceLineRow(dev, room, floor)).join('');
+                const workstationGroups = groupDevicesIntoWorkstations(roomFilteredDevs);
+                devicesListHtml = workstationGroups.map(grp => renderWorkstationCard(grp, room, floor)).join('');
             }
 
             const roomNum = room.roomNumber || '01';
@@ -3845,21 +3846,93 @@ function renderLocationBirdEyeView() {
     lucide.createIcons();
 }
 
-// Render clean, ultra-focused device line: Employee Name (No symbol/circle), Device Type, Device Asset ID, and Icon-only Specs Button
-function renderDeviceLineRow(dev, room, floor) {
-    let user = (appState.users || []).find(u => (u.id && u.id === dev.assignedUserId) || (u.empId && (u.empId === dev.empId || u.empId === dev.assignedEmpId)));
-    const assignedName = (dev.assignedUserName || dev.assigned_user_name || (user ? user.fullName : '') || '').trim();
+// Natural workstation peripheral sequence
+const WORKSTATION_COMPONENT_PRIORITY = {
+    'CPU': 1, 'WORKSTATION': 1, 'COMPUTER': 1,
+    'DISPLAY': 2, 'MONITOR': 2,
+    'KEYBOARD': 3,
+    'MOUSE': 4,
+    'PRINTER': 5,
+    'UPS': 6,
+    'TABLET': 7
+};
+
+function getWorkstationComponentPriority(typeStr) {
+    const t = (typeStr || '').toUpperCase();
+    for (const [k, p] of Object.entries(WORKSTATION_COMPONENT_PRIORITY)) {
+        if (t.includes(k)) return p;
+    }
+    return 99;
+}
+
+// Group device records sharing the same single-identifier Asset Tag into cohesive workstation bundles
+function groupDevicesIntoWorkstations(devices) {
+    const groupMap = new Map();
+    const groups = [];
+
+    devices.forEach(dev => {
+        const rawTag = (dev.assetId || dev.id || 'UNASSIGNED').trim();
+        const cleanTag = rawTag.replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/');
+        const groupKey = cleanTag || dev.id;
+
+        if (!groupMap.has(groupKey)) {
+            const grp = {
+                key: groupKey,
+                cleanTag: cleanTag,
+                primaryDev: dev,
+                devices: [],
+                hasMaintenance: false
+            };
+            groupMap.set(groupKey, grp);
+            groups.push(grp);
+        }
+
+        const grp = groupMap.get(groupKey);
+        grp.devices.push(dev);
+
+        if (dev.status && dev.status.toLowerCase().includes('maintenance')) {
+            grp.hasMaintenance = true;
+        }
+
+        const dt = (dev.deviceType || '').toUpperCase();
+        if (dt.includes('CPU') || dt.includes('COMPUTER') || dt.includes('WORKSTATION')) {
+            grp.primaryDev = dev;
+        }
+    });
+
+    // Sort internal hardware components in standard clinical desk sequence
+    groups.forEach(grp => {
+        grp.devices.sort((a, b) => getWorkstationComponentPriority(a.deviceType) - getWorkstationComponentPriority(b.deviceType));
+    });
+
+    return groups;
+}
+
+// Render cohesive Workstation Card: Line 1 = Custodian & Asset Tag; Line 2 = Complete Hardware Peripherals
+function renderWorkstationCard(grp, room, floor) {
+    // Resolve custodian user profile across devices in this bundle
+    let assignedDev = grp.devices.find(d => {
+        const n = (d.assignedUserName || d.assigned_user_name || '').trim();
+        return n && n.toLowerCase() !== 'unassigned' && !n.toLowerCase().includes('spare pool');
+    }) || grp.primaryDev;
+
+    let user = (appState.users || []).find(u => 
+        (u.id && u.id === assignedDev.assignedUserId) || 
+        (u.empId && (u.empId === assignedDev.empId || u.empId === assignedDev.assignedEmpId))
+    );
+
+    const assignedName = (assignedDev.assignedUserName || assignedDev.assigned_user_name || (user ? user.fullName : '') || '').trim();
     const isUnassigned = !assignedName || assignedName.toLowerCase() === 'unassigned' || assignedName.toLowerCase().includes('spare pool');
 
     if (!user && !isUnassigned) {
         user = {
-            id: dev.assignedUserId || `synth-${dev.id || dev.assetId}`,
+            id: assignedDev.assignedUserId || `synth-${assignedDev.id || grp.cleanTag}`,
             fullName: assignedName,
-            empId: dev.empId || dev.assignedEmpId || '—',
-            designation: dev.designation || dev.assignedDesignation || 'Staff',
-            department: dev.department || dev.assignedDepartment || 'PSM Hospital',
-            email: dev.email || dev.assignedEmail || '',
-            phone: dev.phone || dev.assignedPhone || ''
+            empId: assignedDev.empId || assignedDev.assignedEmpId || '—',
+            designation: assignedDev.designation || assignedDev.assignedDesignation || 'Staff',
+            department: assignedDev.department || assignedDev.assignedDepartment || 'PSM Hospital',
+            email: assignedDev.email || assignedDev.assignedEmail || '',
+            phone: assignedDev.phone || assignedDev.assignedPhone || ''
         };
         if (!appState.users) appState.users = [];
         if (!appState.users.some(u => u.id === user.id)) {
@@ -3867,24 +3940,12 @@ function renderDeviceLineRow(dev, room, floor) {
         }
     }
 
-    const typeStr = (dev.deviceType || 'CPU').trim();
-    let devIcon = 'cpu';
-    const tu = typeStr.toUpperCase();
-    if (tu.includes('DISPLAY') || tu.includes('MONITOR')) devIcon = 'monitor';
-    else if (tu.includes('KEYBOARD')) devIcon = 'keyboard';
-    else if (tu.includes('MOUSE')) devIcon = 'mouse';
-    else if (tu.includes('PRINTER')) devIcon = 'printer';
-    else if (tu.includes('TABLET')) devIcon = 'tablet';
-    else if (tu.includes('UPS')) devIcon = 'zap';
-
-    const cleanTag = (dev.assetId || dev.id || 'N/A').replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/');
-    const isMaintenance = dev.status && dev.status.toLowerCase().includes('maintenance');
-
     return `
-        <div class="group/line p-2.5 rounded-2xl bg-white hover:bg-blue-50/50 border border-slate-200/90 hover:border-blue-400 hover:shadow-md transition-all duration-200 flex flex-col gap-1.5 text-xs relative">
+        <div class="group/workstation p-3 rounded-2xl bg-white hover:bg-blue-50/40 border border-slate-200/90 hover:border-blue-400 hover:shadow-md transition-all duration-200 flex flex-col gap-2 text-xs relative">
             
-            <!-- Row 1: Custodian Identity & Specs Action (Full horizontal space, zero text collision) -->
+            <!-- Line 1: Custodian Identity + Workstation Asset Tag + Action Sliders -->
             <div class="flex items-center justify-between gap-2 min-w-0">
+                <!-- Custodian Name (Clickable for Staff Profile) -->
                 <div class="min-w-0 flex-1 overflow-hidden">
                     ${user ? `
                         <button onclick="openUserDetailModal('${user.id}')" 
@@ -3896,36 +3957,76 @@ function renderDeviceLineRow(dev, room, floor) {
                         <span class="text-xs font-semibold text-slate-400 italic truncate block">Unassigned (Spare Pool)</span>
                     `}
                 </div>
+
+                <!-- Right: Asset Tag Pill + Specs Button -->
                 <div class="flex items-center gap-1.5 shrink-0">
-                    ${isMaintenance ? `
-                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Hardware Under Maintenance"></span>
+                    ${grp.hasMaintenance ? `
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Hardware Under Maintenance in Workstation"></span>
                     ` : ''}
-                    <button onclick="openDeviceDetailPopup('${dev.id}')" 
-                            title="View Full Specifications & Actions for ${cleanTag}" 
+
+                    <!-- Single Identifier Workstation Tag -->
+                    <button onclick="openDeviceDetailPopup('${grp.primaryDev.id}')" 
+                            title="View Workstation Specifications & Telemetry for ${grp.cleanTag}" 
+                            class="font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-slate-50 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 border border-slate-200 text-slate-800 shadow-2xs shrink-0 tracking-tight transition-all cursor-pointer">
+                        ${grp.cleanTag}
+                    </button>
+
+                    <!-- Sliders Action Button -->
+                    <button onclick="openDeviceDetailPopup('${grp.primaryDev.id}')" 
+                            title="View Full Specifications & Actions for ${grp.cleanTag}" 
                             class="w-7 h-7 rounded-xl bg-blue-50/80 hover:bg-blue-600 text-blue-600 hover:text-white border border-blue-200/80 hover:border-blue-600 transition-all flex items-center justify-center cursor-pointer shadow-2xs hover:shadow-xs group">
                         <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Row 2: Hardware Component Type & Single Identifier Asset Tag -->
-            <div class="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-100">
-                <!-- Device Component Type with Clean Unboxed Lucide Vector Icon -->
-                <div class="flex items-center gap-1.5 text-slate-700 font-bold text-[11px] shrink-0">
-                    <i data-lucide="${devIcon}" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
-                    <span class="tracking-tight text-slate-700">${typeStr}</span>
-                </div>
+            <!-- Line 2: All Workstation Hardware Devices (CPU, Display, Keyboard, Mouse, UPS...) -->
+            <div class="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100">
+                ${grp.devices.map(dev => {
+                    const typeStr = (dev.deviceType || 'Device').trim();
+                    let devIcon = 'cpu';
+                    const tu = typeStr.toUpperCase();
+                    if (tu.includes('DISPLAY') || tu.includes('MONITOR')) devIcon = 'monitor';
+                    else if (tu.includes('KEYBOARD')) devIcon = 'keyboard';
+                    else if (tu.includes('MOUSE')) devIcon = 'mouse';
+                    else if (tu.includes('PRINTER')) devIcon = 'printer';
+                    else if (tu.includes('TABLET')) devIcon = 'tablet';
+                    else if (tu.includes('UPS')) devIcon = 'zap';
 
-                <!-- Single Source of Truth Asset ID Tag -->
-                <button onclick="openDeviceDetailPopup('${dev.id}')" 
-                        title="View Specifications & Telemetry for ${cleanTag}" 
-                        class="font-mono text-[11px] font-bold px-2 py-0.5 rounded-lg bg-slate-50 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 border border-slate-200 text-slate-800 shadow-2xs shrink-0 tracking-tight transition-all cursor-pointer">
-                    ${cleanTag}
-                </button>
+                    const isDevMaint = dev.status && dev.status.toLowerCase().includes('maintenance');
+
+                    return `
+                        <button onclick="openDeviceDetailPopup('${dev.id}')" 
+                                title="${typeStr} • ${dev.brand || ''} ${dev.model || ''} (${dev.serialNumber || 'SN: N/A'}) — Click to inspect" 
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer shadow-2xs ${
+                                    isDevMaint 
+                                        ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100' 
+                                        : 'bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 hover:text-blue-700 border-slate-200/80'
+                                }">
+                            <i data-lucide="${devIcon}" class="w-3.5 h-3.5 ${isDevMaint ? 'text-amber-600' : 'text-blue-600'} shrink-0"></i>
+                            <span class="tracking-tight">${typeStr}</span>
+                            ${isDevMaint ? `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>` : ''}
+                        </button>
+                    `;
+                }).join('')}
             </div>
 
         </div>
     `;
+}
+
+// Backwards-compatible adapter for single device rendering
+function renderDeviceLineRow(dev, room, floor) {
+    const rawTag = (dev.assetId || dev.id || 'UNASSIGNED').trim();
+    const cleanTag = rawTag.replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/');
+    const grp = {
+        key: cleanTag || dev.id,
+        cleanTag: cleanTag,
+        primaryDev: dev,
+        devices: [dev],
+        hasMaintenance: dev.status && dev.status.toLowerCase().includes('maintenance')
+    };
+    return renderWorkstationCard(grp, room, floor);
 }
 
 // User Detail Popup Modal Controller (Image & Details Popup)
