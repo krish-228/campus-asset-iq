@@ -49,6 +49,34 @@ function isDeviceOnFloor(dev, floor) {
     return devFloorId === floor.id;
 }
 
+// Purge validator to permanently eliminate 079 / Lalshing / obsolete test records (Global Scope)
+// Safe global Lucide icon initiator
+function refreshLucideIcons() {
+    try {
+        if (typeof window !== 'undefined' && window.lucide && typeof window.lucide.createIcons === 'function') {
+            refreshLucideIcons();
+        } else if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
+            refreshLucideIcons();
+        }
+    } catch (e) {
+        // Silently tolerate icon render issues
+    }
+}
+if (typeof window !== 'undefined') window.refreshLucideIcons = refreshLucideIcons;
+
+function isPurgedDevice(d) {
+    if (!d) return true;
+    const aid = (d.assetId || d.asset_id || '').toUpperCase();
+    const user = (d.assignedUserName || d.assigned_user_name || '').toLowerCase();
+    const emp = (d.empId || d.assignedEmpId || d.assigned_emp_id || '').toLowerCase();
+    const sn = (d.serialNumber || d.serial_number || '').toUpperCase();
+    if (aid.includes('079') || aid.includes('PSM/IT/0926/079')) return true;
+    if (user.includes('lalsing') || user.includes('lalshing') || user.includes('lal shing')) return true;
+    if (emp === '68127' || emp === '860127') return true;
+    if (sn.includes('079') || sn.includes('CN-0W41TY')) return true;
+    return false;
+}
+
 // Initialize State from LocalStorage and Query Parameters
 function initAppState() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -67,22 +95,8 @@ function initAppState() {
         ...INITIAL_SAMPLE_DATA
     };
 
-    // Purge validator to permanently eliminate 079 / Lalshing / obsolete test records
-    function isPurgedDevice(d) {
-        if (!d) return true;
-        const aid = (d.assetId || d.asset_id || '').toUpperCase();
-        const user = (d.assignedUserName || d.assigned_user_name || '').toLowerCase();
-        const emp = (d.empId || d.assignedEmpId || d.assigned_emp_id || '').toLowerCase();
-        const sn = (d.serialNumber || d.serial_number || '').toUpperCase();
-        if (aid.includes('079') || aid.includes('PSM/IT/0926/079')) return true;
-        if (user.includes('lalsing') || user.includes('lalshing') || user.includes('lal shing')) return true;
-        if (emp === '68127' || emp === '860127') return true;
-        if (sn.includes('079') || sn.includes('CN-0W41TY')) return true;
-        return false;
-    }
-
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v21.0_location_explorer_floor_fix";
+    const CURRENT_CACHE_VERSION = "v26.0_instant_zero_latency_save";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -262,22 +276,26 @@ function initAppState() {
 }
 
 function saveAppState() {
-    if (Array.isArray(appState.devices)) {
-        appState.devices = appState.devices.filter(d => !isPurgedDevice(d));
+    try {
+        if (Array.isArray(appState.devices)) {
+            appState.devices = appState.devices.filter(d => !isPurgedDevice(d));
+        }
+        localStorage.setItem("CAMPUS_SELECTED_ORG", "HOSP");
+        localStorage.setItem("CAMPUS_DEVICE_TRACKER_DATA", JSON.stringify({
+            selectedOrg: appState.selectedOrg,
+            organizations: appState.organizations,
+            buildings: appState.buildings,
+            floors: appState.floors,
+            rooms: appState.rooms,
+            users: appState.users,
+            devices: appState.devices,
+            locationHistories: appState.locationHistories,
+            assignmentHistories: appState.assignmentHistories,
+            loginSessions: appState.loginSessions
+        }));
+    } catch (e) {
+        console.warn("LocalStorage save notice:", e);
     }
-    localStorage.setItem("CAMPUS_SELECTED_ORG", "HOSP");
-    localStorage.setItem("CAMPUS_DEVICE_TRACKER_DATA", JSON.stringify({
-        selectedOrg: appState.selectedOrg,
-        organizations: appState.organizations,
-        buildings: appState.buildings,
-        floors: appState.floors,
-        rooms: appState.rooms,
-        users: appState.users,
-        devices: appState.devices,
-        locationHistories: appState.locationHistories,
-        assignmentHistories: appState.assignmentHistories,
-        loginSessions: appState.loginSessions
-    }));
 }
 
 function resetToSampleData() {
@@ -376,7 +394,7 @@ function updateEntityUI() {
 
     const dropdown = document.getElementById("entity-dropdown");
     if (dropdown) dropdown.classList.add("hidden");
-    if (window.lucide) lucide.createIcons();
+    refreshLucideIcons()
 }
 
 function toggleEntityDropdown() {
@@ -1468,7 +1486,7 @@ function renderInventoryTable() {
         `;
         const wsBadge = document.getElementById('badge-workstation-count');
         if (wsBadge) wsBadge.textContent = "0";
-        lucide.createIcons();
+        refreshLucideIcons();
         return;
     }
 
@@ -1870,7 +1888,7 @@ function renderInventoryTable() {
     }
 
     tbody.innerHTML = html;
-    lucide.createIcons();
+    refreshLucideIcons();
     setupWorkstationHoverListeners();
 }
 
@@ -1897,7 +1915,7 @@ function toggleDeviceActionMenu(deviceId, event) {
     }
 
     dropdown.classList.remove("hidden");
-    lucide.createIcons();
+    refreshLucideIcons();
 
     // Position dropdown precisely near the 3-dot button
     const btnRect = event.currentTarget.getBoundingClientRect();
@@ -2320,7 +2338,7 @@ function openChangeLocationModal(deviceId) {
     renderLocationHistoryTableForModal(dev.id);
 
     modal.classList.remove("hidden");
-    lucide.createIcons();
+    refreshLucideIcons();
 }
 
 function handleLocModalOrgChange() {
@@ -2489,7 +2507,7 @@ function openSearchUserModal(empIdOrQuery = "EMP-00125") {
 
     executeUserPopupSearch();
     modal.classList.remove("hidden");
-    lucide.createIcons();
+    refreshLucideIcons();
 }
 
 function handleUserPopupSearchKey(e) {
@@ -2862,7 +2880,7 @@ function openAddDeviceModal(editId = null) {
     }
 
     modal.classList.remove("hidden");
-    if (window.lucide) lucide.createIcons();
+    refreshLucideIcons();
 }
 
 function handleDevOrgChange() {
@@ -3175,7 +3193,7 @@ function openReassignModal(deviceId) {
     }
 
     modal.classList.remove("hidden");
-    lucide.createIcons();
+    refreshLucideIcons();
 }
 
 function submitReassignUser(e) {
@@ -3360,7 +3378,7 @@ function openLoginHistory(deviceId) {
     }
 
     if (modal) modal.classList.remove("hidden");
-    lucide.createIcons();
+    refreshLucideIcons();
 }
 
 function closeLoginHistoryModal() {
@@ -3560,7 +3578,7 @@ function renderFloorSwitcherPills() {
     });
 
     container.innerHTML = html;
-    lucide.createIcons();
+    refreshLucideIcons();
 }
 
 function renderLocationBirdEyeView() {
@@ -3672,7 +3690,7 @@ function renderLocationBirdEyeView() {
                 </div>
             </div>
         `;
-        lucide.createIcons();
+        refreshLucideIcons();
         return;
     }
 
@@ -3843,7 +3861,7 @@ function renderLocationBirdEyeView() {
         `;
     }).join('');
 
-    lucide.createIcons();
+    refreshLucideIcons();
 }
 
 // Natural workstation peripheral sequence
@@ -4104,7 +4122,7 @@ function openUserDetailModal(userId) {
     }
 
     modal.classList.remove("hidden");
-    lucide.createIcons();
+    refreshLucideIcons();
 }
 
 function closeUserDetailModal() {
@@ -4228,9 +4246,7 @@ function openDeviceDetailPopup(deviceId) {
 
     // Show modal & init Lucide icons
     modal.classList.remove("hidden");
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
-    }
+    refreshLucideIcons()
 }
 
 function populateDetailModalCustodian(user, dev, isUnassigned) {
@@ -4584,9 +4600,7 @@ function renderDetailModalActiveSpecs(dev) {
     const gridEl = document.getElementById("devmodal-specs-grid");
     if (gridEl) {
         gridEl.innerHTML = buildDynamicDeviceSpecsGridHtml(dev, locationStr);
-        if (window.lucide && typeof window.lucide.createIcons === 'function') {
-            window.lucide.createIcons();
-        }
+        refreshLucideIcons()
     } else {
         // Fallback for legacy static DOM
         const cpuEl = document.getElementById("devmodal-cpu");
@@ -4739,15 +4753,18 @@ function toggleDetailModalEditMode(enable) {
         if (footerClose) footerClose.classList.remove("hidden");
         if (footerEdit) footerEdit.classList.add("hidden");
 
+        const saveBtn = document.getElementById("devmodal-btn-save-footer");
+        const saveBtnText = document.getElementById("devmodal-save-footer-text");
+        if (saveBtn) saveBtn.disabled = false;
+        if (saveBtnText) saveBtnText.textContent = "Save All Changes";
+
         const dev = (appState.devices || []).find(d => d.id === activeDetailDeviceId);
         if (dev) {
             renderDetailModalActiveSpecs(dev);
         }
     }
 
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
-    }
+    refreshLucideIcons()
 }
 
 function populateDetailModalEditForm(deviceId) {
@@ -4899,160 +4916,165 @@ function handleDetailModalCustodianSelect(val) {
 }
 
 async function saveDetailModalEdits() {
-    let dev = (appState.devices || []).find(d => d.id === activeDetailDeviceId);
-    const headerAssetEl = document.getElementById("devmodal-header-asset-id");
-    const assetId = (dev && dev.assetId) ? dev.assetId : (headerAssetEl ? headerAssetEl.textContent.trim() : '');
-
-    if (!assetId || assetId === '—' || assetId === 'N/A') {
-        showToast("Error: Missing Asset Tag identifier for update.", "error");
-        return;
-    }
-
     const saveBtn = document.getElementById("devmodal-btn-save-footer");
     const saveBtnText = document.getElementById("devmodal-save-footer-text");
-    const origText = saveBtnText ? saveBtnText.textContent : "Save All Changes";
+    const origText = "Save All Changes";
 
-    if (saveBtn) saveBtn.disabled = true;
-    if (saveBtnText) saveBtnText.textContent = "Saving to Database...";
-
-    const userName = (document.getElementById("devmodal-edit-user-fullname")?.value || '').trim() || 'Unassigned';
-    const empId = (document.getElementById("devmodal-edit-user-empid")?.value || '').trim();
-    const designation = (document.getElementById("devmodal-edit-user-designation")?.value || '').trim();
-    const department = (document.getElementById("devmodal-edit-user-department")?.value || '').trim();
-    const email = (document.getElementById("devmodal-edit-user-email")?.value || '').trim();
-    const phone = (document.getElementById("devmodal-edit-user-phone")?.value || '').trim();
-    const orgId = document.getElementById("devmodal-edit-org")?.value || 'HOSP';
-    const orgName = orgId === 'HOSP' ? 'PSM Hospital' : 'Swaminarayan University';
-    const buildingName = (document.getElementById("devmodal-edit-building")?.value || '').trim() || 'PSM Hospital';
-    const floorName = (document.getElementById("devmodal-edit-floor")?.value || '').trim() || 'Ground Floor';
-    const roomName = (document.getElementById("devmodal-edit-room")?.value || '').trim() || 'General Facility';
-
-    const deviceType = (document.getElementById("devmodal-edit-type")?.value || dev?.deviceType || 'CPU').trim();
-    const brandName = (document.getElementById("devmodal-edit-brand")?.value || '').trim();
-    const model = (document.getElementById("devmodal-edit-model")?.value || '').trim();
-    const serialNumber = (document.getElementById("devmodal-edit-serial")?.value || '').trim();
-    const storageRam = (document.getElementById("devmodal-edit-ram")?.value || '').trim();
-    const operatingSystem = (document.getElementById("devmodal-edit-os")?.value || '').trim();
-    const status = document.getElementById("devmodal-edit-status")?.value || 'Active';
-    const ipAddress = (document.getElementById("devmodal-edit-ip")?.value || '').trim();
-    const macAddress = (document.getElementById("devmodal-edit-mac")?.value || '').trim();
-    const anydeskId = (document.getElementById("devmodal-edit-anydesk")?.value || '').trim();
-    const monitorSpec = (document.getElementById("devmodal-edit-monitor")?.value || '').trim();
-    const warrantyExpiryDate = (document.getElementById("devmodal-edit-warranty")?.value || '').trim();
-    const purchaseDate = (document.getElementById("devmodal-edit-purchase-date")?.value || '').trim();
-
-    const payload = {
-        assetId: assetId,
-        is_edit: true,
-        inline_edit: true,
-        preserve_linked_devices: true,
-        editId: dev ? dev.id : activeDetailDeviceId,
-        id: dev ? dev.id : activeDetailDeviceId,
-        deviceType: deviceType,
-        brand_name: brandName,
-        brand: brandName,
-        serialNumber: serialNumber,
-        cpuProcessor: model,
-        storageRam: storageRam,
-        operatingSystem: operatingSystem,
-        status: status,
-        ipAddress: ipAddress,
-        macAddress: macAddress,
-        anydesk_id: anydeskId,
-        anydeskId: anydeskId,
-        monitorSpec: monitorSpec,
-        warrantyExpiryDate: warrantyExpiryDate,
-        purchaseDate: purchaseDate,
-        assignedUserName: userName,
-        assignedEmpId: empId,
-        empId: empId,
-        assignedDesignation: designation,
-        designation: designation,
-        assignedDepartment: department,
-        department: department,
-        assignedEmail: email,
-        email: email,
-        assignedPhone: phone,
-        phone: phone,
-        orgId: orgId,
-        orgName: orgName,
-        buildingName: buildingName,
-        floorName: floorName,
-        roomName: roomName
-    };
-
-    // 1. Immediately update client state in memory
-    if (dev) {
-        Object.assign(dev, payload);
-    }
-    // Also sync custodian & location on all other linked devices sharing this asset tag
-    (appState.devices || []).forEach(d => {
-        if (d.assetId === assetId) {
-            d.assignedUserName = userName;
-            d.assignedEmpId = empId;
-            d.empId = empId;
-            d.assignedDesignation = designation;
-            d.designation = designation;
-            d.assignedDepartment = department;
-            d.department = department;
-            d.assignedEmail = email;
-            d.email = email;
-            d.assignedPhone = phone;
-            d.phone = phone;
-            d.orgId = orgId;
-            d.orgName = orgName;
-            d.buildingName = buildingName;
-            d.floorName = floorName;
-            d.roomName = roomName;
+    try {
+        let dev = (appState.devices || []).find(d => d.id === activeDetailDeviceId);
+        const headerAssetEl = document.getElementById("devmodal-header-asset-id");
+        const assetId = (dev && dev.assetId) ? dev.assetId : (headerAssetEl ? headerAssetEl.textContent.trim() : '');
+        if (!dev && assetId) {
+            dev = (appState.devices || []).find(d => d.assetId === assetId);
         }
-    });
 
-    saveAppState();
+        if (!assetId || assetId === '—' || assetId === 'N/A') {
+            showToast("Error: Missing Asset Tag identifier for update.", "error");
+            return;
+        }
 
-    // 1. Instant Optimistic UI: Immediately return to view mode with updated data (0ms perceived latency)
-    toggleDetailModalEditMode(false);
-    openDeviceDetailPopup(activeDetailDeviceId || assetId);
-    showToast(`Hardware specifications & custodian for ${assetId} updated successfully!`, "success");
+        const userName = (document.getElementById("devmodal-edit-user-fullname")?.value || '').trim() || 'Unassigned';
+        const empId = (document.getElementById("devmodal-edit-user-empid")?.value || '').trim();
+        const designation = (document.getElementById("devmodal-edit-user-designation")?.value || '').trim();
+        const department = (document.getElementById("devmodal-edit-user-department")?.value || '').trim();
+        const email = (document.getElementById("devmodal-edit-user-email")?.value || '').trim();
+        const phone = (document.getElementById("devmodal-edit-user-phone")?.value || '').trim();
+        const orgId = document.getElementById("devmodal-edit-org")?.value || 'HOSP';
+        const orgName = orgId === 'HOSP' ? 'PSM Hospital' : 'Swaminarayan University';
+        const buildingName = (document.getElementById("devmodal-edit-building")?.value || '').trim() || 'PSM Hospital';
+        const floorName = (document.getElementById("devmodal-edit-floor")?.value || '').trim() || 'Ground Floor';
+        const roomName = (document.getElementById("devmodal-edit-room")?.value || '').trim() || 'General Facility';
 
-    // Asynchronously update background table and views without blocking user interaction
-    requestAnimationFrame(() => {
-        if (typeof renderInventoryTable === 'function') renderInventoryTable();
-        if (typeof renderLocationView === 'function') renderLocationView();
-    });
+        const deviceType = (document.getElementById("devmodal-edit-type")?.value || dev?.deviceType || 'CPU').trim();
+        const brandName = (document.getElementById("devmodal-edit-brand")?.value || '').trim();
+        const model = (document.getElementById("devmodal-edit-model")?.value || '').trim();
+        const serialNumber = (document.getElementById("devmodal-edit-serial")?.value || '').trim();
+        const storageRam = (document.getElementById("devmodal-edit-ram")?.value || '').trim();
+        const operatingSystem = (document.getElementById("devmodal-edit-os")?.value || '').trim();
+        const status = document.getElementById("devmodal-edit-status")?.value || 'Active';
+        const ipAddress = (document.getElementById("devmodal-edit-ip")?.value || '').trim();
+        const macAddress = (document.getElementById("devmodal-edit-mac")?.value || '').trim();
+        const anydeskId = (document.getElementById("devmodal-edit-anydesk")?.value || '').trim();
+        const monitorSpec = (document.getElementById("devmodal-edit-monitor")?.value || '').trim();
+        const warrantyExpiryDate = (document.getElementById("devmodal-edit-warranty")?.value || '').trim();
+        const purchaseDate = (document.getElementById("devmodal-edit-purchase-date")?.value || '').trim();
 
-    // 2. Persist to PostgreSQL backend asynchronously in the background
-    fetch('/api/devices/save/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCsrfToken()
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(async resp => {
-        if (resp.ok) {
-            const data = await resp.json();
-            if (data.success && data.device) {
-                const target = appState.devices.find(d => d.id === (dev ? dev.id : activeDetailDeviceId) || d.assetId === assetId);
-                if (target) {
-                    Object.assign(target, data.device);
-                    saveAppState();
+        const payload = {
+            assetId: assetId,
+            is_edit: true,
+            inline_edit: true,
+            preserve_linked_devices: true,
+            editId: dev ? dev.id : activeDetailDeviceId,
+            id: dev ? dev.id : activeDetailDeviceId,
+            deviceType: deviceType,
+            brand_name: brandName,
+            brand: brandName,
+            serialNumber: serialNumber,
+            cpuProcessor: model,
+            storageRam: storageRam,
+            operatingSystem: operatingSystem,
+            status: status,
+            ipAddress: ipAddress,
+            macAddress: macAddress,
+            anydesk_id: anydeskId,
+            anydeskId: anydeskId,
+            monitorSpec: monitorSpec,
+            warrantyExpiryDate: warrantyExpiryDate,
+            purchaseDate: purchaseDate,
+            assignedUserName: userName,
+            assignedEmpId: empId,
+            empId: empId,
+            assignedDesignation: designation,
+            designation: designation,
+            assignedDepartment: department,
+            department: department,
+            assignedEmail: email,
+            email: email,
+            assignedPhone: phone,
+            phone: phone,
+            orgId: orgId,
+            orgName: orgName,
+            buildingName: buildingName,
+            floorName: floorName,
+            roomName: roomName
+        };
+
+        // 1. Immediately update client state in memory
+        if (dev) {
+            Object.assign(dev, payload);
+        }
+        // Also sync custodian & location on all other linked devices sharing this asset tag
+        (appState.devices || []).forEach(d => {
+            if (d.assetId === assetId) {
+                d.assignedUserName = userName;
+                d.assignedEmpId = empId;
+                d.empId = empId;
+                d.assignedDesignation = designation;
+                d.designation = designation;
+                d.assignedDepartment = department;
+                d.department = department;
+                d.assignedEmail = email;
+                d.email = email;
+                d.assignedPhone = phone;
+                d.phone = phone;
+                d.orgId = orgId;
+                d.orgName = orgName;
+                d.buildingName = buildingName;
+                d.floorName = floorName;
+                d.roomName = roomName;
+            }
+        });
+
+        saveAppState();
+
+        // 2. Instant Optimistic UI: Immediately return to view mode with updated data (0ms perceived latency)
+        toggleDetailModalEditMode(false);
+        openDeviceDetailPopup(dev ? dev.id : (activeDetailDeviceId || assetId));
+        showToast(`Hardware specifications & custodian for ${assetId} updated successfully!`, "success");
+
+        // Asynchronously update background table and views without blocking user interaction
+        requestAnimationFrame(() => {
+            if (typeof renderInventoryTable === 'function') renderInventoryTable();
+            if (typeof renderLocationView === 'function') renderLocationView();
+        });
+
+        // 3. Persist to PostgreSQL backend asynchronously in the background
+        fetch('/api/devices/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(async resp => {
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.success && data.device) {
+                    const target = appState.devices.find(d => d.id === (dev ? dev.id : activeDetailDeviceId) || d.assetId === assetId);
+                    if (target) {
+                        Object.assign(target, data.device);
+                        saveAppState();
+                    }
+                }
+            } else {
+                const errData = await resp.json().catch(() => ({}));
+                if (errData.message) {
+                    console.warn("Server notice on save:", errData.message);
                 }
             }
-        } else {
-            const errData = await resp.json().catch(() => ({}));
-            if (errData.message) {
-                console.warn("Server notice on save:", errData.message);
-            }
-        }
-    })
-    .catch(apiErr => {
-        console.warn("Backend save notice:", apiErr);
-    })
-    .finally(() => {
+        })
+        .catch(apiErr => {
+            console.warn("Backend save notice:", apiErr);
+        });
+
+    } catch (err) {
+        console.error("Error saving hardware edits:", err);
+        showToast("Error updating hardware: " + (err.message || "Unknown error"), "error");
+    } finally {
         if (saveBtn) saveBtn.disabled = false;
         if (saveBtnText) saveBtnText.textContent = origText;
-    });
+    }
 }
 
 function selectDetailModalDevice(deviceId) {
@@ -5071,9 +5093,7 @@ function selectDetailModalDevice(deviceId) {
         renderDetailModalActiveSpecs(targetDev);
     }
     renderDetailModalLinkedDevices(activeDetailLinkedDevices, targetDev.id);
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
-    }
+    refreshLucideIcons()
 }
 
 function getDeviceLucideIconName(rawType) {
@@ -5103,10 +5123,10 @@ function copyModalAssetId(btnEl) {
         if (btnEl) {
             const orig = btnEl.innerHTML;
             btnEl.innerHTML = '<i data-lucide="check" class="w-3 h-3 text-emerald-400"></i><span class="text-emerald-300">Copied!</span>';
-            if (window.lucide) window.lucide.createIcons();
+            refreshLucideIcons();
             setTimeout(() => {
                 btnEl.innerHTML = orig;
-                if (window.lucide) window.lucide.createIcons();
+                refreshLucideIcons();
             }, 1800);
         }
     }).catch(() => {});
@@ -5337,7 +5357,7 @@ function renderUsersDirectory() {
         `;
     }).join('');
 
-    lucide.createIcons();
+    refreshLucideIcons();
 }
 
 function filterUsersDirectory() {
@@ -5625,9 +5645,7 @@ function renderAuditLogs() {
     // 6. Render Single Asset Traceability
     renderAssetTraceabilityView(allEvents);
 
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        lucide.createIcons();
-    }
+    refreshLucideIcons()
 }
 
 function renderAssetTraceabilityView(allEvents) {
@@ -5763,9 +5781,7 @@ function handleTraceabilityAssetChange(e) {
     currentTraceabilityAssetId = e.target.value;
     const allEvents = getUnifiedAuditEvents();
     renderAssetTraceabilityView(allEvents);
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        lucide.createIcons();
-    }
+    refreshLucideIcons()
 }
 
 function openAuditDetailModal(eventId) {
@@ -5857,9 +5873,7 @@ function openAuditDetailModal(eventId) {
     `;
 
     modal.classList.remove("hidden");
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        lucide.createIcons();
-    }
+    refreshLucideIcons()
 }
 
 function closeAuditDetailModal() {
@@ -5905,7 +5919,9 @@ function exportAuditLogsToCSV() {
 
 function renderQRTagCenter() {
     const devices = getFilteredDevices();
-    renderStickerCards(devices);
+    if (typeof renderStickerCards === 'function') {
+        renderStickerCards(devices);
+    }
 }
 
 // ============================================================================
@@ -6142,7 +6158,7 @@ function showToast(message, type = "info") {
     `;
 
     container.appendChild(toast);
-    lucide.createIcons();
+    refreshLucideIcons();
 
     setTimeout(() => {
         toast.style.opacity = '0';
@@ -6191,17 +6207,20 @@ function renderAll() {
         updateLandingCounts();
     }
 
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        lucide.createIcons();
-    }
+    refreshLucideIcons()
 }
 
 // Helper to retrieve CSRF token for secure POST requests
 function getCsrfToken() {
-    const input = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (input) return input.value;
-    const match = document.cookie.match(/csrftoken=([^;]+)/);
-    return match ? match[1] : '';
+    try {
+        const input = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (input && input.value) return input.value;
+        const cookieStr = (typeof document !== 'undefined' && document.cookie) ? document.cookie : '';
+        const match = cookieStr.match(/csrftoken=([^;]+)/);
+        return match ? match[1] : '';
+    } catch (e) {
+        return '';
+    }
 }
 
 // Live sync hardware devices from central PostgreSQL database
@@ -6287,9 +6306,7 @@ function initCampusTrackerApp() {
 
     initAppState();
     renderAll();
-    if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        lucide.createIcons();
-    }
+    refreshLucideIcons()
 
     // Check if server-side data was already provided in the HTML payload
     const hasServerPayload = document.getElementById('server-devices-payload');
