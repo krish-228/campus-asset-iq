@@ -530,8 +530,8 @@ def api_save_device(request):
                 parts = dev.asset_id.split('/')
                 if parts and parts[-1].isdigit():
                     seq_val = f"{int(parts[-1]):03d}"
-                if seq_val:
-                    for sm in DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}"):
+                if seq_val and len(existing_rows) < len(components):
+                    for sm in DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}")[:10]:
                         if sm not in existing_rows:
                             existing_rows.append(sm)
 
@@ -702,9 +702,9 @@ def api_save_device(request):
                         )
                         used_row_ids.add(new_row.id)
 
-                for r in existing_rows:
-                    if r.id not in used_row_ids:
-                        r.delete()
+                delete_ids = [r.id for r in existing_rows if r.id not in used_row_ids]
+                if delete_ids:
+                    DeviceAsset.objects.filter(id__in=delete_ids).delete()
 
                 dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first() or dev
             else:
@@ -840,17 +840,17 @@ def api_save_device(request):
                 elif assigned_user_name and assigned_user_name.lower() != 'unassigned':
                     clean_u = assigned_emp_id.lower().replace(' ', '_').replace('/', '_')
                     base_u = clean_u
-                    cntr = 1
-                    while User.objects.filter(username=clean_u).exists():
-                        clean_u = f"{base_u}_{cntr}"
-                        cntr += 1
+                    if User.objects.filter(username=clean_u).exists():
+                        clean_u = f"{base_u}_{uuid.uuid4().hex[:4]}"
                     em_val = assigned_email or f"{clean_u}@psm.hospital"
-                    new_u = User.objects.create_user(
+                    new_u = User(
                         username=clean_u,
                         email=em_val,
                         first_name=assigned_user_name.split()[0] if assigned_user_name else 'Staff',
                         last_name=" ".join(assigned_user_name.split()[1:]) if len(assigned_user_name.split()) > 1 else ''
                     )
+                    new_u.set_unusable_password()
+                    new_u.save()
                     UserProfile.objects.create(
                         user=new_u,
                         emp_id=assigned_emp_id,

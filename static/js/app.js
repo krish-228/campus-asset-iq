@@ -5008,21 +5008,28 @@ async function saveDetailModalEdits() {
     });
 
     saveAppState();
-    if (typeof renderAll === 'function') renderAll();
-    if (typeof renderInventoryTable === 'function') renderInventoryTable();
-    if (typeof renderLocationView === 'function') renderLocationView();
 
-    // 2. Persist to PostgreSQL backend via AJAX
-    try {
-        const resp = await fetch('/api/devices/save/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            },
-            body: JSON.stringify(payload)
-        });
+    // 1. Instant Optimistic UI: Immediately return to view mode with updated data (0ms perceived latency)
+    toggleDetailModalEditMode(false);
+    openDeviceDetailPopup(activeDetailDeviceId || assetId);
+    showToast(`Hardware specifications & custodian for ${assetId} updated successfully!`, "success");
 
+    // Asynchronously update background table and views without blocking user interaction
+    requestAnimationFrame(() => {
+        if (typeof renderInventoryTable === 'function') renderInventoryTable();
+        if (typeof renderLocationView === 'function') renderLocationView();
+    });
+
+    // 2. Persist to PostgreSQL backend asynchronously in the background
+    fetch('/api/devices/save/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async resp => {
         if (resp.ok) {
             const data = await resp.json();
             if (data.success && data.device) {
@@ -5038,17 +5045,14 @@ async function saveDetailModalEdits() {
                 console.warn("Server notice on save:", errData.message);
             }
         }
-    } catch (apiErr) {
+    })
+    .catch(apiErr => {
         console.warn("Backend save notice:", apiErr);
-    } finally {
+    })
+    .finally(() => {
         if (saveBtn) saveBtn.disabled = false;
         if (saveBtnText) saveBtnText.textContent = origText;
-    }
-
-    // 3. Switch back to view mode and re-render modal with new data
-    toggleDetailModalEditMode(false);
-    openDeviceDetailPopup(activeDetailDeviceId || assetId);
-    showToast(`Hardware specifications & custodian for ${assetId} updated successfully!`, "success");
+    });
 }
 
 function selectDetailModalDevice(deviceId) {
