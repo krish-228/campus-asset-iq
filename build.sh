@@ -10,6 +10,6 @@ python manage.py migrate
 
 # Safely load fixture without crashing build if records already exist
 if [ -f "campus_data.json" ]; then
-    python manage.py loaddata campus_data.json || echo "Fixtures already loaded or skipped."
+    python manage.py loaddata campus_data.json || true
 fi
 

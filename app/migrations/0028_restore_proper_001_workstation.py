@@ -17,6 +17,8 @@ def restore_proper_001_workstation(apps, schema_editor):
     UserProfile.objects.filter(emp_id__in=['EMP-TEST-99', 'EMP-TEST-001']).delete()
     CustodyTransferLog.objects.filter(device_asset_id=TAG).delete()
 
+    from django.contrib.auth.hashers import make_password
+
     # Ensure User and UserProfile for Radhe Shyam
     u = User.objects.filter(username='radheshyam').first()
     if not u:
@@ -25,9 +27,11 @@ def restore_proper_001_workstation(apps, schema_editor):
             email='radhe.shyam@psmhospital.org',
             first_name='Radhe',
             last_name='Shyam',
+            password=make_password('radhe@1234'),
             is_active=True
         )
-        u.set_password('radhe@1234')
+    elif not u.password:
+        u.password = make_password('radhe@1234')
         u.save()
 
     prof = UserProfile.objects.filter(user=u).first()
