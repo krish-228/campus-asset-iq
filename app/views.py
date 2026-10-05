@@ -833,10 +833,13 @@ def api_save_device(request):
                 prof = UserProfile.objects.filter(emp_id__iexact=assigned_emp_id).first()
                 if prof:
                     prof.assigned_asset_id = dev.asset_id
-                    if assigned_designation and not prof.designation: prof.designation = assigned_designation
-                    if assigned_department and not prof.department: prof.department = assigned_department
-                    if assigned_phone and not prof.phone: prof.phone = assigned_phone
+                    if assigned_designation: prof.designation = assigned_designation
+                    if assigned_department: prof.department = assigned_department
+                    if assigned_phone: prof.phone = assigned_phone
                     prof.save()
+                    if assigned_email and prof.user:
+                        prof.user.email = assigned_email
+                        prof.user.save()
                 elif assigned_user_name and assigned_user_name.lower() != 'unassigned':
                     clean_u = assigned_emp_id.lower().replace(' ', '_').replace('/', '_')
                     base_u = clean_u

@@ -99,7 +99,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v28.0_master_sync_workstation_01";
+    const CURRENT_CACHE_VERSION = "v29.0_radheshyam_pharmacy_incharge_master";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -250,17 +250,18 @@ function initAppState() {
                                 fullName: uName,
                                 empId: dbDev.empId || dbDev.assignedEmpId || '—',
                                 department: dbDev.department || dbDev.assignedDepartment || 'PSM Hospital',
-                                designation: dbDev.designation || dbDev.assignedDesignation || 'Senior Consultant',
+                                designation: dbDev.designation || dbDev.assignedDesignation || 'Pharmacy Incharge',
                                 email: dbDev.email || dbDev.assignedEmail || '',
                                 phone: dbDev.phone || dbDev.assignedPhone || '',
                                 status: 'Active',
                                 orgId: dbDev.orgId || 'HOSP'
                             });
                         } else {
-                            if (dbDev.designation && !existingUser.designation) existingUser.designation = dbDev.designation;
-                            if (dbDev.department && !existingUser.department) existingUser.department = dbDev.department;
-                            if (dbDev.email && !existingUser.email) existingUser.email = dbDev.email;
-                            if (dbDev.phone && !existingUser.phone) existingUser.phone = dbDev.phone;
+                            if (dbDev.designation) existingUser.designation = dbDev.designation;
+                            if (dbDev.department) existingUser.department = dbDev.department;
+                            if (dbDev.email) existingUser.email = dbDev.email;
+                            if (dbDev.phone) existingUser.phone = dbDev.phone;
+                            if (dbDev.empId) existingUser.empId = dbDev.empId;
                         }
                     }
                 });
@@ -6303,17 +6304,18 @@ async function syncDevicesFromDatabase() {
                             fullName: uName,
                             empId: dbDev.empId || dbDev.assignedEmpId || '—',
                             department: dbDev.department || dbDev.assignedDepartment || 'PSM Hospital',
-                            designation: dbDev.designation || dbDev.assignedDesignation || 'Senior Consultant',
+                            designation: dbDev.designation || dbDev.assignedDesignation || 'Pharmacy Incharge',
                             email: dbDev.email || dbDev.assignedEmail || '',
                             phone: dbDev.phone || dbDev.assignedPhone || '',
                             status: 'Active',
                             orgId: dbDev.orgId || 'HOSP'
                         });
                     } else {
-                        if (dbDev.designation && !existingUser.designation) existingUser.designation = dbDev.designation;
-                        if (dbDev.department && !existingUser.department) existingUser.department = dbDev.department;
-                        if (dbDev.email && !existingUser.email) existingUser.email = dbDev.email;
-                        if (dbDev.phone && !existingUser.phone) existingUser.phone = dbDev.phone;
+                        if (dbDev.designation) existingUser.designation = dbDev.designation;
+                        if (dbDev.department) existingUser.department = dbDev.department;
+                        if (dbDev.email) existingUser.email = dbDev.email;
+                        if (dbDev.phone) existingUser.phone = dbDev.phone;
+                        if (dbDev.empId) existingUser.empId = dbDev.empId;
                     }
                 }
             });

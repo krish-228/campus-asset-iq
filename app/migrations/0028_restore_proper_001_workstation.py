@@ -22,40 +22,49 @@ def restore_proper_001_workstation(apps, schema_editor):
     # Ensure User and UserProfile for Radhe Shyam
     u = User.objects.filter(username='radheshyam').first()
     if not u:
+        u = User.objects.filter(email='radherajpurohit9928@gmail.com').first()
+    if not u:
         u = User.objects.create(
             username='radheshyam',
-            email='radhe.shyam@psmhospital.org',
+            email='radherajpurohit9928@gmail.com',
             first_name='Radhe',
             last_name='Shyam',
             password=make_password('radhe@1234'),
             is_active=True
         )
-    elif not u.password:
-        u.password = make_password('radhe@1234')
+    else:
+        u.email = 'radherajpurohit9928@gmail.com'
+        if not u.password:
+            u.password = make_password('radhe@1234')
         u.save()
+
+    UserProfile.objects.filter(emp_id='1001').delete()
 
     prof = UserProfile.objects.filter(user=u).first()
     if not prof:
-        prof = UserProfile.objects.filter(emp_id='1001').first()
+        prof = UserProfile.objects.filter(emp_id='0000').first()
     if not prof:
         prof = UserProfile(user=u)
 
     prof.user = u
-    prof.emp_id = '1001'
+    prof.emp_id = '0000'
     prof.full_name = 'Radhe Shyam'
-    prof.department = 'Cardiology'
-    prof.designation = 'Senior Consultant'
-    prof.phone = '+91 98250 12345'
+    prof.department = 'Pharmacy'
+    prof.designation = 'Pharmacy Incharge'
+    prof.phone = '7229938069'
     prof.org_id = 'HOSP'
     prof.assigned_asset_id = TAG
     prof.save()
 
     CUSTODIAN_NAME = 'Radhe Shyam'
-    CUSTODIAN_EMP = '1001'
-    CUSTODIAN_DESIG = 'Senior Consultant'
-    CUSTODIAN_DEPT = 'Cardiology'
-    CUSTODIAN_EMAIL = 'radhe.shyam@psmhospital.org'
-    CUSTODIAN_PHONE = '+91 98250 12345'
+    CUSTODIAN_EMP = '0000'
+    CUSTODIAN_DESIG = 'Pharmacy Incharge'
+    CUSTODIAN_DEPT = 'Pharmacy'
+    CUSTODIAN_EMAIL = 'radherajpurohit9928@gmail.com'
+    CUSTODIAN_PHONE = '7229938069'
+    BUILDING_NAME = 'PSM Hospital Main Complex'
+    FLOOR_NAME = 'Ground Floor'
+    ROOM_NAME = 'Pharmacy 01'
 
     # 1. Ensure CPU exists and has proper specs
     cpu = DeviceAsset.objects.filter(asset_id=TAG, device_type='CPU').first()
@@ -73,9 +82,9 @@ def restore_proper_001_workstation(apps, schema_editor):
         cpu.ip_address = '192.168.20.101'
         cpu.mac_address = 'B4-2E-99-20-01-FA'
         cpu.anydesk_id = '928 341 001'
-        cpu.building_name = 'PSM Hospital'
-        cpu.floor_name = '2nd Floor'
-        cpu.room_name = 'Room 201'
+        cpu.building_name = BUILDING_NAME
+        cpu.floor_name = FLOOR_NAME
+        cpu.room_name = ROOM_NAME
         cpu.assigned_department = CUSTODIAN_DEPT
         cpu.assigned_designation = CUSTODIAN_DESIG
         cpu.assigned_user_name = CUSTODIAN_NAME
@@ -95,9 +104,9 @@ def restore_proper_001_workstation(apps, schema_editor):
             serial_number='SN-HP-PD600-001',
             org_id='HOSP',
             org_name='PSM Hospital',
-            building_name='PSM Hospital',
-            floor_name='2nd Floor',
-            room_name='Room 201',
+            building_name=BUILDING_NAME,
+            floor_name=FLOOR_NAME,
+            room_name=ROOM_NAME,
             assigned_department=CUSTODIAN_DEPT,
             assigned_designation=CUSTODIAN_DESIG,
             assigned_user_name=CUSTODIAN_NAME,
@@ -131,9 +140,9 @@ def restore_proper_001_workstation(apps, schema_editor):
         disp.operating_system = 'Hardware Display'
         disp.ip_address = '-'
         disp.mac_address = '-'
-        disp.building_name = 'PSM Hospital'
-        disp.floor_name = '2nd Floor'
-        disp.room_name = 'Room 201'
+        disp.building_name = BUILDING_NAME
+        disp.floor_name = FLOOR_NAME
+        disp.room_name = ROOM_NAME
         disp.assigned_department = CUSTODIAN_DEPT
         disp.assigned_designation = CUSTODIAN_DESIG
         disp.assigned_user_name = CUSTODIAN_NAME
@@ -153,9 +162,9 @@ def restore_proper_001_workstation(apps, schema_editor):
             serial_number='SN-DELL-P24-001',
             org_id='HOSP',
             org_name='PSM Hospital',
-            building_name='PSM Hospital',
-            floor_name='2nd Floor',
-            room_name='Room 201',
+            building_name=BUILDING_NAME,
+            floor_name=FLOOR_NAME,
+            room_name=ROOM_NAME,
             assigned_department=CUSTODIAN_DEPT,
             assigned_designation=CUSTODIAN_DESIG,
             assigned_user_name=CUSTODIAN_NAME,
@@ -187,9 +196,9 @@ def restore_proper_001_workstation(apps, schema_editor):
         kb.operating_system = 'Hardware Peripheral'
         kb.ip_address = '-'
         kb.mac_address = '-'
-        kb.building_name = 'PSM Hospital'
-        kb.floor_name = '2nd Floor'
-        kb.room_name = 'Room 201'
+        kb.building_name = BUILDING_NAME
+        kb.floor_name = FLOOR_NAME
+        kb.room_name = ROOM_NAME
         kb.assigned_department = CUSTODIAN_DEPT
         kb.assigned_designation = CUSTODIAN_DESIG
         kb.assigned_user_name = CUSTODIAN_NAME
@@ -209,9 +218,9 @@ def restore_proper_001_workstation(apps, schema_editor):
             serial_number='SN-HP-KB-001',
             org_id='HOSP',
             org_name='PSM Hospital',
-            building_name='PSM Hospital',
-            floor_name='2nd Floor',
-            room_name='Room 201',
+            building_name=BUILDING_NAME,
+            floor_name=FLOOR_NAME,
+            room_name=ROOM_NAME,
             assigned_department=CUSTODIAN_DEPT,
             assigned_designation=CUSTODIAN_DESIG,
             assigned_user_name=CUSTODIAN_NAME,
@@ -243,9 +252,9 @@ def restore_proper_001_workstation(apps, schema_editor):
         ms.operating_system = 'Hardware Peripheral'
         ms.ip_address = '-'
         ms.mac_address = '-'
-        ms.building_name = 'PSM Hospital'
-        ms.floor_name = '2nd Floor'
-        ms.room_name = 'Room 201'
+        ms.building_name = BUILDING_NAME
+        ms.floor_name = FLOOR_NAME
+        ms.room_name = ROOM_NAME
         ms.assigned_department = CUSTODIAN_DEPT
         ms.assigned_designation = CUSTODIAN_DESIG
         ms.assigned_user_name = CUSTODIAN_NAME
@@ -265,9 +274,9 @@ def restore_proper_001_workstation(apps, schema_editor):
             serial_number='SN-HP-MS-001',
             org_id='HOSP',
             org_name='PSM Hospital',
-            building_name='PSM Hospital',
-            floor_name='2nd Floor',
-            room_name='Room 201',
+            building_name=BUILDING_NAME,
+            floor_name=FLOOR_NAME,
+            room_name=ROOM_NAME,
             assigned_department=CUSTODIAN_DEPT,
             assigned_designation=CUSTODIAN_DESIG,
             assigned_user_name=CUSTODIAN_NAME,
