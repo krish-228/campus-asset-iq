@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict l2fwgkPt8iBcwFsUoYaco3ssVTNVlX6aPAavsziNCDsxxeXqffTKH55XEBFevFS
+\restrict ZwvnZXmbrevbDCmLFwgsdbzh1O0mKIZZn3gminQqXyofmbHW21y8XKk4ycKFcye
 
 -- Dumped from database version 18.6
 -- Dumped by pg_dump version 18.6
@@ -841,11 +841,11 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 
 COPY public.auth_user (id, password, last_login, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined) FROM stdin;
 20	pbkdf2_sha256$1500000$klklXauJLfr2DtNh5ntBMl$ka5C6XFrnJYseJckm+0e0xQzG0SE93YrItI+FN3a+9I=	2026-09-25 14:51:08.46726+05:30	f	kri	krish	patel	krish2282003@gmail.com	t	t	2026-09-23 10:53:51.860431+05:30
-2	pbkdf2_sha256$1500000$A8CyMaXjD88SbchpmAcFpK$kYKu8sjp3qGU12LQ9yLP2t9c9LDv+jeT55iKoxNC22Q=	2026-09-30 09:53:08.138523+05:30	t	admin	System	Administrator	admin@psmhospital.org	t	t	2026-09-07 14:31:28.221+05:30
 25	!8OcCt41pP8d3dBNC0DwYXW2702OByvjV9WRjeUD6	\N	f	7897	Anjali	Darji	anjali.darji@hospital.org	f	t	2026-10-03 10:08:44.909473+05:30
 26	!W9e5nZOGQynzEl1XetjXGAddEGUs1xc2sPbrEi9R	\N	f	emp-test-99	Test	In-Page Custodian	emp-test-99@psm.hospital	f	t	2026-10-04 23:20:53.569013+05:30
 29	!XCQr9upnZMn5sO6DZHFy5fQOn4lwh6UWPmWVNPhC	\N	f	emp-test-001	Dr.	Test User	test@psm.hospital	f	t	2026-10-05 00:20:25.82832+05:30
 30	pbkdf2_sha256$1500000$igte0XmDYpXrByVVgUtTxs$z6axxeJ2l5gox4S0zTuiFMg5XkYUQ3yx6NTzmiGf794=	\N	f	radheshyam	Radhe	Shyam	radhe.shyam@psmhospital.org	f	t	2026-10-05 11:46:09.909564+05:30
+2	pbkdf2_sha256$1500000$A8CyMaXjD88SbchpmAcFpK$kYKu8sjp3qGU12LQ9yLP2t9c9LDv+jeT55iKoxNC22Q=	2026-10-05 12:18:12.543345+05:30	t	admin	System	Administrator	admin@psmhospital.org	t	t	2026-09-07 14:31:28.221+05:30
 \.
 
 
@@ -958,6 +958,9 @@ biq3crlbw3gfbj76trjhyjtmlgohsy1o	.eJxVjsFOxCAQhl9lM-dNA5S2S296NSYmPgAZYLbFpWCAHo
 zo11t28e08hw7lcigr2ysfbzgycm6ktw	.eJxVjLsKwzAMAP9FczFWLEtKxu79BuMXTdqSQJxMpf9eAhna9e64N4S4b2PYW13DVGCADi6_LMX8rPMhyiPO98XkZd7WKZkjMadt5raU-rqe7d9gjG2EATxn16kKOtIeU0QlK5RSj9YTsTJ3DmP2aq16rCykQkUcomWRnODzBYmuNWk:1xBbSZ:vACz7_UetoohVUHNNQ7y9rAmH1TyWUNPhL_x7mA-p90	2026-10-13 22:47:43.728307+05:30
 bofwk3gpwuxo5h9fpf45tccqfb1kkf34	.eJxVjLsKwzAMAP9FczFWLEtKxu79BuMXTdqSQJxMpf9eAhna9e64N4S4b2PYW13DVGCADi6_LMX8rPMhyiPO98XkZd7WKZkjMadt5raU-rqe7d9gjG2EATxn16kKOtIeU0QlK5RSj9YTsTJ3DmP2aq16rCykQkUcomWRnODzBYmuNWk:1xBlqW:DC7Iv5KvF7u2NulhKJRUVS5IjCLXfggGqrchgr1lwcE	2026-10-14 09:53:08.142422+05:30
 8wb80l5d75t4ngwav00enqbr16u4zbj0	e30:1xBmIh:vKOV_dsA_DDYpPutLIh5dozGQAZYadQztIqHXAr-qMs	2026-10-14 10:22:15.825846+05:30
+nme49ly877u9phrg4h7aek6t25i1grwn	.eJxVjLsKwzAMAP9FczFWLEtKxu79BuMXTdqSQJxMpf9eAhna9e64N4S4b2PYW13DVGCADi6_LMX8rPMhyiPO98XkZd7WKZkjMadt5raU-rqe7d9gjG2EATxn16kKOtIeU0QlK5RSj9YTsTJ3DmP2aq16rCykQkUcomWRnODzBYmuNWk:1xDcAr:y-HIaNyvEt4sSe-CRyO4RhVGL_W-q-nKTs9hy_mnocI	2026-10-19 11:57:45.825345+05:30
+m3g6xnlr400g1grfwhotx0ghl0jda2fr	.eJxVjLsKwzAMAP9FczFWLEtKxu79BuMXTdqSQJxMpf9eAhna9e64N4S4b2PYW13DVGCADi6_LMX8rPMhyiPO98XkZd7WKZkjMadt5raU-rqe7d9gjG2EATxn16kKOtIeU0QlK5RSj9YTsTJ3DmP2aq16rCykQkUcomWRnODzBYmuNWk:1xDcGp:pubiKXo_kVLNx-cdr3qlnJWqc8bwkJXqHg4ZNk7auFw	2026-10-19 12:03:55.976671+05:30
+4yr0506npp8pqhvri41wguy0jdj5dejc	.eJxVjLsKwzAMAP9FczFWLEtKxu79BuMXTdqSQJxMpf9eAhna9e64N4S4b2PYW13DVGCADi6_LMX8rPMhyiPO98XkZd7WKZkjMadt5raU-rqe7d9gjG2EATxn16kKOtIeU0QlK5RSj9YTsTJ3DmP2aq16rCykQkUcomWRnODzBYmuNWk:1xDcUe:tcd_vTtcWgqXYx2Bu1K3puv84UebI6kucILspMiz2oQ	2026-10-19 12:18:12.54529+05:30
 \.
 
 
@@ -1537,5 +1540,5 @@ ALTER TABLE ONLY public.django_admin_log
 -- PostgreSQL database dump complete
 --
 
-\unrestrict l2fwgkPt8iBcwFsUoYaco3ssVTNVlX6aPAavsziNCDsxxeXqffTKH55XEBFevFS
+\unrestrict ZwvnZXmbrevbDCmLFwgsdbzh1O0mKIZZn3gminQqXyofmbHW21y8XKk4ycKFcye
 

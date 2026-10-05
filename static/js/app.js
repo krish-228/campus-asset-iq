@@ -54,9 +54,9 @@ function isDeviceOnFloor(dev, floor) {
 function refreshLucideIcons() {
     try {
         if (typeof window !== 'undefined' && window.lucide && typeof window.lucide.createIcons === 'function') {
-            refreshLucideIcons();
+            window.lucide.createIcons();
         } else if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
-            refreshLucideIcons();
+            lucide.createIcons();
         }
     } catch (e) {
         // Silently tolerate icon render issues
@@ -73,7 +73,10 @@ function isPurgedDevice(d) {
     if (aid.includes('079') || aid.includes('PSM/IT/0926/079')) return true;
     if (user.includes('lalsing') || user.includes('lalshing') || user.includes('lal shing')) return true;
     if (emp === '68127' || emp === '860127') return true;
-    if (sn.includes('079') || sn.includes('CN-0W41TY')) return true;
+    if (sn.includes('079') || sn.includes('CN-0W41TY') || sn.includes('SN-PSM-DIS-9580') || sn.includes('9580')) return true;
+    if ((aid === 'PSM/IT/0826/001' || aid.endsWith('/001')) && (sn.startsWith('SN-PSM-DIS-9580') || (d.deviceType === 'Display' && (d.brandName === 'Dell' && d.cpuProcessor === 'NA')))) {
+        return true;
+    }
     return false;
 }
 
@@ -96,7 +99,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v27.0_workstation_01_proper_restore";
+    const CURRENT_CACHE_VERSION = "v28.0_master_sync_workstation_01";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -198,7 +201,8 @@ function initAppState() {
     if (serverDevicesEl && serverDevicesEl.textContent.trim()) {
         try {
             const serverDevices = JSON.parse(serverDevicesEl.textContent);
-            if (Array.isArray(serverDevices)) {
+            if (Array.isArray(serverDevices) && serverDevices.length > 0) {
+                if (!appState.users) appState.users = [];
                 serverDevices.forEach(dbDev => {
                     if (dbDev.assetId) {
                         dbDev.assetId = dbDev.assetId.replace(/^PSM\/IT\/[A-Za-z]\//i, 'PSM/IT/').replace(/\/M\//gi, '/');
@@ -230,6 +234,34 @@ function initAppState() {
                             appState.rooms.push(matchRoom);
                         }
                         dbDev.roomId = matchRoom.id;
+                    }
+
+                    // Auto-sync Custodian Profile into appState.users
+                    const uName = (dbDev.assignedUserName || dbDev.assigned_user_name || '').trim();
+                    if (uName && uName.toLowerCase() !== 'unassigned' && !uName.toLowerCase().includes('spare')) {
+                        const existingUser = appState.users.find(u => 
+                            (dbDev.assignedUserId && u.id === dbDev.assignedUserId) ||
+                            (dbDev.empId && u.empId === dbDev.empId) ||
+                            (u.fullName && u.fullName.toLowerCase() === uName.toLowerCase())
+                        );
+                        if (!existingUser) {
+                            appState.users.push({
+                                id: dbDev.assignedUserId || `user-emp-${dbDev.empId || Math.random().toString(36).substring(2, 8)}`,
+                                fullName: uName,
+                                empId: dbDev.empId || dbDev.assignedEmpId || '—',
+                                department: dbDev.department || dbDev.assignedDepartment || 'PSM Hospital',
+                                designation: dbDev.designation || dbDev.assignedDesignation || 'Senior Consultant',
+                                email: dbDev.email || dbDev.assignedEmail || '',
+                                phone: dbDev.phone || dbDev.assignedPhone || '',
+                                status: 'Active',
+                                orgId: dbDev.orgId || 'HOSP'
+                            });
+                        } else {
+                            if (dbDev.designation && !existingUser.designation) existingUser.designation = dbDev.designation;
+                            if (dbDev.department && !existingUser.department) existingUser.department = dbDev.department;
+                            if (dbDev.email && !existingUser.email) existingUser.email = dbDev.email;
+                            if (dbDev.phone && !existingUser.phone) existingUser.phone = dbDev.phone;
+                        }
                     }
                 });
                 appState.devices = serverDevices.filter(d => !isPurgedDevice(d));
@@ -6230,6 +6262,7 @@ async function syncDevicesFromDatabase() {
         if (!response.ok) return;
         const data = await response.json();
         if (data.success && Array.isArray(data.devices)) {
+            if (!appState.users) appState.users = [];
             data.devices.forEach(dbDev => {
                 const targetRoomName = (dbDev.roomName || '').trim();
                 const devFloorId = getDeviceFloorId(dbDev);
@@ -6254,6 +6287,34 @@ async function syncDevicesFromDatabase() {
                         appState.rooms.push(matchRoom);
                     }
                     dbDev.roomId = matchRoom.id;
+                }
+
+                // Auto-sync Custodian Profile into appState.users
+                const uName = (dbDev.assignedUserName || dbDev.assigned_user_name || '').trim();
+                if (uName && uName.toLowerCase() !== 'unassigned' && !uName.toLowerCase().includes('spare')) {
+                    const existingUser = appState.users.find(u => 
+                        (dbDev.assignedUserId && u.id === dbDev.assignedUserId) ||
+                        (dbDev.empId && u.empId === dbDev.empId) ||
+                        (u.fullName && u.fullName.toLowerCase() === uName.toLowerCase())
+                    );
+                    if (!existingUser) {
+                        appState.users.push({
+                            id: dbDev.assignedUserId || `user-emp-${dbDev.empId || Math.random().toString(36).substring(2, 8)}`,
+                            fullName: uName,
+                            empId: dbDev.empId || dbDev.assignedEmpId || '—',
+                            department: dbDev.department || dbDev.assignedDepartment || 'PSM Hospital',
+                            designation: dbDev.designation || dbDev.assignedDesignation || 'Senior Consultant',
+                            email: dbDev.email || dbDev.assignedEmail || '',
+                            phone: dbDev.phone || dbDev.assignedPhone || '',
+                            status: 'Active',
+                            orgId: dbDev.orgId || 'HOSP'
+                        });
+                    } else {
+                        if (dbDev.designation && !existingUser.designation) existingUser.designation = dbDev.designation;
+                        if (dbDev.department && !existingUser.department) existingUser.department = dbDev.department;
+                        if (dbDev.email && !existingUser.email) existingUser.email = dbDev.email;
+                        if (dbDev.phone && !existingUser.phone) existingUser.phone = dbDev.phone;
+                    }
                 }
             });
             appState.devices = data.devices.filter(d => !isPurgedDevice(d));
@@ -6308,13 +6369,9 @@ function initCampusTrackerApp() {
     renderAll();
     refreshLucideIcons()
 
-    // Check if server-side data was already provided in the HTML payload
-    const hasServerPayload = document.getElementById('server-devices-payload');
-    if (!hasServerPayload) {
-        // Fallback to client-side fetch only if server payload was not present
-        syncDevicesFromDatabase();
-        syncAuditLogsFromDatabase();
-    }
+    // Background live synchronization to guarantee 100% database parity
+    syncDevicesFromDatabase();
+    syncAuditLogsFromDatabase();
 
     if (window.initTableDragScroll) window.initTableDragScroll();
 
