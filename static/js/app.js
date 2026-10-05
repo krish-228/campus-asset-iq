@@ -96,7 +96,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v26.0_instant_zero_latency_save";
+    const CURRENT_CACHE_VERSION = "v27.0_workstation_01_proper_restore";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");

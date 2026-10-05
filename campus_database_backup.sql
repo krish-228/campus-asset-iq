@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Lg0nUpnU5Fomi3Z7m3iOJdixp66O3B44Ij6P04HZOXlWtxd3gCkYfRZoPG7axND
+\restrict l2fwgkPt8iBcwFsUoYaco3ssVTNVlX6aPAavsziNCDsxxeXqffTKH55XEBFevFS
 
 -- Dumped from database version 18.6
 -- Dumped by pg_dump version 18.6
@@ -557,6 +557,7 @@ ALTER TABLE public.django_session OWNER TO postgres;
 --
 
 COPY public.app_custodytransferlog (id, device_asset_id, from_user_name, from_emp_id, to_user_name, to_emp_id, handover_date, assigned_by, remarks, created_at, device_id) FROM stdin;
+4	PSM/IT/0826/034	Unassigned		Anjali Darji	7897	03-Oct-2026	IT Admin Desk	Mobile Asset Update: Custody updated from Unassigned to Anjali Darji	2026-10-03 10:02:34.562313+05:30	87
 \.
 
 
@@ -565,12 +566,22 @@ COPY public.app_custodytransferlog (id, device_asset_id, from_user_name, from_em
 --
 
 COPY public.app_deviceasset (id, dev_id, asset_id, serial_number, org_id, org_name, building_name, floor_name, room_name, assigned_user_id, assigned_user_name, assigned_emp_id, monitor_spec, cpu_processor, storage_ram, ip_address, mac_address, operating_system, purchase_date, warranty_expiry_date, status, created_at, updated_at, device_type, assigned_designation, assigned_email, assigned_phone, keyboard_spec, mouse_spec, printer_spec, tablet_spec, ups_spec, assigned_department, brand_name, anydesk_id, device_id) FROM stdin;
+21	dev-888cd3fa	PSM/IT/0826/001	SN-HP-PD600-001	HOSP	PSM Hospital	PSM Hospital	2nd Floor	Room 201		Radhe Shyam	1001	24" FHD IPS Display	Intel Core i5-10500 (6 cores, 3.10 GHz)	16GB RAM / 512GB NVMe SSD	192.168.20.101	B4-2E-99-20-01-FA	Windows 11 Pro	28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.730069+05:30	2026-10-05 11:36:50.15037+05:30	CPU	Senior Consultant	radhe.shyam@psmhospital.org	+91 98250 12345						Cardiology	HP	928 341 001	
 22	dev-6a33bacd	PSM/IT/0826/002	SN-PSM-DIS-7921	HOSP	PSM Hospital	PSM Hospital Main Complex	GROUND FLOOR	1		Unassigned								28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.734472+05:30	2026-09-28 10:03:41.734486+05:30	Display									Pharmacy	Dell		
 23	dev-ba61e73b	PSM/IT/0826/002	SN-PSM-CPU-5192	HOSP	PSM Hospital	PSM Hospital Main Complex	GROUND FLOOR	1		Unassigned			i7-6700T	8/256	192.168.33.184			28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.741963+05:30	2026-09-28 10:03:41.742+05:30	CPU									Pharmacy	HP		
-170	dev-330f7c0c	PSM/IT/0926/001	SN-PSM-CPU-8992	HOSP	PSM Hospital	PSM Hospital Main Complex	2nd FLOOR	202		Unassigned		24" FHD IPS Display	i5	8/256	192.168.0.130		Windows 11 Pro	28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:22:41.54601+05:30	2026-09-28 10:22:41.546022+05:30	CPU									FMW	Intex		
-171	dev-d86cb66f	PSM/IT/0926/001	SN-PSM-DIS-9569	HOSP	PSM Hospital	PSM Hospital Main Complex	2nd FLOOR	202		Unassigned		24" FHD IPS Display	24" FHD IPS Display		-	-		28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:22:41.547154+05:30	2026-09-28 10:22:41.547161+05:30	Display									FMW	Zebronics		
-20	dev-a642da6f	PSM/IT/0826/001	SN-TEST-DISP-001	HOSP	PSM Hospital	PSM Hospital	2nd Floor	1		Unassigned		24 inch Full HD	24 inch Full HD		-	-		28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.722283+05:30	2026-09-28 10:17:01.776541+05:30	Display										Dell		
-21	dev-888cd3fa	PSM/IT/0826/001	SN-TEST-CPU-001	HOSP	PSM Hospital	PSM Hospital	2nd Floor	1		Unassigned		24 inch Full HD	Intel Core i5-11400	16GB RAM / 512GB SSD			Windows 11 Pro	28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.730069+05:30	2026-09-28 10:17:01.775614+05:30	CPU										HP		
+172	dev-322e76c4	PSM/IT/0926/076	KM160240833659	HOSP	PSM Hospital	PSM Hospital	Ground Floor	Cardiology OPD / 03	\N	Hitakshi Nayak	68050		HP KM160 Wired Keyboard		-	-				Active	2026-10-02 14:13:38.025643+05:30	2026-10-02 14:13:38.025652+05:30	Keyboard	Nursing Staff			HP KM160 Wired Keyboard					Cardiology OPD	HP		
+173	dev-618616b7	PSM/IT/0926/076	KM160240833659	HOSP	PSM Hospital	PSM Hospital	Ground Floor	Cardiology OPD / 03	\N	Hitakshi Nayak	68050		HP KM160 Wired Mouse		-	-				Active	2026-10-02 14:13:38.027113+05:30	2026-10-02 14:13:38.02712+05:30	Mouse	Nursing Staff				HP KM160 Wired Mouse				Cardiology OPD	HP		
+174	dev-24da61b0	PSM/IT/0926/076	NTNA855874	HOSP	PSM Hospital	PSM Hospital	Ground Floor	Cardiology OPD / 03	\N	Hitakshi Nayak	68050		Canon LBP6030 Laser Printer		-	-				Active	2026-10-02 14:13:38.027689+05:30	2026-10-02 14:13:38.027695+05:30	Printer	Nursing Staff					Canon LBP6030 Laser Printer			Cardiology OPD	Canon		
+87	dev-7de1fa0a	PSM/IT/0826/034	SN-PSM-CPU-5043	HOSP	PSM Hospital	PSM Hospital Main Complex	1st Floor	Central Lab Blood Reception-2 / 103		Anjali Darji	7897	24 inch	Intel Core i5	16GB RAM			Windows 11 Pro	03-Oct-2026	03-Oct-2029	Active	2026-09-28 10:03:42.023272+05:30	2026-10-03 10:08:44.903566+05:30	CPU	Receptionist	anjali.darji@hospital.org	+919811223344	Standard USB Keyboard	Optical USB Mouse	HP LaserJet 1020			Center Lab	HP		
+86	dev-ac721ede	PSM/IT/0826/034	SN-PSM-DIS-5168	HOSP	PSM Hospital	PSM Hospital Main Complex	1st Floor	Central Lab Blood Reception-2 / 103		Anjali Darji	7897	24 inch	24 inch		-	-		03-Oct-2026	03-Oct-2029	Active	2026-09-28 10:03:42.018945+05:30	2026-10-03 10:08:44.904613+05:30	Display	Receptionist	anjali.darji@hospital.org	+919811223344						Center Lab	Dell		
+175	dev-631e9404	PSM/IT/0826/034	SN-PSM-CPU-5043-KB	HOSP	PSM Hospital	PSM Hospital Main Complex	1st Floor	Central Lab Blood Reception-2 / 103		Anjali Darji	7897		Standard USB Keyboard		-	-		03-Oct-2026	03-Oct-2029	Active	2026-10-03 10:08:44.905704+05:30	2026-10-03 10:08:44.905709+05:30	Keyboard	Receptionist	anjali.darji@hospital.org	+919811223344	Standard USB Keyboard					Center Lab			
+176	dev-68c24dab	PSM/IT/0826/034	SN-PSM-CPU-5043-MS	HOSP	PSM Hospital	PSM Hospital Main Complex	1st Floor	Central Lab Blood Reception-2 / 103		Anjali Darji	7897		Optical USB Mouse		-	-		03-Oct-2026	03-Oct-2029	Active	2026-10-03 10:08:44.906571+05:30	2026-10-03 10:08:44.906576+05:30	Mouse	Receptionist	anjali.darji@hospital.org	+919811223344		Optical USB Mouse				Center Lab			
+177	dev-f8f594cf	PSM/IT/0826/034	SN-PSM-CPU-5043-PRT	HOSP	PSM Hospital	PSM Hospital Main Complex	1st Floor	Central Lab Blood Reception-2 / 103		Anjali Darji	7897		HP LaserJet 1020		-	-		03-Oct-2026	03-Oct-2029	Active	2026-10-03 10:08:44.906997+05:30	2026-10-03 10:08:44.907001+05:30	Printer	Receptionist	anjali.darji@hospital.org	+919811223344			HP LaserJet 1020			Center Lab			
+178	dev-9ad2b595	PSM/IT/0826/001	SN-HP-KB-001	HOSP	PSM Hospital	PSM Hospital	2nd Floor	Room 201		Radhe Shyam	1001		HP Business Slim USB Wired Keyboard		-	-	Hardware Peripheral	28-Sep-2026	27-Sep-2029	Active	2026-10-04 23:25:27.430124+05:30	2026-10-05 11:36:50.152852+05:30	Keyboard	Senior Consultant	radhe.shyam@psmhospital.org	+91 98250 12345	HP Business Slim USB Wired Keyboard					Cardiology	HP		
+179	dev-f286e5dc	PSM/IT/0826/001	SN-HP-MS-001	HOSP	PSM Hospital	PSM Hospital	2nd Floor	Room 201		Radhe Shyam	1001		HP Optical 1000 DPI USB Wired Mouse		-	-	Hardware Peripheral	28-Sep-2026	27-Sep-2029	Active	2026-10-04 23:25:27.433079+05:30	2026-10-05 11:36:50.154052+05:30	Mouse	Senior Consultant	radhe.shyam@psmhospital.org	+91 98250 12345		HP Optical 1000 DPI USB Wired Mouse				Cardiology	HP		
+35	dev-914ff74e	PSM/IT/0926/076	2115019697260787576	HOSP	PSM Hospital	PSM Hospital	Ground Floor	Cardiology OPD / 03		Hitakshi Nayak	68050		Intel Core i3-8100	8GB RAM / 256GB SSD	192.168.31.209	00-E0-27-40-41-DB	Windows 11 Home	28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.800405+05:30	2026-10-02 14:13:38.022616+05:30	CPU	Nursing Staff								Cardiology OPD	Intex		
+34	dev-05f01efe	PSM/IT/0926/076	ZAA32FX00404	HOSP	PSM Hospital	PSM Hospital	Ground Floor	Cardiology OPD / 03		Hitakshi Nayak	68050	Zeb-PA129 54.6cm LED Monitor	Zeb-PA129 54.6cm LED Monitor		-	-		28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.796511+05:30	2026-10-02 14:13:38.024251+05:30	Display	Nursing Staff								Cardiology OPD	Zebronics		
+20	dev-a642da6f	PSM/IT/0826/001	SN-DELL-P24-001	HOSP	PSM Hospital	PSM Hospital	2nd Floor	Room 201		Radhe Shyam	1001	24" FHD IPS (1920x1080) Anti-Glare Display	24" FHD IPS Display		-	-	Hardware Display	28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.722283+05:30	2026-10-05 11:36:50.151887+05:30	Display	Senior Consultant	radhe.shyam@psmhospital.org	+91 98250 12345						Cardiology	Dell		
 24	dev-b14bc926	PSM/IT/0826/003	SN-PSM-DIS-9488	HOSP	PSM Hospital	PSM Hospital Main Complex	GROUND FLOOR	1		Unassigned								28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.74868+05:30	2026-09-28 10:03:41.748695+05:30	Display									Pharmacy	Dell		
 25	dev-972c2b44	PSM/IT/0826/003	SN-PSM-CPU-3768	HOSP	PSM Hospital	PSM Hospital Main Complex	GROUND FLOOR	1		Unassigned			i5-6500T	8/256	192.168.88.174			28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.752807+05:30	2026-09-28 10:03:41.752853+05:30	CPU									Pharmacy	HP		
 26	dev-60e1a626	PSM/IT/0826/004	SN-PSM-DIS-1403	HOSP	PSM Hospital	PSM Hospital Main Complex	GROUND FLOOR	1		Unassigned								28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.761173+05:30	2026-09-28 10:03:41.761199+05:30	Display									Pharmacy	LG		
@@ -581,8 +592,6 @@ COPY public.app_deviceasset (id, dev_id, asset_id, serial_number, org_id, org_na
 31	dev-1232502d	PSM/IT/0826/006	SN-PSM-CPU-6946	HOSP	PSM Hospital	PSM Hospital Main Complex	GROUND FLOOR	1		Unassigned			i7-6700T	8/256	192.168.88.237			28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.783439+05:30	2026-09-28 10:03:41.783451+05:30	CPU									Pharmacy	Intex		
 33	dev-febc96db	PSM/IT/0826/007	SN-PSM-CPU-007	HOSP	PSM Hospital	PSM Hospital	2nd Floor	2		Unassigned		24" FHD IPS Display	Intel i5	16GB RAM / 512GB SSD			Windows 11 Pro	28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.792181+05:30	2026-09-28 10:44:11.964976+05:30	CPU										HP		
 32	dev-44011751	PSM/IT/0826/007	SN-PSM-DISP-007	HOSP	PSM Hospital	PSM Hospital	2nd Floor	2		Unassigned		24" FHD IPS Display	24" FHD IPS Display		-	-		28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.787441+05:30	2026-09-28 10:44:11.969766+05:30	Display												
-34	dev-05f01efe	PSM/IT/0826/008	SN-PSM-DIS-7958	HOSP	PSM Hospital	PSM Hospital Main Complex	GROUND FLOOR	3		Unassigned								28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.796511+05:30	2026-09-28 10:03:41.796525+05:30	Display									Cardio	Zebronics		
-35	dev-914ff74e	PSM/IT/0826/008	SN-PSM-CPU-7150	HOSP	PSM Hospital	PSM Hospital Main Complex	GROUND FLOOR	3		Unassigned			i3-8100	8/256	192.168.31.209			28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.800405+05:30	2026-09-28 10:03:41.800425+05:30	CPU									Cardio	Intex		
 36	dev-9553c85e	PSM/IT/0826/009	SN-PSM-DIS-4732	HOSP	PSM Hospital	PSM Hospital Main Complex	GROUND FLOOR	4		Unassigned								28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.805147+05:30	2026-09-28 10:03:41.805161+05:30	Display									Pediatric	Zebronics		
 37	dev-704ef12e	PSM/IT/0826/009	SN-PSM-CPU-5112	HOSP	PSM Hospital	PSM Hospital Main Complex	GROUND FLOOR	4		Unassigned			i3-8100	8/256				28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.809777+05:30	2026-09-28 10:03:41.809814+05:30	CPU									Pediatric	Intex		
 39	dev-cfefa2a2	PSM/IT/0826/010	SN-PSM-CPU-3917	HOSP	PSM Hospital	PSM Hospital Main Complex	GROUND FLOOR	10		Unassigned			i3-8100	8/256				28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:41.818227+05:30	2026-09-28 10:03:41.818243+05:30	CPU									Ortho OPD	Intex		
@@ -633,8 +642,6 @@ COPY public.app_deviceasset (id, dev_id, asset_id, serial_number, org_id, org_na
 83	dev-12da68f6	PSM/IT/0826/032	SN-PSM-CPU-5561	HOSP	PSM Hospital	PSM Hospital Main Complex	1st FLOOR	102		Unassigned			i3-8100	8/256	192.168.11.206			28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:42.004783+05:30	2026-09-28 10:03:42.004796+05:30	CPU									ENT	Intex		
 84	dev-5f51f5c9	PSM/IT/0826/033	SN-PSM-DIS-6890	HOSP	PSM Hospital	PSM Hospital Main Complex	1st FLOOR	103/Blood Reception-1		Unassigned								28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:42.011173+05:30	2026-09-28 10:03:42.011186+05:30	Display									Center Lab	Dell		
 85	dev-ad8d2e0c	PSM/IT/0826/033	SN-PSM-CPU-8831	HOSP	PSM Hospital	PSM Hospital Main Complex	1st FLOOR	103/Blood Reception-1		Unassigned			i5	8/256	192.168.8.151			28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:42.014929+05:30	2026-09-28 10:03:42.014941+05:30	CPU									Center Lab	HP		
-86	dev-ac721ede	PSM/IT/0826/034	SN-PSM-DIS-5168	HOSP	PSM Hospital	PSM Hospital Main Complex	1st FLOOR	103/Blood Reception-2		Unassigned								28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:42.018945+05:30	2026-09-28 10:03:42.01897+05:30	Display									Center Lab	Dell		
-87	dev-7de1fa0a	PSM/IT/0826/034	SN-PSM-CPU-5043	HOSP	PSM Hospital	PSM Hospital Main Complex	1st FLOOR	103/Blood Reception-2		Unassigned			i7-6700T	8/256	192.168.11.198			28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:42.023272+05:30	2026-09-28 10:03:42.023286+05:30	CPU									Center Lab	HP		
 88	dev-3180ec41	PSM/IT/0826/035	SN-PSM-DIS-8731	HOSP	PSM Hospital	PSM Hospital Main Complex	1st FLOOR	103/Blood Lab Test		Unassigned								28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:42.028246+05:30	2026-09-28 10:03:42.02826+05:30	Display									Center Lab	HCL		
 89	dev-eb2e3105	PSM/IT/0826/035	SN-PSM-CPU-4626	HOSP	PSM Hospital	PSM Hospital Main Complex	1st FLOOR	103/Blood Lab Test		Unassigned			i5	16/256/1TB	192.168.33.235			28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:42.032296+05:30	2026-09-28 10:03:42.032308+05:30	CPU									Center Lab	HP		
 91	dev-863fcc88	PSM/IT/0826/036	SN-PSM-CPU-8310	HOSP	PSM Hospital	PSM Hospital Main Complex	1st FLOOR	103/Cabin-3		Unassigned			i5	8/256	192.168.8.241			28-Sep-2026	27-Sep-2029	Active	2026-09-28 10:03:42.039645+05:30	2026-09-28 10:03:42.039657+05:30	CPU									Center Lab	HP		
@@ -749,8 +756,10 @@ COPY public.app_equipmentpms (id, equipment_name, company_name, installation_dat
 --
 
 COPY public.app_userprofile (id, emp_id, full_name, org_id, department, designation, phone, assigned_asset_id, user_id, password) FROM stdin;
+28	1001	Radhe Shyam	HOSP	Cardiology	Senior Consultant	+91 98250 12345	PSM/IT/0826/001	30	
 19	ADMIN	System Administrator	HOSP	IT & Medical Systems	Master Administrator			2	admin
 21	KRI	krish patel	HOSP	IT & Medical Systems	Systems Administrator			20	admin123
+25	7897	Anjali Darji	HOSP	Center Lab	Receptionist	+919811223344	PSM/IT/0826/034	25	
 \.
 
 
@@ -832,7 +841,11 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 
 COPY public.auth_user (id, password, last_login, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined) FROM stdin;
 20	pbkdf2_sha256$1500000$klklXauJLfr2DtNh5ntBMl$ka5C6XFrnJYseJckm+0e0xQzG0SE93YrItI+FN3a+9I=	2026-09-25 14:51:08.46726+05:30	f	kri	krish	patel	krish2282003@gmail.com	t	t	2026-09-23 10:53:51.860431+05:30
-2	pbkdf2_sha256$1500000$A8CyMaXjD88SbchpmAcFpK$kYKu8sjp3qGU12LQ9yLP2t9c9LDv+jeT55iKoxNC22Q=	2026-09-25 10:16:02.794938+05:30	t	admin	System	Administrator	admin@psmhospital.org	t	t	2026-09-07 14:31:28.221+05:30
+2	pbkdf2_sha256$1500000$A8CyMaXjD88SbchpmAcFpK$kYKu8sjp3qGU12LQ9yLP2t9c9LDv+jeT55iKoxNC22Q=	2026-09-30 09:53:08.138523+05:30	t	admin	System	Administrator	admin@psmhospital.org	t	t	2026-09-07 14:31:28.221+05:30
+25	!8OcCt41pP8d3dBNC0DwYXW2702OByvjV9WRjeUD6	\N	f	7897	Anjali	Darji	anjali.darji@hospital.org	f	t	2026-10-03 10:08:44.909473+05:30
+26	!W9e5nZOGQynzEl1XetjXGAddEGUs1xc2sPbrEi9R	\N	f	emp-test-99	Test	In-Page Custodian	emp-test-99@psm.hospital	f	t	2026-10-04 23:20:53.569013+05:30
+29	!XCQr9upnZMn5sO6DZHFy5fQOn4lwh6UWPmWVNPhC	\N	f	emp-test-001	Dr.	Test User	test@psm.hospital	f	t	2026-10-05 00:20:25.82832+05:30
+30	pbkdf2_sha256$1500000$igte0XmDYpXrByVVgUtTxs$z6axxeJ2l5gox4S0zTuiFMg5XkYUQ3yx6NTzmiGf794=	\N	f	radheshyam	Radhe	Shyam	radhe.shyam@psmhospital.org	f	t	2026-10-05 11:46:09.909564+05:30
 \.
 
 
@@ -927,6 +940,11 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 40	app	0021_cleanup_dummy_specs	2026-09-26 14:57:17.166346+05:30
 41	app	0022_purge_legacy_m_asset_tags	2026-09-28 12:18:28.015438+05:30
 42	app	0023_deduplicate_device_assets	2026-09-29 15:53:25.561336+05:30
+43	app	0024_purge_079_lalshing_assets	2026-10-01 15:33:49.284573+05:30
+44	app	0025_reassign_077_peripherals_to_016	2026-10-01 16:34:10.810105+05:30
+46	app	0026_deduplicate_hitakshi_workstation	2026-10-02 14:13:38.095262+05:30
+47	app	0027_purge_078_blood_reception_assets	2026-10-03 10:41:11.808974+05:30
+48	app	0028_restore_proper_001_workstation	2026-10-05 11:36:50.154732+05:30
 \.
 
 
@@ -937,6 +955,9 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 COPY public.django_session (session_key, session_data, expire_date) FROM stdin;
 7ukqfdbr96ypndnvmapark5u3a8w28q2	.eJxVjsFOxCAQhl9lM-dNA5S2S296NSYmPgAZYLbFpWCAHozx3Q3JWvX6fd8_mU_QuNdV74Wy9g5mEAzOf6FBe6PYjHvDuKTOplizN11Lurst3XNyFB7v7b8DK5YVZhjc1cqLoJEhWmku0qlJ9GJiZmCOSc4ZyUkocjSi4aOjYZzo2nNlFee9knAGdJuPOqRlIad9hLnmnX5wxI1ghlv2ZT29Y6VwLNobv_rAOYWGXj9Kpa2cHhr0pWasKR-Rj756DAVmeHqBr2_Km2Yw:1xA27A:0lTcAzPttmj-1ZZTQY_Bn7MBEwwyNaDP_WFp8yWaZxg	2026-10-09 14:51:08.342433+05:30
 biq3crlbw3gfbj76trjhyjtmlgohsy1o	.eJxVjsFOxCAQhl9lM-dNA5S2S296NSYmPgAZYLbFpWCAHozx3Q3JWvX6fd8_mU_QuNdV74Wy9g5mEAzOf6FBe6PYjHvDuKTOplizN11Lurst3XNyFB7v7b8DK5YVZhjc1cqLoJEhWmku0qlJ9GJiZmCOSc4ZyUkocjSi4aOjYZzo2nNlFee9knAGdJuPOqRlIad9hLnmnX5wxI1ghlv2ZT29Y6VwLNobv_rAOYWGXj9Kpa2cHhr0pWasKR-Rj756DAVmeHqBr2_Km2Yw:1xA27A:0lTcAzPttmj-1ZZTQY_Bn7MBEwwyNaDP_WFp8yWaZxg	2026-10-09 14:51:08.488458+05:30
+zo11t28e08hw7lcigr2ysfbzgycm6ktw	.eJxVjLsKwzAMAP9FczFWLEtKxu79BuMXTdqSQJxMpf9eAhna9e64N4S4b2PYW13DVGCADi6_LMX8rPMhyiPO98XkZd7WKZkjMadt5raU-rqe7d9gjG2EATxn16kKOtIeU0QlK5RSj9YTsTJ3DmP2aq16rCykQkUcomWRnODzBYmuNWk:1xBbSZ:vACz7_UetoohVUHNNQ7y9rAmH1TyWUNPhL_x7mA-p90	2026-10-13 22:47:43.728307+05:30
+bofwk3gpwuxo5h9fpf45tccqfb1kkf34	.eJxVjLsKwzAMAP9FczFWLEtKxu79BuMXTdqSQJxMpf9eAhna9e64N4S4b2PYW13DVGCADi6_LMX8rPMhyiPO98XkZd7WKZkjMadt5raU-rqe7d9gjG2EATxn16kKOtIeU0QlK5RSj9YTsTJ3DmP2aq16rCykQkUcomWRnODzBYmuNWk:1xBlqW:DC7Iv5KvF7u2NulhKJRUVS5IjCLXfggGqrchgr1lwcE	2026-10-14 09:53:08.142422+05:30
+8wb80l5d75t4ngwav00enqbr16u4zbj0	e30:1xBmIh:vKOV_dsA_DDYpPutLIh5dozGQAZYadQztIqHXAr-qMs	2026-10-14 10:22:15.825846+05:30
 \.
 
 
@@ -944,14 +965,14 @@ biq3crlbw3gfbj76trjhyjtmlgohsy1o	.eJxVjsFOxCAQhl9lM-dNA5S2S296NSYmPgAZYLbFpWCAHo
 -- Name: app_custodytransferlog_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.app_custodytransferlog_id_seq', 2, true);
+SELECT pg_catalog.setval('public.app_custodytransferlog_id_seq', 5, true);
 
 
 --
 -- Name: app_deviceasset_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.app_deviceasset_id_seq', 171, true);
+SELECT pg_catalog.setval('public.app_deviceasset_id_seq', 179, true);
 
 
 --
@@ -979,7 +1000,7 @@ SELECT pg_catalog.setval('public.app_equipmentpms_id_seq', 1, false);
 -- Name: app_userprofile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.app_userprofile_id_seq', 24, true);
+SELECT pg_catalog.setval('public.app_userprofile_id_seq', 28, true);
 
 
 --
@@ -1014,7 +1035,7 @@ SELECT pg_catalog.setval('public.auth_user_groups_id_seq', 1, false);
 -- Name: auth_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.auth_user_id_seq', 24, true);
+SELECT pg_catalog.setval('public.auth_user_id_seq', 30, true);
 
 
 --
@@ -1042,7 +1063,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 12, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 42, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 48, true);
 
 
 --
@@ -1516,5 +1537,5 @@ ALTER TABLE ONLY public.django_admin_log
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Lg0nUpnU5Fomi3Z7m3iOJdixp66O3B44Ij6P04HZOXlWtxd3gCkYfRZoPG7axND
+\unrestrict l2fwgkPt8iBcwFsUoYaco3ssVTNVlX6aPAavsziNCDsxxeXqffTKH55XEBFevFS
 
