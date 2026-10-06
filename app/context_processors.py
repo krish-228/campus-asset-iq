@@ -12,10 +12,10 @@ def admin_nav_counts(request):
             uname = request.user.username.lower()
             if uname == 'sunil':
                 is_technician = True
-                tech_name = 'Sunil Sharma'
+                tech_name = 'Sunil'
             elif uname == 'sahil':
                 is_technician = True
-                tech_name = 'Sahil Patel'
+                tech_name = 'Sahil'
 
         if is_technician and tech_name:
             first_name = tech_name.split()[0]

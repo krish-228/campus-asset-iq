@@ -21,37 +21,42 @@ from .models import DeviceComplaint, UserProfile, DeviceAsset, CustodyTransferLo
 def ensure_default_it_technicians():
     """Ensure standard IT technicians roster exists with Sunil & Sahil as primary field engineers."""
     try:
+        # Purge unwanted/deprecated technician names from roster
+        ITTechnician.objects.filter(
+            models.Q(name__icontains='Sunil Sharma') |
+            models.Q(name__icontains='Sahil Patel') |
+            models.Q(name__icontains='Devesh') |
+            models.Q(name__icontains='Amit Verma') |
+            models.Q(name__icontains='krish') |
+            models.Q(name__icontains='System Administrator')
+        ).delete()
+
         primary_techs = [
             {
                 'username': 'sunil',
-                'name': 'Sunil Sharma',
+                'name': 'Sunil',
                 'emp_id': 'IT-TECH-01',
                 'role_title': 'Field Hardware Technician',
                 'phone': '+91 98250 22301',
-                'email': 'sunil@psmhospital.org',
                 'specialization': 'CPU, Monitor, Power & On-Site Hardware Repair',
-                'password': 'sunil'
             },
             {
                 'username': 'sahil',
-                'name': 'Sahil Patel',
+                'name': 'Sahil',
                 'emp_id': 'IT-TECH-02',
                 'role_title': 'Field Hardware Technician',
                 'phone': '+91 98250 22302',
-                'email': 'sahil@psmhospital.org',
                 'specialization': 'Printers, LAN, OS & System Peripherals',
-                'password': 'sahil'
             }
         ]
 
         for spec in primary_techs:
             u, _ = User.objects.get_or_create(username=spec['username'])
-            u.first_name = spec['name'].split()[0]
-            u.last_name = spec['name'].split()[-1] if len(spec['name'].split()) > 1 else ''
-            u.email = spec['email']
+            u.first_name = spec['name']
+            u.last_name = ''
             u.is_staff = True
             if not u.has_usable_password():
-                u.set_password(spec['password'])
+                u.set_password(spec['username'])
             u.save()
 
             profile, _ = UserProfile.objects.get_or_create(user=u, defaults={'emp_id': spec['emp_id']})
@@ -59,7 +64,6 @@ def ensure_default_it_technicians():
             profile.emp_id = spec['emp_id']
             profile.department = 'IT & Biomedical Systems'
             profile.designation = spec['role_title']
-            profile.password = spec['password']
             profile.save()
 
             tech_rec = ITTechnician.objects.filter(models.Q(user=u) | models.Q(name__iexact=spec['name'])).first()
@@ -69,7 +73,6 @@ def ensure_default_it_technicians():
                     emp_id=spec['emp_id'],
                     role_title=spec['role_title'],
                     phone=spec['phone'],
-                    email=spec['email'],
                     specialization=spec['specialization'],
                     user=u,
                     is_active=True
@@ -81,22 +84,6 @@ def ensure_default_it_technicians():
                 tech_rec.role_title = spec['role_title']
                 tech_rec.is_active = True
                 tech_rec.save()
-
-        # Also automatically sync any staff user accounts into ITTechnician if not already present
-        for u in User.objects.filter(is_staff=True):
-            if u.username.lower() in ['sunil', 'sahil']:
-                continue
-            full_name = u.get_full_name() or u.username
-            if not ITTechnician.objects.filter(models.Q(name__iexact=full_name) | models.Q(user=u)).exists():
-                ITTechnician.objects.create(
-                    name=full_name,
-                    emp_id=f"IT-{u.username.upper()}",
-                    role_title='IT Systems Administrator' if u.is_superuser else 'IT Systems Lead',
-                    phone='+91 98250 11200',
-                    email=u.email or f"{u.username}@psmhospital.org",
-                    specialization='Core Systems, Asset Auditing & Network Infrastructure',
-                    user=u
-                )
     except Exception:
         pass
 
@@ -107,7 +94,7 @@ def get_current_user_role(request):
     Returns:
       - is_admin: True for Master Admin / Superuser / System Admin (sees whole and systematic).
       - is_technician: True for Sunil or Sahil (sees only their own live issues & history).
-      - tech_name: 'Sunil Sharma' or 'Sahil Patel' (or other technician name)
+      - tech_name: 'Sunil' or 'Sahil' (or other technician name)
       - user_obj: User instance or None
     """
     user_obj = getattr(request, 'user', None)
@@ -133,7 +120,7 @@ def get_current_user_role(request):
         return {
             'is_admin': False,
             'is_technician': True,
-            'tech_name': 'Sunil Sharma',
+            'tech_name': 'Sunil',
             'user_obj': user_obj
         }
 
@@ -142,7 +129,7 @@ def get_current_user_role(request):
         return {
             'is_admin': False,
             'is_technician': True,
-            'tech_name': 'Sahil Patel',
+            'tech_name': 'Sahil',
             'user_obj': user_obj
         }
 
@@ -179,7 +166,7 @@ def get_technician_roster():
     """Retrieve full IT technician team with dynamic active workload and historical stats."""
     ensure_default_it_technicians()
     raw_techs = list(ITTechnician.objects.filter(is_active=True).order_by('id'))
-    # Ensure Sunil Sharma and Sahil Patel are at the very top of the roster
+    # Ensure Sunil and Sahil are at the very top of the roster
     raw_techs.sort(key=lambda t: 0 if 'sunil' in t.name.lower() else (1 if 'sahil' in t.name.lower() else 2))
     techs = raw_techs
     roster = []
@@ -315,7 +302,7 @@ def sync_complaint_to_breakdown(complaint):
     else:
         b_status = 'Pending Review'
 
-    tech_name = complaint.technician_name or 'Er. Amit Verma (IT CELL)'
+    tech_name = complaint.technician_name or 'Unassigned'
 
     # Check if breakdown already exists for this ticket
     bd = EquipmentBreakdown.objects.filter(ticket_id=complaint.ticket_id).first()
@@ -2211,7 +2198,7 @@ def submit_complaint(request):
             subject=subject,
             description=description,
             status='Pending',
-            technician_name='Er. Amit Verma (IT CELL)'
+            technician_name='Unassigned'
         )
         sync_complaint_to_breakdown(complaint)
 
@@ -2416,7 +2403,7 @@ def api_submit_quick_complaint(request):
             subject=subject,
             description=full_description or f"Malfunctioning hardware reported via mobile QR scan: {issue_category}",
             status='Pending',
-            technician_name='Er. Amit Verma (IT CELL)'
+            technician_name='Unassigned'
         )
         sync_complaint_to_breakdown(complaint)
 
