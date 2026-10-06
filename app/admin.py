@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import UserProfile, DeviceComplaint, DeviceAsset, CustodyTransferLog, EquipmentPMS, EquipmentBreakdown
+from .models import UserProfile, DeviceComplaint, DeviceAsset, CustodyTransferLog, EquipmentPMS, EquipmentBreakdown, ITTechnician
+
+
+@admin.register(ITTechnician)
+class ITTechnicianAdmin(admin.ModelAdmin):
+    list_display = ('name', 'emp_id', 'role_title', 'phone', 'specialization', 'is_active')
+    search_fields = ('name', 'emp_id', 'role_title', 'specialization')
+    list_filter = ('is_active', 'role_title')
 
 
 @admin.register(EquipmentBreakdown)

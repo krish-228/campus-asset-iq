@@ -235,6 +235,7 @@ class EquipmentBreakdown(models.Model):
     sign_it_cell = models.CharField(max_length=150, blank=True, default='Er. Amit Verma (IT CELL)', help_text="Sign of IT CELL")
     location = models.CharField(max_length=150, blank=True, default='', help_text="Department / Room / Location")
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Resolved')
+    ticket_id = models.CharField(max_length=50, blank=True, default='', db_index=True, help_text="Linked Helpdesk Ticket ID")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -299,5 +300,22 @@ class EquipmentBreakdown(models.Model):
         return re.sub(r'(\d+)\.(\d+)', r'\1:\2', val.replace('.', '/'))
 
 
+class ITTechnician(models.Model):
+    name = models.CharField(max_length=150, unique=True, help_text="Full Name of IT Technician")
+    emp_id = models.CharField(max_length=50, blank=True, help_text="Employee / Staff ID")
+    role_title = models.CharField(max_length=100, default='Hardware & Systems Engineer')
+    phone = models.CharField(max_length=30, blank=True)
+    email = models.CharField(max_length=100, blank=True)
+    specialization = models.CharField(max_length=150, default='Hardware, Peripherals & OS')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='technician_profile')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'IT Technician'
+        verbose_name_plural = 'IT Technicians'
 
+    def __str__(self):
+        return f"{self.name} ({self.role_title})"

@@ -224,6 +224,34 @@
                     <button type="submit" class="w-full py-3.5 px-6 rounded-xl text-white font-bold text-base tracking-wide btn-primary-flow flex items-center justify-center gap-2.5 transition-all mt-4 sm:mt-5 cursor-pointer shadow-md">
                         <span>Sign In</span>
                     </button>
+
+                    <!-- Instant 1-Click Role Switch (Testing & Live Demonstration) -->
+                    <div class="mt-4 pt-3.5 border-t border-slate-100">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Fast 1-Click Role Login</span>
+                            <span class="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">Testing & Colleague Demo</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="fastRoleLogin('admin')"
+                                class="px-2.5 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95 group"
+                                title="Login as Master Administrator (Full systematic control of all tickets and team)">
+                                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform"></i>
+                                <span>Master Admin</span>
+                            </button>
+                            <button type="button" onclick="fastRoleLogin('sunil')"
+                                class="px-2.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition-all shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 group"
+                                title="Login as Sunil Sharma (Field Technician - only Sunil's live issues & history)">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span>Sunil (Tech)</span>
+                            </button>
+                            <button type="button" onclick="fastRoleLogin('sahil')"
+                                class="px-2.5 py-2 rounded-xl text-xs font-bold bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 transition-all shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 group"
+                                title="Login as Sahil Patel (Field Technician - only Sahil's live issues & history)">
+                                <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span>
+                                <span>Sahil (Tech)</span>
+                            </button>
+                        </div>
+                    </div>
                 </form>
 
             </div>
@@ -250,6 +278,23 @@
                 ? '<i data-lucide="eye-off" class="w-4 h-4 text-indigo-600"></i>' 
                 : '<i data-lucide="eye" class="w-4 h-4"></i>';
             lucide.createIcons();
+        }
+
+        function fastRoleLogin(role) {
+            const form = document.querySelector('form');
+            let roleInput = form.querySelector('input[name="demo_role"]');
+            if (!roleInput) {
+                roleInput = document.createElement('input');
+                roleInput.type = 'hidden';
+                roleInput.name = 'demo_role';
+                form.appendChild(roleInput);
+            }
+            roleInput.value = role;
+            const loginInput = document.getElementById('login_id');
+            const passInput = document.getElementById('password');
+            if (loginInput) loginInput.removeAttribute('required');
+            if (passInput) passInput.removeAttribute('required');
+            form.submit();
         }
     </script>
 </body>

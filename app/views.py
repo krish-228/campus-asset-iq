@@ -11,10 +11,363 @@ import re
 import urllib.parse
 import random
 from django.db import models, transaction
-from django.db.models import Q
-from .models import DeviceComplaint, UserProfile, DeviceAsset, CustodyTransferLog, EquipmentPMS, EquipmentBreakdown
+from .models import DeviceComplaint, UserProfile, DeviceAsset, CustodyTransferLog, EquipmentPMS, EquipmentBreakdown, ITTechnician
 
 
+# ============================================================================
+# IT CELL & BME TECHNICIANS TEAM & BREAKDOWN TICKET SYNCHRONIZATION
+# ============================================================================
+
+def ensure_default_it_technicians():
+    """Ensure standard IT technicians roster exists with Sunil & Sahil as primary field engineers."""
+    try:
+        primary_techs = [
+            {
+                'username': 'sunil',
+                'name': 'Sunil Sharma',
+                'emp_id': 'IT-TECH-01',
+                'role_title': 'Field Hardware Technician',
+                'phone': '+91 98250 22301',
+                'email': 'sunil@psmhospital.org',
+                'specialization': 'CPU, Monitor, Power & On-Site Hardware Repair',
+                'password': 'sunil'
+            },
+            {
+                'username': 'sahil',
+                'name': 'Sahil Patel',
+                'emp_id': 'IT-TECH-02',
+                'role_title': 'Field Hardware Technician',
+                'phone': '+91 98250 22302',
+                'email': 'sahil@psmhospital.org',
+                'specialization': 'Printers, LAN, OS & System Peripherals',
+                'password': 'sahil'
+            }
+        ]
+
+        for spec in primary_techs:
+            u, _ = User.objects.get_or_create(username=spec['username'])
+            u.first_name = spec['name'].split()[0]
+            u.last_name = spec['name'].split()[-1] if len(spec['name'].split()) > 1 else ''
+            u.email = spec['email']
+            u.is_staff = True
+            if not u.has_usable_password():
+                u.set_password(spec['password'])
+            u.save()
+
+            profile, _ = UserProfile.objects.get_or_create(user=u, defaults={'emp_id': spec['emp_id']})
+            profile.full_name = spec['name']
+            profile.emp_id = spec['emp_id']
+            profile.department = 'IT & Biomedical Systems'
+            profile.designation = spec['role_title']
+            profile.password = spec['password']
+            profile.save()
+
+            tech_rec = ITTechnician.objects.filter(models.Q(user=u) | models.Q(name__iexact=spec['name'])).first()
+            if not tech_rec:
+                ITTechnician.objects.create(
+                    name=spec['name'],
+                    emp_id=spec['emp_id'],
+                    role_title=spec['role_title'],
+                    phone=spec['phone'],
+                    email=spec['email'],
+                    specialization=spec['specialization'],
+                    user=u,
+                    is_active=True
+                )
+            else:
+                tech_rec.name = spec['name']
+                tech_rec.user = u
+                tech_rec.emp_id = spec['emp_id']
+                tech_rec.role_title = spec['role_title']
+                tech_rec.is_active = True
+                tech_rec.save()
+
+        # Also automatically sync any staff user accounts into ITTechnician if not already present
+        for u in User.objects.filter(is_staff=True):
+            if u.username.lower() in ['sunil', 'sahil']:
+                continue
+            full_name = u.get_full_name() or u.username
+            if not ITTechnician.objects.filter(models.Q(name__iexact=full_name) | models.Q(user=u)).exists():
+                ITTechnician.objects.create(
+                    name=full_name,
+                    emp_id=f"IT-{u.username.upper()}",
+                    role_title='IT Systems Administrator' if u.is_superuser else 'IT Systems Lead',
+                    phone='+91 98250 11200',
+                    email=u.email or f"{u.username}@psmhospital.org",
+                    specialization='Core Systems, Asset Auditing & Network Infrastructure',
+                    user=u
+                )
+    except Exception:
+        pass
+
+
+def get_current_user_role(request):
+    """
+    Identifies whether current logged-in user is a Field Technician (Sunil or Sahil) or Master Admin.
+    Returns:
+      - is_admin: True for Master Admin / Superuser / System Admin (sees whole and systematic).
+      - is_technician: True for Sunil or Sahil (sees only their own live issues & history).
+      - tech_name: 'Sunil Sharma' or 'Sahil Patel' (or other technician name)
+      - user_obj: User instance or None
+    """
+    user_obj = getattr(request, 'user', None)
+    username = ''
+    if user_obj and user_obj.is_authenticated:
+        username = user_obj.username.lower().strip()
+    else:
+        username = request.session.get('admin_username', '').lower().strip()
+        if username:
+            user_obj = User.objects.filter(username__iexact=username).first()
+
+    # 1. Superuser or primary admin accounts are always Master Admins (whole view)
+    if (user_obj and user_obj.is_superuser) or username in ['admin', 'kri', 'krish']:
+        return {
+            'is_admin': True,
+            'is_technician': False,
+            'tech_name': None,
+            'user_obj': user_obj
+        }
+
+    # 2. Sunil is a field technician
+    if username == 'sunil' or 'sunil' in username:
+        return {
+            'is_admin': False,
+            'is_technician': True,
+            'tech_name': 'Sunil Sharma',
+            'user_obj': user_obj
+        }
+
+    # 3. Sahil is a field technician
+    if username == 'sahil' or 'sahil' in username:
+        return {
+            'is_admin': False,
+            'is_technician': True,
+            'tech_name': 'Sahil Patel',
+            'user_obj': user_obj
+        }
+
+    # 4. Check if user is linked to an ITTechnician
+    if user_obj and not user_obj.is_superuser:
+        tech = ITTechnician.objects.filter(user=user_obj).first()
+        if tech and ('technician' in tech.role_title.lower() or 'field' in tech.role_title.lower()):
+            return {
+                'is_admin': False,
+                'is_technician': True,
+                'tech_name': tech.name,
+                'user_obj': user_obj
+            }
+
+    # 5. Session flag
+    if request.session.get('is_technician') and request.session.get('technician_name'):
+        return {
+            'is_admin': False,
+            'is_technician': True,
+            'tech_name': request.session.get('technician_name'),
+            'user_obj': user_obj
+        }
+
+    # Default fallback: Admin
+    return {
+        'is_admin': True,
+        'is_technician': False,
+        'tech_name': None,
+        'user_obj': user_obj
+    }
+
+
+def get_technician_roster():
+    """Retrieve full IT technician team with dynamic active workload and historical stats."""
+    ensure_default_it_technicians()
+    raw_techs = list(ITTechnician.objects.filter(is_active=True).order_by('id'))
+    # Ensure Sunil Sharma and Sahil Patel are at the very top of the roster
+    raw_techs.sort(key=lambda t: 0 if 'sunil' in t.name.lower() else (1 if 'sahil' in t.name.lower() else 2))
+    techs = raw_techs
+    roster = []
+    for t in techs:
+        first_name = t.name.split()[0] if t.name else ''
+        last_name = t.name.split()[-1] if len(t.name.split()) > 1 else ''
+
+        q_tech = models.Q(it_staff_name__icontains=t.name)
+        if first_name and len(first_name) > 2:
+            q_tech |= models.Q(it_staff_name__icontains=first_name)
+        if last_name and len(last_name) > 2:
+            q_tech |= models.Q(it_staff_name__icontains=last_name)
+
+        q_complaint = models.Q(technician_name__icontains=t.name)
+        if first_name and len(first_name) > 2:
+            q_complaint |= models.Q(technician_name__icontains=first_name)
+        if last_name and len(last_name) > 2:
+            q_complaint |= models.Q(technician_name__icontains=last_name)
+
+        # Active in EquipmentBreakdown
+        b_active = EquipmentBreakdown.objects.filter(
+            q_tech,
+            status__in=['Under Repair', 'Pending Review', 'Pending', 'In Progress']
+        ).count()
+        # Active in DeviceComplaint
+        c_active = DeviceComplaint.objects.filter(
+            q_complaint,
+            status__in=['Pending', 'In Progress']
+        ).count()
+        active_count = max(b_active, c_active)
+
+        # Resolved in EquipmentBreakdown
+        b_resolved = EquipmentBreakdown.objects.filter(
+            q_tech,
+            status__icontains='Resolve'
+        ).count()
+        # Resolved in DeviceComplaint
+        c_resolved = DeviceComplaint.objects.filter(
+            q_complaint,
+            status__in=['Resolved', 'Closed']
+        ).count()
+        resolved_count = max(b_resolved, c_resolved)
+
+        # Calculate average TAT
+        resolved_records = EquipmentBreakdown.objects.filter(q_tech, status__icontains='Resolve').exclude(tat_duration='')
+        total_mins = 0
+        tat_count = 0
+        for r in resolved_records:
+            m = re.search(r'(\d+)\s*(?:min|m)', r.tat_duration or '', re.IGNORECASE)
+            h = re.search(r'(\d+)\s*(?:hour|hr|h)', r.tat_duration or '', re.IGNORECASE)
+            mins = 0
+            if h:
+                mins += int(h.group(1)) * 60
+            if m:
+                mins += int(m.group(1))
+            if mins > 0:
+                total_mins += mins
+                tat_count += 1
+        avg_tat = f"{round(total_mins / tat_count)} mins" if tat_count > 0 else "30 mins"
+
+        roster.append({
+            'id': t.id,
+            'name': t.name,
+            'emp_id': t.emp_id,
+            'role_title': t.role_title,
+            'phone': t.phone,
+            'email': t.email,
+            'specialization': t.specialization,
+            'active_count': active_count,
+            'resolved_count': resolved_count,
+            'avg_tat': avg_tat,
+            'status_label': 'Available' if active_count == 0 else f"{active_count} Active Task{'s' if active_count > 1 else ''}",
+            'is_busy': active_count > 0,
+        })
+    return roster
+
+
+def sync_complaint_to_breakdown(complaint):
+    """
+    Bidirectional synchronization: automatically registers/updates an EquipmentBreakdown
+    record whenever a DeviceComplaint ticket is filed or updated.
+    """
+    if not complaint:
+        return None
+
+    # Derive device type from DeviceAsset or issue_category
+    dev = DeviceAsset.objects.filter(asset_id__iexact=complaint.device_asset_id).first()
+    dev_name = 'CPU'
+    if dev and dev.device_type:
+        dt = dev.device_type.strip().lower()
+        if 'monitor' in dt or 'display' in dt or 'screen' in dt:
+            dev_name = 'Monitor'
+        elif 'cpu' in dt or 'processor' in dt or 'desktop' in dt:
+            dev_name = 'CPU'
+        elif 'printer' in dt:
+            dev_name = 'Laser Printer'
+        elif 'ups' in dt:
+            dev_name = 'UPS'
+        elif 'keyboard' in dt:
+            dev_name = 'Keyboard'
+        elif 'mouse' in dt:
+            dev_name = 'Mouse'
+        elif 'scanner' in dt:
+            dev_name = 'Scanner'
+        else:
+            dev_name = 'CPU'
+    else:
+        cat = (complaint.issue_category or '').lower()
+        if 'display' in cat or 'screen' in cat:
+            dev_name = 'Monitor'
+        elif 'printer' in cat:
+            dev_name = 'Laser Printer'
+        elif 'peripheral' in cat or 'keyboard' in cat or 'mouse' in cat:
+            dev_name = 'Keyboard'
+        else:
+            dev_name = 'CPU'
+
+    # Location lookup
+    loc = complaint.room_location or ''
+    if not loc and dev and dev.room_name:
+        loc = f"{dev.room_name} ({dev.floor_name or 'PSM Hospital'})"
+
+    eq_type = 'Critical' if complaint.priority == 'Critical' else 'Routine'
+    now_local = timezone.localtime(complaint.created_at) if complaint.created_at else timezone.localtime()
+    breakdown_date = now_local.strftime('%d/%m/%Y')
+    breakdown_time = now_local.strftime('%I:%M %p').lower()
+
+    # Determine status
+    if complaint.status in ['Resolved', 'Closed']:
+        b_status = 'Resolved'
+    elif complaint.status == 'In Progress' or complaint.priority == 'Critical':
+        b_status = 'Under Repair'
+    else:
+        b_status = 'Pending Review'
+
+    tech_name = complaint.technician_name or 'Er. Amit Verma (IT CELL)'
+
+    # Check if breakdown already exists for this ticket
+    bd = EquipmentBreakdown.objects.filter(ticket_id=complaint.ticket_id).first()
+    if not bd:
+        # Check by asset_id and matching ticket_id=''
+        bd = EquipmentBreakdown.objects.filter(
+            asset_id__iexact=complaint.device_asset_id,
+            ticket_id=''
+        ).first()
+
+    if not bd:
+        bd = EquipmentBreakdown.objects.create(
+            ticket_id=complaint.ticket_id,
+            breakdown_date=breakdown_date,
+            breakdown_time=breakdown_time,
+            asset_id=complaint.device_asset_id,
+            device_name=dev_name,
+            breakdown_cause=f"[{complaint.ticket_id}] {complaint.subject} - {complaint.description}".strip(),
+            equipment_type=eq_type,
+            intimation_datetime=f"{breakdown_date} {breakdown_time}",
+            checkin_datetime=f"{breakdown_date} {breakdown_time}",
+            dept_hod_name=complaint.user_full_name or 'Department Staff',
+            it_staff_name=tech_name,
+            location=loc,
+            status=b_status
+        )
+    else:
+        bd.ticket_id = complaint.ticket_id
+        bd.it_staff_name = tech_name
+        bd.status = b_status
+        bd.location = loc or bd.location
+        if complaint.status in ['Resolved', 'Closed']:
+            now_res = timezone.localtime()
+            bd.repair_datetime = now_res.strftime('%d/%m/%Y %I:%M %p').lower()
+            diff = now_res - (timezone.localtime(complaint.created_at) if complaint.created_at else now_res)
+            mins = max(int(diff.total_seconds() // 60), 15)
+            bd.tat_duration = f"{mins} minutes" if mins < 60 else f"{mins // 60}h {mins % 60}m"
+            bd.sign_it_cell = f"{tech_name} (IT CELL)"
+            bd.sign_dept_hod = f"{complaint.user_full_name or 'Department HOD'} (Verified)"
+        bd.save()
+
+    return bd
+
+
+def sync_all_existing_complaints():
+    """Ensure all existing DeviceComplaint records are reflected in EquipmentBreakdown."""
+    try:
+        for c in DeviceComplaint.objects.all():
+            if not EquipmentBreakdown.objects.filter(ticket_id=c.ticket_id).exists():
+                sync_complaint_to_breakdown(c)
+    except Exception:
+        pass
 
 def normalize_device_type(code, asset_id=''):
     c = (code or '').upper().strip()
@@ -1520,37 +1873,60 @@ def admin_login_view(request):
         next_url = 'index'
 
     if request.method == 'POST':
-        # 1-Click Quick Demo Admin Login
-        if request.POST.get('demo_admin') == 'true':
-            admin_user = User.objects.filter(is_superuser=True).first() or User.objects.filter(is_staff=True).first()
-            if not admin_user:
-                admin_user = User.objects.create_superuser(
-                    username='admin',
-                    email='admin@psmhospital.org',
-                    password='admin',
-                    first_name='System',
-                    last_name='Administrator'
-                )
-            login(request, admin_user)
-            admin_name = admin_user.get_full_name() or admin_user.username
-            parts = admin_name.split()
-            admin_initials = (parts[0][0] + (parts[1][0] if len(parts) > 1 else '')).upper() if parts else 'AD'
-            
-            request.session['admin_logged_in'] = True
-            request.session['admin_name'] = admin_name
-            request.session['admin_username'] = admin_user.username
-            request.session['admin_role'] = 'Master Systems Administrator'
-            request.session['admin_initials'] = admin_initials
-            
-            messages.success(request, f"Authenticated successfully as {admin_name}!")
-            return redirect(next_url)
+        # 1-Click Fast Role Sign In (Admin, Sunil, Sahil)
+        demo_role = request.POST.get('demo_role', '').strip().lower()
+        if not demo_role and request.POST.get('demo_admin') == 'true':
+            demo_role = 'admin'
+
+        if demo_role:
+            ensure_default_it_technicians()
+            target_user = None
+            target_dest = next_url
+
+            if demo_role == 'sunil':
+                target_user = User.objects.filter(username='sunil').first()
+                target_dest = '/breakdown-register/'
+            elif demo_role == 'sahil':
+                target_user = User.objects.filter(username='sahil').first()
+                target_dest = '/breakdown-register/'
+            else:
+                target_user = User.objects.filter(is_superuser=True).first() or User.objects.filter(username='admin').first() or User.objects.filter(is_staff=True).first()
+                if not target_user:
+                    target_user = User.objects.create_superuser(
+                        username='admin',
+                        email='admin@psmhospital.org',
+                        password='admin',
+                        first_name='System',
+                        last_name='Administrator'
+                    )
+
+            if target_user:
+                login(request, target_user)
+                u_role = get_current_user_role(request)
+                admin_name = target_user.get_full_name() or target_user.username
+                parts = admin_name.split()
+                admin_initials = (parts[0][0] + (parts[1][0] if len(parts) > 1 else '')).upper() if parts else target_user.username[:2].upper()
+
+                request.session['admin_logged_in'] = True
+                request.session['admin_name'] = admin_name
+                request.session['admin_username'] = target_user.username
+                request.session['admin_role'] = 'Field Hardware Technician' if u_role['is_technician'] else ('Master Systems Administrator' if target_user.is_superuser else 'IT Systems Lead')
+                request.session['admin_initials'] = admin_initials
+                request.session['is_technician'] = u_role['is_technician']
+                request.session['technician_name'] = u_role['tech_name']
+
+                if u_role['is_technician']:
+                    messages.success(request, f"Welcome {admin_name}! Logged into your personal technician workspace.")
+                else:
+                    messages.success(request, f"Authenticated successfully as {admin_name}!")
+                return redirect(target_dest)
 
         # Standard Credentials Login
         login_id = request.POST.get('login_id', '').strip()
         password = request.POST.get('password', '').strip()
 
         if not login_id or not password:
-            messages.error(request, "Please enter both Administrator Username/Email and Password.")
+            messages.error(request, "Please enter both Administrator/Technician Username and Password.")
             return render(request, "admin/admin_login.html", {'next': next_url})
 
         # Match username or email
@@ -1565,14 +1941,22 @@ def admin_login_view(request):
             user = authenticate(request, username=login_id, password=password)
 
         if user is not None:
-            # Check admin privileges
-            if not (user.is_staff or user.is_superuser):
-                profile = getattr(user, 'profile', None)
-                if not (profile and 'admin' in profile.designation.lower()):
-                    messages.error(request, "Access restricted. This account does not have IT Administrator privileges.")
-                    return render(request, "admin/admin_login.html", {'next': next_url})
-
+            # Check admin or technician privileges
+            ensure_default_it_technicians()
             login(request, user)
+            u_role = get_current_user_role(request)
+
+            is_allowed = user.is_staff or user.is_superuser or u_role['is_technician']
+            if not is_allowed:
+                profile = getattr(user, 'profile', None)
+                if profile and ('admin' in profile.designation.lower() or 'technician' in profile.designation.lower()):
+                    is_allowed = True
+
+            if not is_allowed:
+                logout(request)
+                messages.error(request, "Access restricted. This account does not have IT staff privileges.")
+                return render(request, "admin/admin_login.html", {'next': next_url})
+
             profile = getattr(user, 'profile', None)
             if not profile:
                 profile = UserProfile.objects.create(
@@ -1581,28 +1965,32 @@ def admin_login_view(request):
                     full_name=user.get_full_name() or user.username,
                     org_id='HOSP',
                     department='IT & Medical Systems',
-                    designation='Master Administrator' if user.is_superuser else 'IT Systems Lead',
+                    designation='Field Hardware Technician' if u_role['is_technician'] else ('Master Administrator' if user.is_superuser else 'IT Systems Lead'),
                     password=password
                 )
-            elif profile.password != password:
-                profile.password = password
-                profile.save(update_fields=['password'])
 
             admin_name = user.get_full_name() or (profile.full_name if profile else user.username)
             parts = admin_name.split()
             admin_initials = (parts[0][0] + (parts[1][0] if len(parts) > 1 else '')).upper() if parts else user.username[:2].upper()
-            admin_role = profile.designation if (profile and profile.designation) else ('Master Administrator' if user.is_superuser else 'IT Systems Lead')
+            admin_role = 'Field Hardware Technician' if u_role['is_technician'] else (profile.designation if (profile and profile.designation) else ('Master Administrator' if user.is_superuser else 'IT Systems Lead'))
 
             request.session['admin_logged_in'] = True
             request.session['admin_name'] = admin_name
             request.session['admin_username'] = user.username
             request.session['admin_role'] = admin_role
             request.session['admin_initials'] = admin_initials
+            request.session['is_technician'] = u_role['is_technician']
+            request.session['technician_name'] = u_role['tech_name']
 
-            messages.success(request, f"Welcome back to Central Admin Console, {admin_name}!")
+            if u_role['is_technician']:
+                messages.success(request, f"Welcome {admin_name}! Active hardware breakdown tickets loaded.")
+                if next_url in ('index', '/', '/index/', ''):
+                    return redirect('/breakdown-register/')
+            else:
+                messages.success(request, f"Welcome back to Central Admin Console, {admin_name}!")
             return redirect(next_url)
         else:
-            messages.error(request, "Invalid credentials. Please verify your administrator username/email and password.")
+            messages.error(request, "Invalid credentials. Please verify your username and password.")
 
     return render(request, "admin/admin_login.html", {'next': next_url})
 
@@ -1808,7 +2196,7 @@ def submit_complaint(request):
             rand_num = random.randint(100, 999)
             ticket_id = f"TKT-2026-{rand_num}"
 
-        DeviceComplaint.objects.create(
+        complaint = DeviceComplaint.objects.create(
             ticket_id=ticket_id,
             user=request.user if request.user.is_authenticated else None,
             user_full_name=user_name,
@@ -1823,8 +2211,9 @@ def submit_complaint(request):
             subject=subject,
             description=description,
             status='Pending',
-            technician_name='Biomedical IT Team'
+            technician_name='Er. Amit Verma (IT CELL)'
         )
+        sync_complaint_to_breakdown(complaint)
 
         messages.success(request, f"Service Complaint #{ticket_id} filed successfully! Biomedical IT Support has been notified.")
         return redirect('mobile_report')
@@ -2027,8 +2416,9 @@ def api_submit_quick_complaint(request):
             subject=subject,
             description=full_description or f"Malfunctioning hardware reported via mobile QR scan: {issue_category}",
             status='Pending',
-            technician_name='Biomedical IT Team'
+            technician_name='Er. Amit Verma (IT CELL)'
         )
+        sync_complaint_to_breakdown(complaint)
 
         sla_minutes = 30 if priority == 'Critical' else 240
         sla_text = "< 30 Mins (Emergency Priority)" if priority == 'Critical' else "2 - 4 Hours (Routine SLA)"
@@ -2055,32 +2445,80 @@ def api_submit_quick_complaint(request):
 
 @admin_required
 def admin_complaints(request):
-    """Admin Helpdesk Tickets / Complaints view (PSM Hospital only)."""
+    """Admin Helpdesk Tickets / Complaints view with Technician Role Scoping."""
+    user_role = get_current_user_role(request)
+    is_technician = user_role['is_technician']
+    logged_in_tech_name = user_role['tech_name']
+
     org = request.GET.get('org', 'HOSP')
     if org == 'UNI':
         return redirect('/admin-complaints/?org=HOSP')
 
     status_filter = request.GET.get('status', 'ALL')
 
+    if is_technician and logged_in_tech_name:
+        technician_filter = logged_in_tech_name
+    else:
+        technician_filter = request.GET.get('technician', 'ALL').strip()
+
+    sync_all_existing_complaints()
+    technicians = get_technician_roster()
+
     queryset = DeviceComplaint.objects.filter(org_id='HOSP').order_by('-created_at')
     if status_filter != 'ALL':
         queryset = queryset.filter(status=status_filter)
 
-    total_tickets = DeviceComplaint.objects.filter(org_id='HOSP').count()
-    pending_tickets = DeviceComplaint.objects.filter(org_id='HOSP', status='Pending').count()
-    progress_tickets = DeviceComplaint.objects.filter(org_id='HOSP', status='In Progress').count()
-    resolved_tickets = DeviceComplaint.objects.filter(org_id='HOSP', status='Resolved').count()
-    critical_tickets = DeviceComplaint.objects.filter(org_id='HOSP', priority='Critical').count()
+    if is_technician and logged_in_tech_name:
+        first_name = logged_in_tech_name.split()[0]
+        queryset = queryset.filter(
+            models.Q(technician_name__icontains=logged_in_tech_name) |
+            models.Q(technician_name__icontains=first_name)
+        )
+    elif technician_filter != 'ALL':
+        if technician_filter.upper() == 'UNASSIGNED':
+            queryset = queryset.filter(
+                models.Q(technician_name__icontains='Unassigned') |
+                models.Q(technician_name='') |
+                models.Q(technician_name__isnull=True)
+            )
+        else:
+            first_name = technician_filter.split()[0] if technician_filter else ''
+            q_filter = models.Q(technician_name__icontains=technician_filter)
+            if first_name and len(first_name) > 2:
+                q_filter |= models.Q(technician_name__icontains=first_name)
+            queryset = queryset.filter(q_filter)
+
+    if is_technician and logged_in_tech_name:
+        first_name = logged_in_tech_name.split()[0]
+        scope = DeviceComplaint.objects.filter(
+            models.Q(org_id='HOSP') & (models.Q(technician_name__icontains=logged_in_tech_name) | models.Q(technician_name__icontains=first_name))
+        )
+        total_tickets = scope.count()
+        pending_tickets = scope.filter(status='Pending').count()
+        progress_tickets = scope.filter(status='In Progress').count()
+        resolved_tickets = scope.filter(status='Resolved').count()
+        critical_tickets = scope.filter(priority='Critical').count()
+    else:
+        total_tickets = DeviceComplaint.objects.filter(org_id='HOSP').count()
+        pending_tickets = DeviceComplaint.objects.filter(org_id='HOSP', status='Pending').count()
+        progress_tickets = DeviceComplaint.objects.filter(org_id='HOSP', status='In Progress').count()
+        resolved_tickets = DeviceComplaint.objects.filter(org_id='HOSP', status='Resolved').count()
+        critical_tickets = DeviceComplaint.objects.filter(org_id='HOSP', priority='Critical').count()
 
     context = {
         'selected_org': 'HOSP',
         'status_filter': status_filter,
+        'selected_technician': technician_filter,
+        'technicians': technicians,
         'complaints': queryset,
         'total_tickets': total_tickets,
         'pending_tickets': pending_tickets,
         'progress_tickets': progress_tickets,
         'resolved_tickets': resolved_tickets,
         'critical_tickets': critical_tickets,
+        'is_technician_user': is_technician,
+        'logged_in_tech_name': logged_in_tech_name,
+        'is_admin_user': not is_technician,
     }
     return render(request, "admin/admin_complaints.html", context)
 
@@ -2101,6 +2539,7 @@ def admin_update_complaint(request, ticket_id):
             complaint.resolved_at = timezone.now()
 
         complaint.save()
+        sync_complaint_to_breakdown(complaint)
         messages.success(request, f"Ticket #{ticket_id} updated to '{new_status}' successfully!")
 
         next_url = request.POST.get('next', 'admin_complaints')
@@ -3063,12 +3502,25 @@ def api_import_pms_excel(request):
 # ============================================================================
 @admin_required
 def equipment_breakdown(request):
-    """8. Equipment Breakdown Register view."""
+    """8. Equipment Breakdown Register view with Technician Scoping & Dispatch."""
+    user_role = get_current_user_role(request)
+    is_technician = user_role['is_technician']
+    logged_in_tech_name = user_role['tech_name']
+
     org = request.GET.get('org', 'ALL')
     search = request.GET.get('search', '').strip()
     filter_device = request.GET.get('device', 'ALL')
     filter_type = request.GET.get('type', 'ALL')
     filter_status = request.GET.get('status', 'ALL')
+
+    # If technician is logged in, force selected_technician to their profile
+    if is_technician and logged_in_tech_name:
+        selected_technician = logged_in_tech_name
+    else:
+        selected_technician = request.GET.get('technician', 'ALL').strip()
+
+    sync_all_existing_complaints()
+    technicians = get_technician_roster()
 
     records = EquipmentBreakdown.objects.all().order_by('-id')
 
@@ -3097,11 +3549,65 @@ def equipment_breakdown(request):
         else:
             records = records.filter(status__iexact=filter_status.strip())
 
-    total_count = EquipmentBreakdown.objects.count()
-    critical_count = EquipmentBreakdown.objects.filter(equipment_type='Critical').count()
-    routine_count = EquipmentBreakdown.objects.filter(equipment_type='Routine').count()
-    under_repair_count = EquipmentBreakdown.objects.filter(status='Under Repair').count()
-    resolved_count = EquipmentBreakdown.objects.filter(status='Resolved').count()
+    if is_technician and logged_in_tech_name:
+        first_name = logged_in_tech_name.split()[0]
+        records = records.filter(
+            models.Q(it_staff_name__icontains=logged_in_tech_name) |
+            models.Q(it_staff_name__icontains=first_name)
+        )
+    elif selected_technician != 'ALL':
+        if selected_technician.upper() == 'UNASSIGNED':
+            records = records.filter(
+                models.Q(it_staff_name__icontains='Unassigned') |
+                models.Q(it_staff_name='') |
+                models.Q(it_staff_name__isnull=True)
+            )
+        else:
+            first_name = selected_technician.split()[0] if selected_technician else ''
+            q_filter = models.Q(it_staff_name__icontains=selected_technician)
+            if first_name and len(first_name) > 2:
+                q_filter |= models.Q(it_staff_name__icontains=first_name)
+            records = records.filter(q_filter)
+
+    if is_technician and logged_in_tech_name:
+        first_name = logged_in_tech_name.split()[0]
+        base_scope = EquipmentBreakdown.objects.filter(
+            models.Q(it_staff_name__icontains=logged_in_tech_name) |
+            models.Q(it_staff_name__icontains=first_name)
+        )
+        total_count = base_scope.count()
+        critical_count = base_scope.filter(equipment_type='Critical').count()
+        routine_count = base_scope.filter(equipment_type='Routine').count()
+        under_repair_count = base_scope.filter(status__in=['Under Repair', 'Pending Review', 'Pending', 'In Progress']).count()
+        resolved_count = base_scope.filter(status__icontains='Resolve').count()
+    else:
+        total_count = EquipmentBreakdown.objects.count()
+        critical_count = EquipmentBreakdown.objects.filter(equipment_type='Critical').count()
+        routine_count = EquipmentBreakdown.objects.filter(equipment_type='Routine').count()
+        under_repair_count = EquipmentBreakdown.objects.filter(status='Under Repair').count()
+        resolved_count = EquipmentBreakdown.objects.filter(status__icontains='Resolve').count()
+
+    # Technician dual workspace slices: Recent Active Work vs Individual Past History
+    tech_active_records = records.filter(status__in=['Under Repair', 'Pending Review', 'Pending', 'In Progress']).order_by('-id')
+    tech_resolved_records = records.filter(status__icontains='Resolve').order_by('-id')
+
+    # Selected technician details
+    current_tech_obj = None
+    target_tech_name = logged_in_tech_name if (is_technician and logged_in_tech_name) else selected_technician
+    if target_tech_name and target_tech_name != 'ALL' and target_tech_name.upper() != 'UNASSIGNED':
+        current_tech_obj = ITTechnician.objects.filter(
+            models.Q(name__icontains=target_tech_name) |
+            models.Q(name__icontains=target_tech_name.split()[0])
+        ).first()
+
+    # Logged in admin technician detection
+    admin_name = request.session.get('admin_name', '')
+    logged_in_tech = None
+    if admin_name:
+        logged_in_tech = ITTechnician.objects.filter(
+            models.Q(name__icontains=admin_name) |
+            models.Q(user__username__iexact=request.session.get('admin_username', ''))
+        ).first()
 
     # Dropdown choices from User's Images 3 & 4
     device_choices = [c[0] for c in EquipmentBreakdown.DEVICE_NAME_CHOICES]
@@ -3116,6 +3622,14 @@ def equipment_breakdown(request):
     context = {
         'selected_org': org,
         'records': records,
+        'technicians': technicians,
+        'selected_technician': selected_technician,
+        'current_tech_obj': current_tech_obj,
+        'logged_in_tech': logged_in_tech,
+        'tech_active_records': tech_active_records,
+        'tech_resolved_records': tech_resolved_records,
+        'tech_active_count': tech_active_records.count(),
+        'tech_resolved_count': tech_resolved_records.count(),
         'total_count': total_count,
         'critical_count': critical_count,
         'routine_count': routine_count,
@@ -3131,6 +3645,9 @@ def equipment_breakdown(request):
         'pms_total_count': pms_total_count,
         'inventory_devices': inventory_devices,
         'pms_assets': pms_assets,
+        'is_technician_user': is_technician,
+        'logged_in_tech_name': logged_in_tech_name,
+        'is_admin_user': not is_technician,
     }
     return render(request, "admin/equipment_breakdown.html", context)
 
@@ -3194,7 +3711,14 @@ def api_add_breakdown(request):
                 loc_parts = [p for p in [matching_dev.building_name, matching_dev.floor_name, matching_dev.room_name] if p]
                 location = " - ".join(loc_parts) if loc_parts else (matching_dev.room_name or '')
 
+        rand_num = random.randint(100, 999)
+        ticket_id = f"TKT-2026-{rand_num}"
+        while EquipmentBreakdown.objects.filter(ticket_id=ticket_id).exists() or DeviceComplaint.objects.filter(ticket_id=ticket_id).exists():
+            rand_num = random.randint(100, 999)
+            ticket_id = f"TKT-2026-{rand_num}"
+
         new_record = EquipmentBreakdown.objects.create(
+            ticket_id=ticket_id,
             breakdown_date=breakdown_date,
             breakdown_time=breakdown_time,
             asset_id=asset_id,
@@ -3213,6 +3737,26 @@ def api_add_breakdown(request):
             status=status
         )
 
+        # Database Bidirectional Sync: create corresponding DeviceComplaint
+        user_inst = request.user if (hasattr(request, 'user') and request.user and request.user.is_authenticated) else None
+        DeviceComplaint.objects.create(
+            ticket_id=ticket_id,
+            user=user_inst,
+            user_full_name=dept_hod_name or 'PSM Hospital Staff',
+            emp_id='HOSP-STAFF',
+            user_email='',
+            user_dept='Clinical Services',
+            org_id='HOSP',
+            device_asset_id=asset_id,
+            room_location=location,
+            issue_category='Hardware Fault',
+            priority='Critical' if equipment_type == 'Critical' else 'Normal',
+            subject=f"[{equipment_type}] {device_name} Fault — {asset_id}",
+            description=breakdown_cause,
+            status='Resolved' if status == 'Resolved' else ('In Progress' if status == 'Under Repair' else 'Pending'),
+            technician_name=it_staff_name
+        )
+
         # Database Bidirectional Sync: if status is Under Repair, update DeviceAsset
         if status == 'Under Repair':
             matching_dev = DeviceAsset.objects.filter(models.Q(asset_id__iexact=asset_id)).first()
@@ -3224,7 +3768,8 @@ def api_add_breakdown(request):
             'success': True,
             'message': f'Breakdown record #{new_record.id} logged for {new_record.asset_id}!',
             'id': new_record.id,
-            'asset_id': new_record.asset_id
+            'asset_id': new_record.asset_id,
+            'ticket_id': ticket_id
         })
 
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=400)
@@ -3263,6 +3808,26 @@ def api_resolve_breakdown(request, pk):
         if matching_dev:
             matching_dev.status = 'Active'
             matching_dev.save(update_fields=['status'])
+
+        # Database Bidirectional Sync: Helpdesk Complaint Ticket
+        if record.ticket_id:
+            c = DeviceComplaint.objects.filter(ticket_id=record.ticket_id).first()
+            if c:
+                c.status = 'Resolved'
+                c.resolved_at = timezone.now()
+                c.technician_name = record.it_staff_name
+                c.admin_remarks = f"Equipment repaired and verified by {record.it_staff_name}. TAT: {record.tat_duration}."
+                c.save()
+        else:
+            c = DeviceComplaint.objects.filter(device_asset_id__iexact=record.asset_id, status__in=['Pending', 'In Progress']).first()
+            if c:
+                c.status = 'Resolved'
+                c.resolved_at = timezone.now()
+                c.technician_name = record.it_staff_name
+                c.admin_remarks = f"Equipment repaired and verified by {record.it_staff_name}. TAT: {record.tat_duration}."
+                c.save()
+                record.ticket_id = c.ticket_id
+                record.save(update_fields=['ticket_id'])
 
         return JsonResponse({
             'success': True,
@@ -3321,11 +3886,29 @@ def api_update_breakdown(request, pk):
 
         record.save()
 
-        # Database Bidirectional Sync
+        # Database Bidirectional Sync: DeviceAsset
         matching_dev = DeviceAsset.objects.filter(models.Q(asset_id__iexact=record.asset_id)).first()
         if matching_dev:
             matching_dev.status = 'Maintenance' if record.status == 'Under Repair' else 'Active'
             matching_dev.save(update_fields=['status'])
+
+        # Database Bidirectional Sync: Helpdesk Complaint Ticket
+        if record.ticket_id:
+            c = DeviceComplaint.objects.filter(ticket_id=record.ticket_id).first()
+            if c:
+                if 'it_staff_name' in data:
+                    c.technician_name = record.it_staff_name
+                if 'status' in data:
+                    if record.status == 'Resolved':
+                        c.status = 'Resolved'
+                        c.resolved_at = timezone.now()
+                    elif record.status == 'Under Repair':
+                        c.status = 'In Progress'
+                    else:
+                        c.status = 'Pending'
+                if 'breakdown_cause' in data:
+                    c.description = record.breakdown_cause
+                c.save()
 
         return JsonResponse({
             'success': True,

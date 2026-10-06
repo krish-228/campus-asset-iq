@@ -106,6 +106,70 @@
         </div>
     </div>
 
+    <!-- IT TEAM DISPATCH & TECHNICIAN BIFURCATION BAR -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 no-print">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 font-bold">
+                <i data-lucide="users-round" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-xs font-black uppercase tracking-wider text-slate-800">IT Team Technician Dispatch</h3>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                        {{ technicians|length }} Field Technicians
+                    </span>
+                </div>
+                <p class="text-[11px] text-slate-500 font-medium">Bifurcate tickets by individual technician workload, or review the unassigned triage queue.</p>
+            </div>
+        </div>
+
+        {% if is_admin_user %}
+        <!-- Technician Filter Pills (Master Admin View) -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+            <!-- All IT Team -->
+            <a href="?org=HOSP&status={{ status_filter }}&technician=ALL" 
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap {% if not selected_technician or selected_technician == 'ALL' %}bg-indigo-600 text-white shadow-xs{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700{% endif %}">
+                <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                <span>All IT Team</span>
+            </a>
+
+            <!-- Individual Technicians -->
+            {% for tech in technicians %}
+            <a href="?org=HOSP&status={{ status_filter }}&technician={{ tech.name }}" 
+               class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap border {% if selected_technician == tech.name %}bg-indigo-50 border-indigo-400 text-indigo-900 shadow-xs ring-1 ring-indigo-500{% else %}bg-white hover:bg-slate-50 border-slate-200 text-slate-700{% endif %}">
+                <span class="w-2 h-2 rounded-full {% if tech.active_count > 0 %}bg-amber-500 animate-pulse{% else %}bg-emerald-500{% endif %}"></span>
+                <span>{{ tech.name }}</span>
+                {% if tech.active_count > 0 %}
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300">{{ tech.active_count }}</span>
+                {% else %}
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">0</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+
+            <!-- Unassigned Queue -->
+            <a href="?org=HOSP&status={{ status_filter }}&technician=UNASSIGNED" 
+               class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap border {% if selected_technician == 'UNASSIGNED' %}bg-rose-50 border-rose-400 text-rose-900 shadow-xs ring-1 ring-rose-500{% else %}bg-white hover:bg-slate-50 border-slate-200 text-slate-700{% endif %}">
+                <i data-lucide="help-circle" class="w-3.5 h-3.5 text-rose-500"></i>
+                <span>Unassigned Queue</span>
+            </a>
+        </div>
+        {% else %}
+        <!-- Dedicated Technician Queue Badge (Technician View) -->
+        <div class="flex items-center justify-between p-2.5 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs gap-3">
+            <div class="flex items-center gap-2">
+                <i data-lucide="lock" class="w-3.5 h-3.5 text-indigo-600"></i>
+                <span class="font-bold text-slate-800">Technician Queue: {{ logged_in_tech_name }}</span>
+                <span class="text-slate-400 hidden sm:inline">&bull;</span>
+                <span class="text-slate-500 font-medium hidden sm:inline">Assigned live incident tickets</span>
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-black shrink-0">
+                {{ complaints|length }} Assigned Ticket{% if complaints|length != 1 %}s{% endif %}
+            </span>
+        </div>
+        {% endif %}
+    </div>
+
     <!-- Filter & Search Toolbar -->
     <div
         class="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -496,31 +560,27 @@
             <!-- Assigned Technician -->
             <div>
                 <div class="flex items-center justify-between mb-1.5">
-                    <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Assigned
-                        Technician *</label>
-                    <span class="text-[10px] text-slate-400">Quick suggestions below</span>
+                    <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Assigned Field Technician *</label>
+                    <span class="text-[10px] text-indigo-600 font-semibold">Assigns technician & syncs Breakdown Register</span>
                 </div>
-                <input type="text" id="modal-tech" name="technician_name" required
+                <select id="modal-tech" name="technician_name" required
                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-semibold">
+                    <option value="Unassigned">-- Unassigned --</option>
+                    {% for tech in technicians %}
+                    <option value="{{ tech.name }}">{{ tech.name }} ({{ tech.role_title|default:'IT Support' }})</option>
+                    {% endfor %}
+                </select>
 
-                <!-- Quick Technician Presets -->
-                <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                    <button type="button" onclick="quickSetTechnician('Senior IT Hardware Engineer')"
-                        class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[10px] font-medium transition-colors">
-                        + Senior IT Engineer
+                <!-- Quick Technician Preset Buttons -->
+                <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                    <span class="text-[10px] text-slate-400 font-medium mr-1">Quick assign:</span>
+                    {% for tech in technicians %}
+                    <button type="button" onclick="quickSetTechnician('{{ tech.name }}')"
+                        class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 active:scale-95">
+                        <i data-lucide="user-check" class="w-3 h-3 text-indigo-500"></i>
+                        <span>{{ tech.name }}</span>
                     </button>
-                    <button type="button" onclick="quickSetTechnician('Biomedical IT Specialist')"
-                        class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[10px] font-medium transition-colors">
-                        + Biomedical Specialist
-                    </button>
-                    <button type="button" onclick="quickSetTechnician('Campus Network Administrator')"
-                        class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[10px] font-medium transition-colors">
-                        + Network Admin
-                    </button>
-                    <button type="button" onclick="quickSetTechnician('Lab Technical Assistant')"
-                        class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-[10px] font-medium transition-colors">
-                        + Lab Assistant
-                    </button>
+                    {% endfor %}
                 </div>
             </div>
 
@@ -613,7 +673,18 @@
             document.getElementById('status-radio-resolved').checked = true;
         }
 
-        document.getElementById('modal-tech').value = technician || 'IT Desk Team';
+        const techVal = technician || 'Unassigned';
+        const techSelect = document.getElementById('modal-tech');
+        if (techSelect) {
+            techSelect.value = techVal;
+            if (techVal && techSelect.value !== techVal) {
+                const opt = document.createElement('option');
+                opt.value = techVal;
+                opt.textContent = techVal;
+                opt.selected = true;
+                techSelect.appendChild(opt);
+            }
+        }
         document.getElementById('modal-remarks').value = remarks || '';
         document.getElementById('resolve-form').action = `/admin-complaints/update/${ticketId}/`;
         document.getElementById('resolve-modal').classList.remove('hidden');
@@ -625,7 +696,17 @@
     }
 
     function quickSetTechnician(name) {
-        document.getElementById('modal-tech').value = name;
+        const sel = document.getElementById('modal-tech');
+        if (sel) {
+            sel.value = name;
+            if (sel.value !== name) {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                opt.selected = true;
+                sel.appendChild(opt);
+            }
+        }
     }
 
     function handleComplaintsSearch(e) {
