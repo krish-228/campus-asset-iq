@@ -10,8 +10,26 @@ import json
 import re
 import urllib.parse
 import random
+import functools
 from django.db import models, transaction
+from django.db.models import Q
 from .models import DeviceComplaint, UserProfile, DeviceAsset, CustodyTransferLog, EquipmentPMS, EquipmentBreakdown, ITTechnician
+
+
+def json_api_exception_handler(view_func):
+    """Decorator to catch unexpected exceptions in JSON API endpoints and return structured JSON."""
+    @functools.wraps(view_func)
+    def wrapped_view(request, *args, **kwargs):
+        try:
+            return view_func(request, *args, **kwargs)
+        except Exception as exc:
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'message': f'Server Error: {str(exc)}'
+            }, status=500)
+    return wrapped_view
 
 
 # ============================================================================
@@ -671,6 +689,7 @@ def api_reassign_device(request):
     return JsonResponse({'success': False, 'message': 'Invalid request method.'}, status=405)
 
 @csrf_exempt
+@json_api_exception_handler
 def api_save_device(request):
     """Registers a new hardware device or updates an existing device in PostgreSQL database.
     Immediately synchronizes with Asset Tag Center and Inventory."""
