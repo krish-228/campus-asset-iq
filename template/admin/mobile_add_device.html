@@ -383,7 +383,7 @@
                 <div>
                     <div class="relative">
                         <input type="text" id="input-asset-id" name="asset_id" required
-                            placeholder="e.g. PSM/IT/0826/001 or PSM/IT/0926/076"
+                            placeholder="e.g. PSM/IT/0826/001 or PSM/IT/0826/075"
                             class="mobile-input uppercase font-mono font-bold tracking-wide pr-10 text-base"
                             oninput="handleAssetIdInput(this)"
                             list="existing-tags-datalist"
@@ -1159,7 +1159,7 @@
         let lastRegisteredAssetId = '';
         let isEditMode = false;
         let loadedAssetId = '';
-        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v10';
+        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v11';
 
         // Multi-select components state (Default: CPU only)
         let selectedComponents = new Set(['CPU']);
@@ -1168,14 +1168,9 @@
             // Clean up obsolete legacy drafts
             try {
                 localStorage.removeItem('campus_asset_draft');
-                localStorage.removeItem('campus_asset_draft_v2');
-                localStorage.removeItem('campus_asset_draft_v3');
-                localStorage.removeItem('campus_asset_draft_v4');
-                localStorage.removeItem('campus_asset_draft_v5');
-                localStorage.removeItem('campus_asset_draft_v6');
-                localStorage.removeItem('campus_asset_draft_v7');
-                localStorage.removeItem('campus_asset_draft_v8');
-                localStorage.removeItem('campus_asset_draft_v9');
+                for (let i = 2; i <= 10; i++) {
+                    localStorage.removeItem(`campus_asset_draft_v${i}`);
+                }
             } catch (e) {}
 
             updateSelectedComponentsUI();
@@ -2283,7 +2278,7 @@
                     if (draft.asset_id) {
                         draft.asset_id = draft.asset_id.replace(/^PSM\/IT\/[A-Z]\//i, 'PSM/IT/');
                     }
-                    if (draft.asset_id && !draft.asset_id.includes('/2F/') && !draft.asset_id.includes('/1F/') && !draft.asset_id.includes('/GF/') && !draft.asset_id.includes('-')) {
+                    if (draft.asset_id && !draft.asset_id.includes('/2F/') && !draft.asset_id.includes('/1F/') && !draft.asset_id.includes('/GF/') && !draft.asset_id.includes('-') && !draft.asset_id.includes('/078') && !draft.asset_id.includes('/077')) {
                         document.getElementById('input-asset-id').value = draft.asset_id;
                         validateAssetId(draft.asset_id);
                     } else {

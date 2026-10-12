@@ -824,9 +824,9 @@ def api_save_device(request):
         dev = DeviceAsset.objects.filter(dev_id=edit_id).first() or DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
     else:
         dev = DeviceAsset.objects.filter(asset_id__iexact=asset_id).first()
-        if not dev and asset_id:
-            parts = asset_id.split('/')
-            last = parts[-1].strip() if parts else asset_id.strip()
+        if not dev and asset_id and '/' not in asset_id:
+            # Sequence lookup only for raw numbers/short tags without full canonical path
+            last = asset_id.split('/')[-1].strip()
             if last.isdigit():
                 seq_val = f"{int(last):03d}"
                 dev = DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}").first()
@@ -2831,13 +2831,11 @@ def serialize_device_for_mobile_edit(asset_id):
     # 1. Direct exact match
     matching_devs = list(DeviceAsset.objects.filter(asset_id__iexact=clean_id).order_by('id'))
 
-    # 2. Sequence lookup by sequence number across all batch prefixes
-    # e.g. If user enters PSM/IT/1026/076, 076, or 76, find existing Device #076 (PSM/IT/0926/076)
-    if not matching_devs:
-        parts = clean_id.split('/')
-        last = parts[-1].strip() if parts else clean_id.strip()
-        if last.isdigit():
-            seq_num = int(last)
+    # 2. Sequence lookup ONLY IF query is a raw sequence number or short tag (e.g. '008', '8', 'WS-8') without slashes
+    if not matching_devs and '/' not in clean_id:
+        m = re.search(r'(\d+)$', clean_id)
+        if m:
+            seq_num = int(m.group(1))
             seq_val = f"{seq_num:03d}"
             devs = list(DeviceAsset.objects.filter(asset_id__iendswith=f"/{seq_val}").order_by('id'))
             if devs:

@@ -99,7 +99,7 @@ function initAppState() {
     };
 
     // Automatic Cache Version Purge for clean slate & 100% fresh site
-    const CURRENT_CACHE_VERSION = "v29.0_radheshyam_pharmacy_incharge_master";
+    const CURRENT_CACHE_VERSION = "v30.0_workstation_008_restored_clean_inventory";
     if (localStorage.getItem("CAMPUS_CACHE_VERSION") !== CURRENT_CACHE_VERSION) {
         localStorage.removeItem("CAMPUS_DEVICE_TRACKER_DATA");
         localStorage.removeItem("CAMPUS_SELECTED_ORG");
@@ -108,13 +108,9 @@ function initAppState() {
         localStorage.removeItem("CAMPUS_ASSIGNMENT_HISTORY");
         localStorage.removeItem("CAMPUS_LOGIN_SESSIONS");
         localStorage.removeItem("psm_staff_profile");
-        localStorage.removeItem("campus_asset_draft");
-        localStorage.removeItem("campus_asset_draft_v2");
-        localStorage.removeItem("campus_asset_draft_v3");
-        localStorage.removeItem("campus_asset_draft_v4");
-        localStorage.removeItem("campus_asset_draft_v5");
-        localStorage.removeItem("campus_asset_draft_v6");
-        localStorage.removeItem("campus_asset_draft_v7");
+        for (let i = 1; i <= 10; i++) {
+            localStorage.removeItem(i === 1 ? 'campus_asset_draft' : `campus_asset_draft_v${i}`);
+        }
         localStorage.setItem("CAMPUS_CACHE_VERSION", CURRENT_CACHE_VERSION);
     }
 
