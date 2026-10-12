@@ -912,7 +912,7 @@
                         <div>
                             <label class="text-[11px] font-bold text-slate-400 block mb-1">Brand Name</label>
                             <input type="text" id="input-tablet-brand" name="tablet_brand"
-                                value="Samsung"
+                                value=""
                                 class="mobile-input text-xs font-medium"
                                 placeholder="e.g. Samsung / Apple / Lenovo / Zebra">
                         </div>
@@ -930,7 +930,7 @@
                     <div>
                         <label class="text-[11px] font-bold text-slate-400 block mb-1">Tablet Model & Screen Size</label>
                         <input type="text" id="input-tablet" name="tablet_spec"
-                            value='10.5" Retina Multi-Touch Clinical Tablet (128GB Storage, iPadOS / Android)'
+                            value=""
                             placeholder='e.g. Apple iPad 10.2" (9th Gen) / Samsung Galaxy Tab S9 FE 10.9"'
                             class="mobile-input text-xs font-medium">
                     </div>
@@ -2476,36 +2476,36 @@
                 assigned_phone: assignedContact,
                 assigned_email: assignedEmail,
                 status: document.getElementById('input-status').value,
-                cpu_processor: document.getElementById('input-cpu').value.trim(),
-                cpu_brand: (document.getElementById('input-cpu-brand')?.value || '').trim(),
-                storage_ram: document.getElementById('input-ram').value.trim(),
-                monitor_spec: (document.getElementById('input-monitor')?.value || '').trim(),
-                monitor_brand: (document.getElementById('input-monitor-brand')?.value || '').trim(),
-                monitor_serial: (document.getElementById('input-monitor-sn')?.value || '').trim(),
-                keyboard_spec: (document.getElementById('input-keyboard')?.value || '').trim(),
-                keyboard_brand: (document.getElementById('input-keyboard-brand')?.value || '').trim(),
-                keyboard_serial: (document.getElementById('input-keyboard-sn')?.value || '').trim(),
-                mouse_spec: (document.getElementById('input-mouse')?.value || '').trim(),
-                mouse_brand: (document.getElementById('input-mouse-brand')?.value || '').trim(),
-                mouse_serial: (document.getElementById('input-mouse-sn')?.value || '').trim(),
-                printer_spec: (document.getElementById('input-printer')?.value || '').trim(),
-                printer_brand: (document.getElementById('input-printer-brand')?.value || '').trim(),
-                printer_serial: (document.getElementById('input-printer-sn')?.value || '').trim(),
-                ups_spec: (document.getElementById('input-ups')?.value || '').trim(),
-                ups_brand: (document.getElementById('input-ups-brand')?.value || '').trim(),
-                ups_serial: (document.getElementById('input-ups-sn')?.value || '').trim(),
-                tablet_spec: (document.getElementById('input-tablet')?.value || '').trim(),
-                tablet_brand: (document.getElementById('input-tablet-brand')?.value || '').trim(),
-                tablet_serial: (document.getElementById('input-tablet-sn')?.value || '').trim(),
-                tablet_device_id: (document.getElementById('input-tablet-device-id')?.value || '').trim(),
-                tablet_anydesk_id: (document.getElementById('input-tablet-anydesk-id')?.value || '').trim(),
-                tablet_mac_address: (document.getElementById('input-tablet-mac')?.value || '').trim(),
+                cpu_processor: selectedComponents.has('CPU') ? document.getElementById('input-cpu').value.trim() : '',
+                cpu_brand: selectedComponents.has('CPU') ? (document.getElementById('input-cpu-brand')?.value || '').trim() : '',
+                storage_ram: selectedComponents.has('CPU') ? document.getElementById('input-ram').value.trim() : '',
+                monitor_spec: selectedComponents.has('Display') ? (document.getElementById('input-monitor')?.value || '').trim() : '',
+                monitor_brand: selectedComponents.has('Display') ? (document.getElementById('input-monitor-brand')?.value || '').trim() : '',
+                monitor_serial: selectedComponents.has('Display') ? (document.getElementById('input-monitor-sn')?.value || '').trim() : '',
+                keyboard_spec: selectedComponents.has('Keyboard') ? (document.getElementById('input-keyboard')?.value || '').trim() : '',
+                keyboard_brand: selectedComponents.has('Keyboard') ? (document.getElementById('input-keyboard-brand')?.value || '').trim() : '',
+                keyboard_serial: selectedComponents.has('Keyboard') ? (document.getElementById('input-keyboard-sn')?.value || '').trim() : '',
+                mouse_spec: selectedComponents.has('Mouse') ? (document.getElementById('input-mouse')?.value || '').trim() : '',
+                mouse_brand: selectedComponents.has('Mouse') ? (document.getElementById('input-mouse-brand')?.value || '').trim() : '',
+                mouse_serial: selectedComponents.has('Mouse') ? (document.getElementById('input-mouse-sn')?.value || '').trim() : '',
+                printer_spec: selectedComponents.has('Printer') ? (document.getElementById('input-printer')?.value || '').trim() : '',
+                printer_brand: selectedComponents.has('Printer') ? (document.getElementById('input-printer-brand')?.value || '').trim() : '',
+                printer_serial: selectedComponents.has('Printer') ? (document.getElementById('input-printer-sn')?.value || '').trim() : '',
+                ups_spec: selectedComponents.has('UPS') ? (document.getElementById('input-ups')?.value || '').trim() : '',
+                ups_brand: selectedComponents.has('UPS') ? (document.getElementById('input-ups-brand')?.value || '').trim() : '',
+                ups_serial: selectedComponents.has('UPS') ? (document.getElementById('input-ups-sn')?.value || '').trim() : '',
+                tablet_spec: selectedComponents.has('Tablet') ? (document.getElementById('input-tablet')?.value || '').trim() : '',
+                tablet_brand: selectedComponents.has('Tablet') ? (document.getElementById('input-tablet-brand')?.value || '').trim() : '',
+                tablet_serial: selectedComponents.has('Tablet') ? (document.getElementById('input-tablet-sn')?.value || '').trim() : '',
+                tablet_device_id: selectedComponents.has('Tablet') ? (document.getElementById('input-tablet-device-id')?.value || '').trim() : '',
+                tablet_anydesk_id: selectedComponents.has('Tablet') ? (document.getElementById('input-tablet-anydesk-id')?.value || '').trim() : '',
+                tablet_mac_address: selectedComponents.has('Tablet') ? (document.getElementById('input-tablet-mac')?.value || '').trim() : '',
                 other_device_type: getEffectiveOtherType(),
                 other_brand: (document.getElementById('input-other-brand')?.value || '').trim(),
                 other_model: (document.getElementById('input-other-model')?.value || '').trim(),
                 other_serial: (document.getElementById('input-other-sn')?.value || '').trim(),
-                device_id: (document.getElementById('input-tablet-device-id')?.value || '').trim(),
-                anydesk_id: (document.getElementById('input-tablet-anydesk-id')?.value || '').trim(),
+                device_id: selectedComponents.has('Tablet') ? (document.getElementById('input-tablet-device-id')?.value || '').trim() : '',
+                anydesk_id: selectedComponents.has('Tablet') ? (document.getElementById('input-tablet-anydesk-id')?.value || '').trim() : '',
                 operating_system: document.getElementById('input-os').value,
                 ip_address: document.getElementById('input-ip').value.trim(),
                 mac_address: document.getElementById('input-mac').value.trim(),

@@ -1002,12 +1002,12 @@ def api_save_device(request):
                         row.assigned_phone = assigned_phone
                         row.cpu_processor = item_cpu
                         row.storage_ram = item_ram
-                        row.monitor_spec = monitor_spec if comp_upper in ('CPU', 'DISPLAY') else ''
-                        row.keyboard_spec = keyboard_spec if comp_upper in ('CPU', 'KEYBOARD') else ''
-                        row.mouse_spec = mouse_spec if comp_upper in ('CPU', 'MOUSE') else ''
-                        row.printer_spec = printer_spec if comp_upper in ('CPU', 'PRINTER') else ''
-                        row.ups_spec = ups_spec if comp_upper in ('CPU', 'UPS') else ''
-                        row.tablet_spec = tablet_spec if comp_upper in ('CPU', 'TABLET') else ''
+                        row.monitor_spec = monitor_spec if comp_upper == 'DISPLAY' else ''
+                        row.keyboard_spec = keyboard_spec if comp_upper == 'KEYBOARD' else ''
+                        row.mouse_spec = mouse_spec if comp_upper == 'MOUSE' else ''
+                        row.printer_spec = printer_spec if comp_upper == 'PRINTER' else ''
+                        row.ups_spec = ups_spec if comp_upper == 'UPS' else ''
+                        row.tablet_spec = tablet_spec if comp_upper == 'TABLET' else ''
                         row.operating_system = item_os
                         row.ip_address = item_ip
                         row.mac_address = item_mac
@@ -1046,12 +1046,12 @@ def api_save_device(request):
                             assigned_phone=assigned_phone,
                             cpu_processor=item_cpu,
                             storage_ram=item_ram,
-                            monitor_spec=monitor_spec if comp_upper in ('CPU', 'DISPLAY') else '',
-                            keyboard_spec=keyboard_spec if comp_upper in ('CPU', 'KEYBOARD') else '',
-                            mouse_spec=mouse_spec if comp_upper in ('CPU', 'MOUSE') else '',
-                            printer_spec=printer_spec if comp_upper in ('CPU', 'PRINTER') else '',
-                            ups_spec=ups_spec if comp_upper in ('CPU', 'UPS') else '',
-                            tablet_spec=tablet_spec if comp_upper in ('CPU', 'TABLET') else '',
+                            monitor_spec=monitor_spec if comp_upper == 'DISPLAY' else '',
+                            keyboard_spec=keyboard_spec if comp_upper == 'KEYBOARD' else '',
+                            mouse_spec=mouse_spec if comp_upper == 'MOUSE' else '',
+                            printer_spec=printer_spec if comp_upper == 'PRINTER' else '',
+                            ups_spec=ups_spec if comp_upper == 'UPS' else '',
+                            tablet_spec=tablet_spec if comp_upper == 'TABLET' else '',
                             operating_system=item_os,
                             ip_address=item_ip,
                             mac_address=item_mac,
@@ -1461,12 +1461,12 @@ def api_save_device(request):
                     existing_comp.assigned_phone = assigned_phone
                     existing_comp.cpu_processor = item_cpu
                     existing_comp.storage_ram = item_ram
-                    existing_comp.monitor_spec = monitor_spec if comp_upper in ('CPU', 'DISPLAY') else ''
-                    existing_comp.keyboard_spec = keyboard_spec if comp_upper in ('CPU', 'KEYBOARD') else ''
-                    existing_comp.mouse_spec = mouse_spec if comp_upper in ('CPU', 'MOUSE') else ''
-                    existing_comp.printer_spec = printer_spec if comp_upper in ('CPU', 'PRINTER') else ''
-                    existing_comp.ups_spec = ups_spec if comp_upper in ('CPU', 'UPS') else ''
-                    existing_comp.tablet_spec = tablet_spec if comp_upper in ('CPU', 'TABLET') else ''
+                    existing_comp.monitor_spec = monitor_spec if comp_upper == 'DISPLAY' else ''
+                    existing_comp.keyboard_spec = keyboard_spec if comp_upper == 'KEYBOARD' else ''
+                    existing_comp.mouse_spec = mouse_spec if comp_upper == 'MOUSE' else ''
+                    existing_comp.printer_spec = printer_spec if comp_upper == 'PRINTER' else ''
+                    existing_comp.ups_spec = ups_spec if comp_upper == 'UPS' else ''
+                    existing_comp.tablet_spec = tablet_spec if comp_upper == 'TABLET' else ''
                     existing_comp.operating_system = item_os
                     existing_comp.ip_address = item_ip
                     existing_comp.mac_address = item_mac
@@ -1498,12 +1498,12 @@ def api_save_device(request):
                         assigned_phone=assigned_phone,
                         cpu_processor=item_cpu,
                         storage_ram=item_ram,
-                        monitor_spec=monitor_spec if comp_upper in ('CPU', 'DISPLAY') else '',
-                        keyboard_spec=keyboard_spec if comp_upper in ('CPU', 'KEYBOARD') else '',
-                        mouse_spec=mouse_spec if comp_upper in ('CPU', 'MOUSE') else '',
-                        printer_spec=printer_spec if comp_upper in ('CPU', 'PRINTER') else '',
-                        ups_spec=ups_spec if comp_upper in ('CPU', 'UPS') else '',
-                        tablet_spec=tablet_spec if comp_upper in ('CPU', 'TABLET') else '',
+                        monitor_spec=monitor_spec if comp_upper == 'DISPLAY' else '',
+                        keyboard_spec=keyboard_spec if comp_upper == 'KEYBOARD' else '',
+                        mouse_spec=mouse_spec if comp_upper == 'MOUSE' else '',
+                        printer_spec=printer_spec if comp_upper == 'PRINTER' else '',
+                        ups_spec=ups_spec if comp_upper == 'UPS' else '',
+                        tablet_spec=tablet_spec if comp_upper == 'TABLET' else '',
                         operating_system=item_os,
                         ip_address=item_ip,
                         mac_address=item_mac,

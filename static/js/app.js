@@ -612,11 +612,30 @@ const collapsedWorkstations = new Set();
 
 function isTabletDevice(dev) {
     if (!dev) return false;
-    const type = (dev.deviceType || dev.device_type || '').toUpperCase().trim();
-    if (type.includes('TABLET') || type === 'TAB' || type === 'IPAD' || type === 'T') return true;
-    if (dev.tabletSpec && String(dev.tabletSpec).trim().length > 0) return true;
-    const proc = (dev.cpuProcessor || dev.modelSpecs || '').toUpperCase();
-    if (proc.includes('TABLET') || proc.includes('IPAD') || proc.includes('GALAXY TAB') || proc.includes('TAB M10') || proc.includes('TAB ACTIVE')) return true;
+    const rawType = (dev.deviceType || dev.device_type || '').trim();
+    const type = rawType.toUpperCase();
+
+    // 1. Explicit exclusion: Non-tablet hardware components can never be tablets
+    if (type === 'CPU' || type === 'DESKTOP' || type === 'PC' || type === 'COMPUTER' ||
+        type === 'DISPLAY' || type === 'MONITOR' || type === 'SCREEN' ||
+        type === 'KEYBOARD' || type === 'KB' ||
+        type === 'MOUSE' ||
+        type === 'PRINTER' || type === 'PRT' || type.includes('PRINTER') ||
+        type === 'UPS' || type === 'INVERTER' ||
+        type === 'SCANNER' || type === 'BIOMETRIC') {
+        return false;
+    }
+
+    // 2. Must be an actual Tablet device
+    if (type === 'TABLET' || type === 'TAB' || type === 'IPAD' || type.startsWith('TABLET') || type.endsWith('TABLET')) {
+        return true;
+    }
+
+    // 3. Fallback for custom labels containing TABLET
+    if (type.includes('TABLET') || type.includes('IPAD')) {
+        return true;
+    }
+
     return false;
 }
 
