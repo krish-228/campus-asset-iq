@@ -1159,7 +1159,7 @@
         let lastRegisteredAssetId = '';
         let isEditMode = false;
         let loadedAssetId = '';
-        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v11';
+        const DRAFT_STORAGE_KEY = 'campus_asset_draft_v12';
 
         // Multi-select components state (Default: CPU only)
         let selectedComponents = new Set(['CPU']);
@@ -1168,7 +1168,7 @@
             // Clean up obsolete legacy drafts
             try {
                 localStorage.removeItem('campus_asset_draft');
-                for (let i = 2; i <= 10; i++) {
+                for (let i = 2; i <= 11; i++) {
                     localStorage.removeItem(`campus_asset_draft_v${i}`);
                 }
             } catch (e) {}
@@ -1872,9 +1872,10 @@
                         enterEditModeWithDevice(data.device);
                     } else {
                         // 100% Unique and available for new enrollment!
-                        if (isEditMode) {
-                            exitEditMode(true);
-                        }
+                        exitEditMode(false);
+                        const editBadge = document.getElementById('asset-id-edit-badge');
+                        if (editBadge) editBadge.classList.add('hidden');
+
                         if (statusIcon) {
                             statusIcon.classList.remove('hidden');
                             statusIcon.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400" title="100% Unique & Available"></i>`;
@@ -2278,7 +2279,8 @@
                     if (draft.asset_id) {
                         draft.asset_id = draft.asset_id.replace(/^PSM\/IT\/[A-Z]\//i, 'PSM/IT/');
                     }
-                    if (draft.asset_id && !draft.asset_id.includes('/2F/') && !draft.asset_id.includes('/1F/') && !draft.asset_id.includes('/GF/') && !draft.asset_id.includes('-') && !draft.asset_id.includes('/078') && !draft.asset_id.includes('/077')) {
+                    const draftSeq = draft.asset_id ? parseInt(draft.asset_id.split('/').pop(), 10) : 0;
+                    if (draft.asset_id && !draft.asset_id.includes('/2F/') && !draft.asset_id.includes('/1F/') && !draft.asset_id.includes('/GF/') && !draft.asset_id.includes('-') && draftSeq > 0 && draftSeq <= 75) {
                         document.getElementById('input-asset-id').value = draft.asset_id;
                         validateAssetId(draft.asset_id);
                     } else {
