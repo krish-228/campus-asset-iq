@@ -1749,8 +1749,16 @@ function renderInventoryTable() {
         group.devices = deduped;
     });
 
+    // Filter out standalone clinical tablets from Workstation Sets (they belong exclusively in the Tablets view)
+    const workstationGroups = Object.values(groupsMap).filter(group => {
+        if (group.devices.length === 1 && isTabletDevice(group.devices[0])) {
+            return false;
+        }
+        return true;
+    });
+
     // SORT ALL WORKSTATIONS STRICTLY IN ASCENDING NUMERICAL SEQUENCE: 1 TO 74, 75, 76, etc.
-    const allWorkstations = Object.values(groupsMap).sort((a, b) => {
+    const allWorkstations = workstationGroups.sort((a, b) => {
         const seqA = a.sequenceNum !== undefined ? a.sequenceNum : getAssetTagSequence(a.assetId);
         const seqB = b.sequenceNum !== undefined ? b.sequenceNum : getAssetTagSequence(b.assetId);
         if (seqA !== seqB) return seqA - seqB;
