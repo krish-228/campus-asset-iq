@@ -224,7 +224,7 @@
                 </div>
             </div>
 
-            <!-- Right: View Mode Segmented Control (Workstation Sets vs Flat Table) -->
+            <!-- Right: View Mode Segmented Control (Workstation Sets vs Clinical Tablets) -->
             <div class="inline-flex items-center p-1 bg-slate-200/90 rounded-xl border border-slate-300/80 shadow-2xs self-start lg:self-center">
                 <button type="button" id="btn-view-grouped" onclick="setInventoryViewMode('grouped')"
                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer">
@@ -232,10 +232,11 @@
                     <span>Workstation Sets</span>
                     <span id="badge-workstation-count" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-100 text-indigo-700 font-mono font-black">0</span>
                 </button>
-                <button type="button" id="btn-view-flat" onclick="setInventoryViewMode('flat')"
+                <button type="button" id="btn-view-tablets" onclick="setInventoryViewMode('tablets')"
                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
-                    <i data-lucide="list" class="w-3.5 h-3.5 text-slate-500"></i>
-                    <span>All Devices (Flat)</span>
+                    <i data-lucide="tablet" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>Tablets</span>
+                    <span id="badge-tablet-count" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700 font-mono font-black">0</span>
                 </button>
             </div>
         </div>

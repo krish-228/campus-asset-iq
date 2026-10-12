@@ -604,24 +604,35 @@ function getDeviceTypeBadge(dev) {
 }
 
 // ============================================================================
-// Inventory View Mode (Workstation Sets / Grouped vs All Devices / Flat)
+// Inventory View Mode (Workstation Sets / Grouped vs Clinical Tablets)
 // ============================================================================
 let inventoryViewMode = localStorage.getItem('campus_inventory_view_mode') || 'grouped';
+if (inventoryViewMode === 'flat') inventoryViewMode = 'tablets';
 const collapsedWorkstations = new Set();
+
+function isTabletDevice(dev) {
+    if (!dev) return false;
+    const type = (dev.deviceType || dev.device_type || '').toUpperCase().trim();
+    if (type.includes('TABLET') || type === 'TAB' || type === 'IPAD' || type === 'T') return true;
+    if (dev.tabletSpec && String(dev.tabletSpec).trim().length > 0) return true;
+    const proc = (dev.cpuProcessor || dev.modelSpecs || '').toUpperCase();
+    if (proc.includes('TABLET') || proc.includes('IPAD') || proc.includes('GALAXY TAB') || proc.includes('TAB M10') || proc.includes('TAB ACTIVE')) return true;
+    return false;
+}
 
 function setInventoryViewMode(mode) {
     inventoryViewMode = mode;
     localStorage.setItem('campus_inventory_view_mode', mode);
 
     const btnGrouped = document.getElementById('btn-view-grouped');
-    const btnFlat = document.getElementById('btn-view-flat');
+    const btnTablets = document.getElementById('btn-view-tablets') || document.getElementById('btn-view-flat');
 
-    if (btnGrouped && btnFlat) {
+    if (btnGrouped && btnTablets) {
         if (mode === 'grouped') {
             btnGrouped.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer";
-            btnFlat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
+            btnTablets.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
         } else {
-            btnFlat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer";
+            btnTablets.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer";
             btnGrouped.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
         }
     }
@@ -1490,15 +1501,21 @@ function renderInventoryTable() {
 
     // Sync toggle button active visual state
     const btnGrouped = document.getElementById('btn-view-grouped');
-    const btnFlat = document.getElementById('btn-view-flat');
-    if (btnGrouped && btnFlat) {
+    const btnTablets = document.getElementById('btn-view-tablets') || document.getElementById('btn-view-flat');
+    if (btnGrouped && btnTablets) {
         if (inventoryViewMode === 'grouped') {
             btnGrouped.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer";
-            btnFlat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
+            btnTablets.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
         } else {
-            btnFlat.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer";
+            btnTablets.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer";
             btnGrouped.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
         }
+    }
+
+    const tabletBadge = document.getElementById('badge-tablet-count');
+    if (tabletBadge) {
+        const totalTablets = (appState.devices || []).filter(d => isTabletDevice(d)).length;
+        tabletBadge.textContent = totalTablets;
     }
 
     const devices = getFilteredDevices();
@@ -1893,31 +1910,48 @@ function renderInventoryTable() {
     }
 
     // ========================================================================
-    // MODE B: ALL DEVICES (FLAT VIEW)
+    // MODE B: HOSPITAL TABLETS (CLINICAL TABLET DEVICES VIEW)
     // ========================================================================
     else {
-        const flatSortedDevices = [...devices].sort((a, b) => {
-            const seqA = getAssetTagSequence(a.assetId);
-            const seqB = getAssetTagSequence(b.assetId);
-            if (seqA !== seqB) return seqA - seqB;
-            const pA = getWorkstationDevicePriority(a);
-            const pB = getWorkstationDevicePriority(b);
-            if (pA !== pB) return pA - pB;
-            return (a.assetId || '').localeCompare(b.assetId || '');
-        });
+        const tabletDevices = devices.filter(d => isTabletDevice(d));
 
-        html = flatSortedDevices.map(dev => {
-            const isHosp = dev.orgId === 'HOSP';
-            const assetBadgeClass = isHosp ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
-            const roomBadgeClass = isHosp ? 'bg-violet-50 text-violet-800 border-violet-200' : 'bg-indigo-50 text-indigo-800 border-indigo-200';
+        if (countSpan) countSpan.textContent = tabletDevices.length;
+        if (badgeSpan) badgeSpan.textContent = tabletDevices.length;
 
-            const cleanTag = (dev.assetId || '').trim().toUpperCase();
-            const groupKey = cleanTag || (dev._meta.assignedName || '').toLowerCase();
-            const isMulti = groupKey && groupsMap[groupKey] && groupsMap[groupKey].devices.length > 1;
-            const multiCount = isMulti ? groupsMap[groupKey].devices.length : 0;
+        if (tabletDevices.length === 0) {
+            html = `
+                <tr>
+                    <td colspan="5" class="text-center py-14 text-slate-400">
+                        <div class="flex flex-col items-center justify-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-xs">
+                                <i data-lucide="tablet" class="w-6 h-6"></i>
+                            </div>
+                            <div class="text-sm font-bold text-slate-700">No Clinical Tablets Found</div>
+                            <p class="text-xs text-slate-400 max-w-sm">No hospital tablets match the current filter. Enroll or assign hospital tablets from the Add Device registration page.</p>
+                            <a href="/admin-add-device/" class="mt-1 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                <span>Enroll Hospital Tablet</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            const sortedTablets = [...tabletDevices].sort((a, b) => {
+                const seqA = getAssetTagSequence(a.assetId);
+                const seqB = getAssetTagSequence(b.assetId);
+                if (seqA !== seqB) return seqA - seqB;
+                return (a.assetId || '').localeCompare(b.assetId || '');
+            });
 
-            return renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, isMulti, multiCount);
-        }).join('');
+            html = sortedTablets.map(dev => {
+                const isHosp = dev.orgId === 'HOSP';
+                const assetBadgeClass = isHosp ? 'bg-teal-50 text-teal-800 border-teal-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                const roomBadgeClass = isHosp ? 'bg-teal-50 text-teal-900 border-teal-200' : 'bg-indigo-50 text-indigo-800 border-indigo-200';
+
+                return renderFlatDeviceRow(dev, assetBadgeClass, roomBadgeClass, false, 0);
+            }).join('');
+        }
     }
 
     tbody.innerHTML = html;
