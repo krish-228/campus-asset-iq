@@ -350,57 +350,161 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <button onclick="exportBreakdownCSV()" class="px-3 py-1.5 bg-white hover:bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-300 transition-all shadow-2xs flex items-center gap-1.5 active:scale-95">
+                    <button onclick="exportTechHistoryCSV()" class="px-3 py-1.5 bg-white hover:bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-300 transition-all shadow-2xs flex items-center gap-1.5 active:scale-95">
                         <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-600"></i>
                         <span>Export History (CSV)</span>
                     </button>
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm border-collapse">
-                    <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs tracking-wider">
-                        <tr class="divide-x divide-slate-200">
-                            <th class="py-3 px-3 text-center w-12 bg-slate-200/80 font-extrabold text-slate-800">#</th>
-                            <th class="py-3 px-3.5 text-center min-w-[110px] bg-slate-200/80 font-extrabold text-slate-800">Breakdown Date</th>
-                            <th class="py-3 px-4 min-w-[180px] bg-slate-200/80 font-extrabold text-slate-800">Equipment & Asset ID</th>
-                            <th class="py-3 px-4 min-w-[150px] bg-slate-200/80 font-extrabold text-slate-800">Location</th>
-                            <th class="py-3 px-4 min-w-[180px] bg-slate-200/80 font-extrabold text-slate-800">Breakdown Cause</th>
-                            <th class="py-3 px-3.5 text-center min-w-[140px] bg-slate-200/80 font-extrabold text-slate-800">Repair Date & Time</th>
-                            <th class="py-3 px-3.5 text-center min-w-[120px] bg-emerald-100 text-emerald-950 font-extrabold">TAT</th>
-                            <th class="py-3 px-3.5 text-center min-w-[130px] bg-slate-200/80 font-extrabold text-slate-800">HOD Verification</th>
-                            <th class="py-3 px-3 text-center min-w-[90px] bg-slate-200/80 font-extrabold text-slate-800">Status</th>
+            <div class="overflow-x-auto max-h-[750px] scrollbar-thin">
+                <table class="w-full text-left text-sm border-collapse print-table" id="tech-history-table">
+                    <thead class="sticky top-0 z-20 bg-slate-100 text-slate-700 font-bold border-b border-slate-300 shadow-2xs">
+                        <tr class="divide-x divide-slate-200 uppercase text-xs tracking-wider">
+                            <th scope="col" class="py-3.5 px-3 w-14 text-center bg-slate-200/90 font-extrabold text-slate-800">Sr. No.</th>
+                            <th scope="col" class="py-3.5 px-3.5 min-w-[120px] text-center bg-slate-200/90 font-extrabold text-slate-800">Breakdown Date</th>
+                            <th scope="col" class="py-3.5 px-3 min-w-[105px] text-center bg-slate-200/90 font-extrabold text-slate-800">Breakdown Time</th>
+                            <th scope="col" class="py-3.5 px-4 min-w-[180px] bg-slate-200/90 font-extrabold text-slate-800">Instrument / Equipment name</th>
+                            <th scope="col" class="py-3.5 px-4 min-w-[160px] bg-slate-200/90 font-extrabold text-slate-800">Location</th>
+                            <th scope="col" class="py-3.5 px-4 min-w-[170px] bg-slate-200/90 font-extrabold text-slate-800">Breakdown Cause</th>
+                            <th scope="col" class="py-3.5 px-3.5 min-w-[140px] text-center bg-slate-200/90 font-extrabold text-slate-800">Type of equipment<br><span class="text-[11px] text-slate-600 font-bold lowercase">Critical/routine</span></th>
+                            <th scope="col" class="py-3.5 px-3 min-w-[130px] text-center bg-slate-200/90 font-extrabold text-slate-800">Status</th>
+                            <th scope="col" class="py-3.5 px-3.5 min-w-[155px] text-center bg-slate-200/90 font-extrabold text-slate-800">Intimation date & time<br><span class="text-[11px] text-slate-600 font-bold lowercase">to IT CELL / BME</span></th>
+                            <th scope="col" class="py-3.5 px-3.5 min-w-[145px] text-center bg-slate-200/90 font-extrabold text-slate-800">Checkin Date & Time</th>
+                            <th scope="col" class="py-3.5 px-3.5 min-w-[140px] bg-slate-200/90 font-extrabold text-slate-800">Name of<br><span class="text-[11px] text-slate-600 font-bold">Department</span></th>
+                            <th scope="col" class="py-3.5 px-3.5 min-w-[140px] bg-slate-200/90 font-extrabold text-slate-800">Name of<br><span class="text-[11px] text-slate-600 font-bold">BME staff</span></th>
+                            <th scope="col" class="py-3.5 px-3.5 min-w-[145px] text-center bg-slate-200/90 font-extrabold text-slate-800">Repair Date & Time</th>
+                            <th scope="col" class="py-3.5 px-3.5 min-w-[125px] text-center bg-emerald-100/90 text-emerald-950 font-extrabold">Total Turn around<br>time (TAT)</th>
+                            <th scope="col" class="py-3.5 px-3.5 min-w-[135px] text-center bg-slate-200/90 font-extrabold text-slate-800">Sign of<br><span class="text-[11px] text-slate-600 font-bold">Departmental HOD</span></th>
+                            <th scope="col" class="py-3.5 px-3.5 min-w-[135px] text-center bg-slate-200/90 font-extrabold text-slate-800">Sign of<br><span class="text-[11px] text-slate-600 font-bold">BME staff</span></th>
+                            <th scope="col" class="py-3.5 px-3 min-w-[100px] text-center bg-slate-200/90 font-extrabold text-slate-800 no-print">Action</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-200 bg-white">
+                    <tbody class="divide-y divide-slate-200 bg-white" id="tech-history-table-body">
                         {% for item in tech_resolved_records %}
-                        <tr class="hover:bg-slate-50 transition-colors divide-x divide-slate-100 text-slate-800">
-                            <td class="py-3 px-3 text-center font-bold text-slate-500 text-xs">{{ forloop.counter }}</td>
-                            <td class="py-3 px-3.5 text-center font-mono font-bold text-xs">{{ item.display_breakdown_date|default:item.breakdown_date }}</td>
-                            <td class="py-3 px-4">
-                                <div class="font-bold text-slate-900 text-xs">{{ item.device_name }}</div>
-                                <div class="font-mono text-indigo-700 font-bold text-xs">{{ item.asset_id }}</div>
+                        <tr class="hover:bg-slate-50/80 transition-colors divide-x divide-slate-100 text-slate-800 tech-history-row border-l-4 border-l-emerald-400">
+                            <!-- 1. Sr. No. -->
+                            <td class="py-3 px-3 text-center font-bold text-slate-600 bg-slate-50/60 text-sm">
+                                {{ forloop.counter }}
                             </td>
-                            <td class="py-3 px-4 text-xs text-slate-700 font-medium">{{ item.location|default:'Clinical Ward' }}</td>
-                            <td class="py-3 px-4 text-xs text-slate-800 leading-snug">{{ item.breakdown_cause }}</td>
-                            <td class="py-3 px-3.5 text-center font-mono text-xs font-bold text-emerald-800">
+
+                            <!-- 2. Breakdown Date -->
+                            <td class="py-3 px-3.5 text-center font-mono text-sm font-bold text-slate-900">
+                                {{ item.display_breakdown_date|default:item.breakdown_date }}
+                            </td>
+
+                            <!-- 3. Breakdown Time -->
+                            <td class="py-3 px-3 text-center font-mono text-sm font-semibold text-slate-700">
+                                {{ item.display_breakdown_time|default:item.breakdown_time }}
+                            </td>
+
+                            <!-- 4. Instrument / Equipment Name -->
+                            <td class="py-3 px-4 font-bold text-slate-900 text-sm">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-8 h-8 rounded-lg {% if item.device_name == 'Monitor' %}bg-blue-50 text-blue-600 border border-blue-100{% elif item.device_name == 'CPU' %}bg-indigo-50 text-indigo-600 border border-indigo-100{% elif item.device_name == 'UPS' %}bg-amber-50 text-amber-600 border border-amber-100{% elif 'Printer' in item.device_name %}bg-emerald-50 text-emerald-600 border border-emerald-100{% else %}bg-slate-50 text-slate-600 border border-slate-100{% endif %} flex items-center justify-center shrink-0">
+                                        <i data-lucide="cpu" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-bold text-slate-900">{{ item.device_name }}</div>
+                                        <div class="text-xs font-mono text-indigo-700 font-bold">{{ item.asset_id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- 5. Location -->
+                            <td class="py-3 px-4 text-slate-800 text-sm font-medium">
+                                <div class="flex items-center gap-1.5 text-slate-700">
+                                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
+                                    <span class="font-semibold text-slate-800">{% if item.location %}{{ item.location }}{% else %}<span class="text-slate-400 font-normal italic text-xs">Unspecified</span>{% endif %}</span>
+                                </div>
+                            </td>
+
+                            <!-- 6. Breakdown Cause -->
+                            <td class="py-3 px-4 text-slate-800 text-sm font-medium leading-snug">
+                                {{ item.breakdown_cause }}
+                            </td>
+
+                            <!-- 7. Type of Equipment Critical / Routine -->
+                            <td class="py-3 px-3.5 text-center">
+                                {% if item.equipment_type == 'Critical' %}
+                                <span class="px-2.5 py-1 rounded-md text-xs font-extrabold bg-rose-100 text-rose-800 border border-rose-300">
+                                    Critical
+                                </span>
+                                {% else %}
+                                <span class="px-2.5 py-1 rounded-md text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-300">
+                                    Routine
+                                </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- 8. Status -->
+                            <td class="py-3 px-3.5 text-center">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    <span>Resolved</span>
+                                </span>
+                            </td>
+
+                            <!-- 9. Intimation Date & Time -->
+                            <td class="py-3 px-3.5 text-center font-mono text-sm text-slate-800 font-semibold">
+                                {{ item.intimation_datetime }}
+                            </td>
+
+                            <!-- 10. Checkin Date & Time -->
+                            <td class="py-3 px-3.5 text-center font-mono text-sm text-slate-800 font-semibold">
+                                {{ item.checkin_datetime }}
+                            </td>
+
+                            <!-- 11. Name of Department -->
+                            <td class="py-3 px-3.5 text-sm font-bold text-slate-900">
+                                {{ item.dept_hod_name }}
+                            </td>
+
+                            <!-- 12. Name of BME staff -->
+                            <td class="py-3 px-3.5 text-sm font-bold text-slate-900">
+                                {{ item.it_staff_name }}
+                            </td>
+
+                            <!-- 13. Repair Date & Time -->
+                            <td class="py-3 px-3.5 text-center font-mono text-sm font-bold text-emerald-800">
                                 {{ item.display_repair_datetime|default:item.repair_datetime }}
                             </td>
-                            <td class="py-3 px-3.5 text-center font-mono text-xs font-bold bg-emerald-50 text-emerald-950">
-                                <span class="px-2 py-0.5 rounded bg-emerald-100 border border-emerald-300 font-bold">{{ item.tat_duration|default:'30 mins' }}</span>
-                            </td>
-                            <td class="py-3 px-3.5 text-center font-mono text-xs text-slate-700 font-bold">{{ item.sign_dept_hod }}</td>
-                            <td class="py-3 px-3 text-center">
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                    <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i> Repaired
+
+                            <!-- 14. Total Turn Around Time (TAT) -->
+                            <td class="py-3 px-3.5 text-center font-mono text-sm font-bold bg-emerald-50/50 text-emerald-950">
+                                <span class="inline-flex items-center gap-1.5 text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-md border border-emerald-300 font-bold">
+                                    <i data-lucide="clock" class="w-3.5 h-3.5 text-emerald-700"></i>
+                                    {{ item.tat_duration|default:'30 mins' }}
                                 </span>
+                            </td>
+
+                            <!-- 15. Sign of Departmental HOD -->
+                            <td class="py-3 px-3.5 text-center text-sm font-bold text-slate-800 font-mono">
+                                {{ item.sign_dept_hod }}
+                            </td>
+
+                            <!-- 16. Sign of BME staff -->
+                            <td class="py-3 px-3.5 text-center text-sm font-bold text-slate-800 font-mono">
+                                {{ item.sign_it_cell }}
+                            </td>
+
+                            <!-- 17. Action -->
+                            <td class="py-3 px-3 text-center no-print">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <button onclick="openEditBreakdownModal('{{ item.id }}')" title="View / Edit Incident Details" class="p-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition-all border border-slate-200 shadow-2xs">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="9" class="py-10 text-center text-slate-400">
-                                <i data-lucide="inbox" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
-                                <div class="text-xs font-bold text-slate-600">No past resolved records on file for this technician yet.</div>
+                            <td colspan="17" class="py-12 text-center text-slate-400">
+                                <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2 border border-slate-200">
+                                    <i data-lucide="inbox" class="w-6 h-6 text-slate-400"></i>
+                                </div>
+                                <div class="text-sm font-bold text-slate-700">No Past Resolved Records Found</div>
+                                <div class="text-xs text-slate-500 mt-0.5">No historical resolved breakdown tickets recorded for {{ selected_technician }} yet.</div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -1949,6 +2053,72 @@
         let link = document.createElement("a");
         link.setAttribute("href", encodedUri);
         link.setAttribute("download", `Equipment_Breakdown_Register_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Export Individual Technician Historical Log (16 Columns matching Master Register)
+    function exportTechHistoryCSV() {
+        const table = document.getElementById('tech-history-table');
+        if (!table) {
+            exportBreakdownCSV();
+            return;
+        }
+        let csv = [];
+        csv.push([
+            "Sr. No.",
+            "Breakdown Date",
+            "Breakdown Time",
+            "Instrument/Equipment name",
+            "Location",
+            "Breakdown Cause",
+            "Type of equipment Critical/routine",
+            "Status",
+            "Intimation date & time to IT CELL / BME",
+            "Checkin Date & Time",
+            "Name of Department",
+            "Name of BME staff",
+            "Repair Date & Time",
+            "Total Turn around time (TAT)",
+            "Sign of Departmental HOD",
+            "Sign of BME staff"
+        ]);
+
+        table.querySelectorAll('.tech-history-row').forEach((row, index) => {
+            const cols = row.querySelectorAll('td');
+            if (cols.length >= 16) {
+                csv.push([
+                    index + 1,
+                    cols[1].innerText.trim(),
+                    cols[2].innerText.trim(),
+                    cols[3].innerText.replace(/\n/g, ' ').trim(),
+                    cols[4].innerText.trim(),
+                    cols[5].innerText.trim(),
+                    cols[6].innerText.trim(),
+                    cols[7].innerText.trim(),
+                    cols[8].innerText.trim(),
+                    cols[9].innerText.trim(),
+                    cols[10].innerText.trim(),
+                    cols[11].innerText.trim(),
+                    cols[12].innerText.trim(),
+                    cols[13].innerText.trim(),
+                    cols[14].innerText.trim(),
+                    cols[15].innerText.trim()
+                ]);
+            }
+        });
+
+        if (csv.length <= 1) {
+            alert('No resolved records available to export for this technician.');
+            return;
+        }
+
+        let csvContent = "data:text/csv;charset=utf-8," + csv.map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+        let encodedUri = encodeURI(csvContent);
+        let link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Technician_Breakdown_History_${new Date().toISOString().slice(0,10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
