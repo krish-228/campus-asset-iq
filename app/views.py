@@ -3623,6 +3623,10 @@ def equipment_breakdown(request):
     inventory_devices = DeviceAsset.objects.all().order_by('asset_id')
     pms_assets = EquipmentPMS.objects.all().order_by('asset_code')
 
+    session_admin_role = request.session.get('admin_role', '')
+    is_admin_session = request.session.get('admin_logged_in') and ('Admin' in session_admin_role or session_admin_role == 'Super Administrator')
+    is_admin = (user_role['is_admin'] or is_admin_session) and not is_technician
+
     context = {
         'selected_org': org,
         'records': records,
@@ -3651,7 +3655,7 @@ def equipment_breakdown(request):
         'pms_assets': pms_assets,
         'is_technician_user': is_technician,
         'logged_in_tech_name': logged_in_tech_name,
-        'is_admin_user': not is_technician,
+        'is_admin_user': is_admin,
     }
     return render(request, "admin/equipment_breakdown.html", context)
 
@@ -3845,8 +3849,19 @@ def api_resolve_breakdown(request, pk):
 
 @csrf_exempt
 def api_update_breakdown(request, pk):
-    """Update all fields of an existing equipment breakdown incident."""
+    """Update all fields of an existing equipment breakdown incident (Admin Only)."""
     if request.method == 'POST':
+        # Enforce Admin-Only Permission
+        u_role = get_current_user_role(request)
+        session_admin_logged_in = request.session.get('admin_logged_in', False)
+        session_admin_role = request.session.get('admin_role', '')
+        is_admin = u_role.get('is_admin', False) or (session_admin_logged_in and session_admin_role != 'Field Hardware Technician') or (hasattr(request, 'user') and request.user.is_authenticated and request.user.is_superuser)
+        if not is_admin:
+            return JsonResponse({
+                'success': False,
+                'error': 'Permission denied: Only system administrators can edit equipment breakdown incidents.'
+            }, status=403)
+
         import json
         try:
             data = json.loads(request.body)
@@ -3927,8 +3942,19 @@ def api_update_breakdown(request, pk):
 
 @csrf_exempt
 def api_delete_breakdown(request, pk):
-    """Delete an equipment breakdown incident."""
+    """Delete an equipment breakdown incident (Admin Only)."""
     if request.method in ['POST', 'DELETE']:
+        # Enforce Admin-Only Permission
+        u_role = get_current_user_role(request)
+        session_admin_logged_in = request.session.get('admin_logged_in', False)
+        session_admin_role = request.session.get('admin_role', '')
+        is_admin = u_role.get('is_admin', False) or (session_admin_logged_in and session_admin_role != 'Field Hardware Technician') or (hasattr(request, 'user') and request.user.is_authenticated and request.user.is_superuser)
+        if not is_admin:
+            return JsonResponse({
+                'success': False,
+                'error': 'Permission denied: Only system administrators can delete breakdown records.'
+            }, status=403)
+
         record = get_object_or_404(EquipmentBreakdown, pk=pk)
         asset_id = record.asset_id
         was_under_repair = (record.status == 'Under Repair')

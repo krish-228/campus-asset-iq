@@ -307,10 +307,17 @@
                                 <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
                                 <span>Mark Resolved</span>
                             </button>
-                            <button onclick="openEditBreakdownModal('{{ item.id }}')" title="Reassign or Edit Details" class="py-2 px-3 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-300 transition-all flex items-center justify-center gap-1 active:scale-95">
+                            {% if is_admin_user %}
+                            <button onclick="openEditBreakdownModal('{{ item.id }}', true)" title="Edit Details (Admin)" class="py-2 px-3 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-300 transition-all flex items-center justify-center gap-1 active:scale-95">
                                 <i data-lucide="pencil" class="w-3.5 h-3.5 text-slate-500"></i>
                                 <span>Edit</span>
                             </button>
+                            {% else %}
+                            <button onclick="openEditBreakdownModal('{{ item.id }}', false)" title="View Incident Details (Read-Only)" class="py-2 px-3 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-300 transition-all flex items-center justify-center gap-1 active:scale-95">
+                                <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-500"></i>
+                                <span>View</span>
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
@@ -382,7 +389,25 @@
                     </thead>
                     <tbody class="divide-y divide-slate-200 bg-white" id="tech-history-table-body">
                         {% for item in tech_resolved_records %}
-                        <tr class="hover:bg-slate-50/80 transition-colors divide-x divide-slate-100 text-slate-800 tech-history-row border-l-4 border-l-emerald-400">
+                        <tr class="hover:bg-slate-50/80 transition-colors divide-x divide-slate-100 text-slate-800 tech-history-row border-l-4 border-l-emerald-400"
+                            id="tech-history-row-{{ item.id }}"
+                            data-id="{{ item.id }}"
+                            data-asset="{{ item.asset_id }}"
+                            data-device="{{ item.device_name }}"
+                            data-location="{{ item.location|default:'' }}"
+                            data-cause="{{ item.breakdown_cause|escapejs }}"
+                            data-type="{{ item.equipment_type }}"
+                            data-bdate="{{ item.display_breakdown_date|default:item.breakdown_date }}"
+                            data-btime="{{ item.display_breakdown_time|default:item.breakdown_time }}"
+                            data-intimation="{{ item.intimation_datetime }}"
+                            data-checkin="{{ item.checkin_datetime }}"
+                            data-dept-hod="{{ item.dept_hod_name }}"
+                            data-it-staff="{{ item.it_staff_name }}"
+                            data-repair="{{ item.repair_datetime|default:'' }}"
+                            data-tat="{{ item.tat_duration|default:'' }}"
+                            data-sign-hod="{{ item.sign_dept_hod|default:'' }}"
+                            data-sign-it="{{ item.sign_it_cell|default:'' }}"
+                            data-status="{{ item.status }}">
                             <!-- 1. Sr. No. -->
                             <td class="py-3 px-3 text-center font-bold text-slate-600 bg-slate-50/60 text-sm">
                                 {{ forloop.counter }}
@@ -491,7 +516,7 @@
                             <!-- 17. Action -->
                             <td class="py-3 px-3 text-center no-print">
                                 <div class="flex items-center justify-center gap-1.5">
-                                    <button onclick="openEditBreakdownModal('{{ item.id }}')" title="View / Edit Incident Details" class="p-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition-all border border-slate-200 shadow-2xs">
+                                    <button onclick="openEditBreakdownModal('{{ item.id }}', false)" title="View Incident Details" class="p-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition-all border border-slate-200 shadow-2xs">
                                         <i data-lucide="eye" class="w-4 h-4"></i>
                                     </button>
                                 </div>
@@ -1187,11 +1212,11 @@
     <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
         <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
             <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
-                    <i data-lucide="edit-3" class="w-5 h-5"></i>
+                <div id="edit-breakdown-icon-wrapper" class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
+                    <i data-lucide="edit-3" id="edit-breakdown-icon" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-slate-900 text-base">Edit Equipment Breakdown Incident</h3>
+                    <h3 id="edit-breakdown-title" class="font-bold text-slate-900 text-base">Edit Equipment Breakdown Incident</h3>
                     <p class="text-xs text-slate-500" id="edit-breakdown-subtitle">Asset: ... • Incident #...</p>
                 </div>
             </div>
@@ -1200,8 +1225,21 @@
             </button>
         </div>
 
-        <form onsubmit="submitEditBreakdown(event)" class="p-6 space-y-4 text-xs sm:text-sm">
+        <form id="form-edit-breakdown" onsubmit="submitEditBreakdown(event)" class="p-6 space-y-4 text-xs sm:text-sm">
             <input type="hidden" id="edit-breakdown-id">
+
+            <!-- Read-Only / Admin Status Banner -->
+            <div id="edit-modal-notice-banner" class="hidden p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-2.5">
+                    <div id="edit-modal-notice-icon-box" class="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                        <i data-lucide="lock" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <div id="edit-modal-notice-title" class="font-bold text-slate-900">Read-Only Mode</div>
+                        <div id="edit-modal-notice-desc" class="text-slate-500">Incident details are locked. Only a system administrator can modify this record.</div>
+                    </div>
+                </div>
+            </div>
 
             <!-- 1. Breakdown Date Time -->
             <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
@@ -1354,14 +1392,28 @@
             </div>
 
             <!-- Actions -->
-            <div class="pt-2 flex items-center justify-end gap-3 border-t border-slate-200">
-                <button type="button" onclick="closeEditBreakdownModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold transition-all">
-                    Cancel
-                </button>
-                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-md flex items-center gap-2 active:scale-95">
-                    <i data-lucide="check" class="w-4 h-4"></i>
-                    <span>Save Changes</span>
-                </button>
+            <div class="pt-3 flex items-center justify-between gap-3 border-t border-slate-200">
+                <div class="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
+                    <i data-lucide="shield" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span id="edit-modal-access-text">{% if is_admin_user %}Administrator Access{% else %}Field Technician Access (Read-Only){% endif %}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeEditBreakdownModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold transition-all text-xs sm:text-sm">
+                        Close
+                    </button>
+                    <!-- Unlock & Edit button: visible ONLY if the logged in user is an Admin AND the modal is currently in read-only mode -->
+                    {% if is_admin_user %}
+                    <button type="button" id="edit-modal-unlock-btn" onclick="enableModalEditMode()" class="hidden px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-md flex items-center gap-1.5 active:scale-95 text-xs sm:text-sm">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        <span>Edit Incident (Admin)</span>
+                    </button>
+                    {% endif %}
+                    <!-- Save button: visible ONLY when in edit mode AND user is Admin -->
+                    <button type="submit" id="edit-modal-save-btn" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-md flex items-center gap-1.5 active:scale-95 text-xs sm:text-sm">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Save Changes</span>
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -1461,6 +1513,9 @@
 
 {% block extra_scripts %}
 <script>
+    const CURRENT_USER_IS_ADMIN = {{ is_admin_user|yesno:"true,false" }};
+    const IS_INDIVIDUAL_PAGE = {% if selected_technician and selected_technician != 'ALL' and selected_technician != 'UNASSIGNED' %}true{% else %}false{% endif %};
+
     // Preset Date/Time Pickers with Local Values
     function presetPickers() {
         const now = new Date();
@@ -1885,9 +1940,119 @@
         }
     }
 
-    // Open Breakdown Edit Modal
-    function openEditBreakdownModal(id) {
-        const row = document.getElementById(`breakdown-row-${id}`);
+    // Set Modal Edit State (Read-Only vs Editable Mode)
+    function setModalEditState(isEditable) {
+        const titleEl = document.getElementById('edit-breakdown-title');
+        const iconWrapper = document.getElementById('edit-breakdown-icon-wrapper');
+        const iconEl = document.getElementById('edit-breakdown-icon');
+        const noticeBox = document.getElementById('edit-modal-notice-banner');
+        const noticeTitle = document.getElementById('edit-modal-notice-title');
+        const noticeDesc = document.getElementById('edit-modal-notice-desc');
+        const noticeIconBox = document.getElementById('edit-modal-notice-icon-box');
+        const saveBtn = document.getElementById('edit-modal-save-btn');
+        const unlockBtn = document.getElementById('edit-modal-unlock-btn');
+        const accessText = document.getElementById('edit-modal-access-text');
+
+        const form = document.getElementById('form-edit-breakdown');
+        if (!form) return;
+        const inputs = form.querySelectorAll('input:not([type="hidden"]), select, textarea');
+
+        if (isEditable && CURRENT_USER_IS_ADMIN) {
+            // EDITABLE MODE (Admin Only)
+            if (titleEl) titleEl.innerText = "Edit Equipment Breakdown Incident";
+            if (iconWrapper) {
+                iconWrapper.className = "w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0";
+            }
+            if (iconEl) {
+                iconEl.setAttribute('data-lucide', 'edit-3');
+            }
+            if (noticeBox) {
+                noticeBox.className = "p-3.5 rounded-xl border border-indigo-200 bg-indigo-50/70 text-indigo-950 flex items-center justify-between gap-3 text-xs";
+                noticeBox.classList.remove('hidden');
+                if (noticeTitle) noticeTitle.innerText = "Administrator Edit Mode";
+                if (noticeDesc) noticeDesc.innerText = "You have administrator privileges to modify breakdown timestamps, reassign staff, and change status.";
+                if (noticeIconBox) {
+                    noticeIconBox.className = "w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0";
+                    noticeIconBox.innerHTML = '<i data-lucide="shield-check" class="w-4 h-4"></i>';
+                }
+            }
+            if (saveBtn) saveBtn.classList.remove('hidden');
+            if (unlockBtn) unlockBtn.classList.add('hidden');
+            if (accessText) accessText.innerText = "Administrator Mode (Editing Enabled)";
+
+            inputs.forEach(el => {
+                el.disabled = false;
+                el.classList.remove('bg-slate-100', 'text-slate-600', 'cursor-not-allowed', 'border-slate-200');
+                el.classList.add('bg-white', 'text-slate-800');
+            });
+        } else {
+            // READ-ONLY MODE (Individual Page / Non-Admin)
+            if (titleEl) titleEl.innerText = "Equipment Breakdown Incident Details";
+            if (iconWrapper) {
+                iconWrapper.className = "w-9 h-9 rounded-xl bg-slate-100 text-slate-700 border border-slate-300 flex items-center justify-center shrink-0";
+            }
+            if (iconEl) {
+                iconEl.setAttribute('data-lucide', 'eye');
+            }
+            if (noticeBox) {
+                noticeBox.classList.remove('hidden');
+                if (CURRENT_USER_IS_ADMIN) {
+                    noticeBox.className = "p-3.5 rounded-xl border border-blue-200 bg-blue-50/70 text-blue-950 flex items-center justify-between gap-3 text-xs";
+                    if (noticeTitle) noticeTitle.innerText = "Read-Only Inspection (Administrator)";
+                    if (noticeDesc) noticeDesc.innerText = "Viewing historical incident record. Click 'Edit Incident (Admin)' below to unlock and modify fields.";
+                    if (noticeIconBox) {
+                        noticeIconBox.className = "w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0";
+                        noticeIconBox.innerHTML = '<i data-lucide="info" class="w-4 h-4"></i>';
+                    }
+                } else {
+                    noticeBox.className = "p-3.5 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-950 flex items-center justify-between gap-3 text-xs";
+                    if (noticeTitle) noticeTitle.innerText = "Read-Only Mode";
+                    if (noticeDesc) noticeDesc.innerText = "This incident record is locked. Only a system administrator can edit hardware breakdown details.";
+                    if (noticeIconBox) {
+                        noticeIconBox.className = "w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0";
+                        noticeIconBox.innerHTML = '<i data-lucide="lock" class="w-4 h-4"></i>';
+                    }
+                }
+            }
+            if (saveBtn) saveBtn.classList.add('hidden');
+            if (unlockBtn) {
+                if (CURRENT_USER_IS_ADMIN) {
+                    unlockBtn.classList.remove('hidden');
+                } else {
+                    unlockBtn.classList.add('hidden');
+                }
+            }
+            if (accessText) {
+                accessText.innerText = CURRENT_USER_IS_ADMIN ? "Administrator (Read-Only Preview)" : "Field Technician (Read-Only Access)";
+            }
+
+            inputs.forEach(el => {
+                el.disabled = true;
+                el.classList.remove('bg-white');
+                el.classList.add('bg-slate-100', 'text-slate-600', 'cursor-not-allowed', 'border-slate-200');
+            });
+        }
+
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+    }
+
+    // Unlock Edit Mode for Admins
+    function enableModalEditMode() {
+        if (!CURRENT_USER_IS_ADMIN) {
+            alert('Permission denied: Only administrators can edit equipment breakdown incidents.');
+            return;
+        }
+        setModalEditState(true);
+    }
+
+    // Open Breakdown Edit Modal (Role-Scoped: Read-Only on Individual Page / Non-Admin)
+    function openEditBreakdownModal(id, forceEditable = false) {
+        let row = document.getElementById(`breakdown-row-${id}`);
+        if (!row) {
+            row = document.getElementById(`tech-history-row-${id}`);
+        }
         if (!row) return;
 
         document.getElementById('edit-breakdown-id').value = id;
@@ -1923,6 +2088,11 @@
         document.getElementById('edit-sign-hod').value = row.getAttribute('data-sign-hod') || '';
         document.getElementById('edit-sign-it').value = row.getAttribute('data-sign-it') || '';
 
+        // Role-based state:
+        // On individual page, it is read-only unless specifically forced by an Admin
+        const canEdit = CURRENT_USER_IS_ADMIN && (forceEditable || !IS_INDIVIDUAL_PAGE);
+        setModalEditState(canEdit);
+
         document.getElementById('modal-edit-breakdown').classList.remove('hidden');
         if (window.lucide && typeof window.lucide.createIcons === 'function') {
             window.lucide.createIcons();
@@ -1934,9 +2104,14 @@
         document.getElementById('modal-edit-breakdown').classList.add('hidden');
     }
 
-    // Submit Edit Breakdown
+    // Submit Edit Breakdown (Admin Only)
     async function submitEditBreakdown(e) {
         e.preventDefault();
+        if (!CURRENT_USER_IS_ADMIN) {
+            alert('Permission denied: Only administrators can edit equipment breakdown incidents.');
+            return;
+        }
+
         const id = document.getElementById('edit-breakdown-id').value;
         const payload = {
             breakdown_date: document.getElementById('edit-breakdown-date').value.trim(),
