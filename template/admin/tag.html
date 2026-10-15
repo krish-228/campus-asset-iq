@@ -78,6 +78,17 @@
             aspect-ratio: auto !important;
             overflow: hidden !important;
         }
+        /* First column only: inner margin/padding calibration to prevent left edge text clipping */
+        .sticker-card:nth-child(4n+1) {
+            padding-left: 3.8mm !important;
+            padding-right: 1.2mm !important;
+        }
+        .sticker-card:nth-child(4n+1) .sticker-print-content {
+            gap: 1.0mm !important;
+        }
+        .sticker-card:nth-child(4n+1) .sticker-print-left {
+            padding-right: 0.5mm !important;
+        }
         /* Hide screen-only workstation metadata on print */
         .sticker-screen-only {
             display: none !important;
@@ -417,10 +428,10 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static 'js/data.js' %}?v=38.0_a4_3mm_col_gap"></script>
-<script src="{% static 'js/qrcode.min.js' %}?v=38.0_a4_3mm_col_gap"></script>
-<script src="{% static 'js/qr_generator.js' %}?v=38.0_a4_3mm_col_gap"></script>
-<script src="{% static 'js/app.js' %}?v=38.0_a4_3mm_col_gap"></script>
+<script src="{% static 'js/data.js' %}?v=39.0_first_col_safe_margin"></script>
+<script src="{% static 'js/qrcode.min.js' %}?v=39.0_first_col_safe_margin"></script>
+<script src="{% static 'js/qr_generator.js' %}?v=39.0_first_col_safe_margin"></script>
+<script src="{% static 'js/app.js' %}?v=39.0_first_col_safe_margin"></script>
 <script>
     function handleTagFilterSearch(e) {
         const val = (e && e.target ? e.target.value : '').toLowerCase().trim();
