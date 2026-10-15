@@ -359,7 +359,7 @@ function renderStickerCards(devices) {
     }
 }
 
-// Dedicated 1-Click Single Asset Tag Printer (Calibrated for 25mm x 50mm Vertical Physical Sticker)
+// Dedicated 1-Click Single Asset Tag Printer (Horizontal 50mm x 25mm physical sticker)
 function printSingleTag(assetId) {
     const rawDevs = (typeof appState !== 'undefined' && appState.devices) ? appState.devices : [];
     const dev = rawDevs.find(d => (d.assetId || '').toUpperCase() === (assetId || '').toUpperCase()) || { assetId };
@@ -377,7 +377,7 @@ function printSingleTag(assetId) {
     const reportUrl = `${window.location.origin}/report/${encodeURIComponent(dev.assetId)}/`;
     const qrSVG = generateQRSVG(reportUrl, 68);
 
-    const printWindow = window.open('', '_blank', 'width=580,height=520');
+    const printWindow = window.open('', '_blank', 'width=560,height=340');
     if (!printWindow) {
         window.print();
         return;
@@ -389,202 +389,43 @@ function printSingleTag(assetId) {
         <head>
             <meta charset="utf-8">
             <title>Asset Tag — ${dev.assetId}</title>
-            <style id="print-style">
+            <style>
                 @page {
-                    size: 25mm 50mm;
+                    size: 50mm 25mm;
                     margin: 0;
                 }
-                * { box-sizing: border-box; margin: 0; padding: 0; }
-                html, body {
-                    width: 100%;
-                    height: 100%;
-                    background: #f1f5f9;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                }
-                
-                /* Screen Toolbar */
-                .no-print-toolbar {
-                    background: #0f172a;
-                    color: #ffffff;
-                    padding: 10px 16px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 10px;
-                    font-size: 12px;
-                    border-bottom: 1px solid #1e293b;
-                }
-                .toolbar-title {
-                    font-weight: 700;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                }
-                .toolbar-tag {
-                    background: #2563eb;
-                    color: #ffffff;
-                    padding: 2px 8px;
-                    border-radius: 4px;
-                    font-family: monospace;
-                    font-weight: 800;
-                }
-                .toolbar-buttons {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-                .btn {
-                    padding: 6px 12px;
-                    border-radius: 6px;
-                    font-size: 11px;
-                    font-weight: 700;
-                    cursor: pointer;
-                    border: none;
-                    transition: all 0.15s ease;
-                }
-                .btn-toggle {
-                    background: #334155;
-                    color: #f8fafc;
-                }
-                .btn-toggle:hover {
-                    background: #475569;
-                }
-                .btn-print {
-                    background: #16a34a;
-                    color: #ffffff;
-                }
-                .btn-print:hover {
-                    background: #15803d;
-                }
-
-                /* Center Preview Stage on Screen */
-                .stage {
-                    padding: 24px;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: calc(100vh - 55px);
-                }
-                .stage-hint {
-                    margin-top: 14px;
-                    font-size: 11px;
-                    color: #64748b;
-                    font-weight: 600;
-                    text-align: center;
-                }
-
-                /* ========================================================
-                   VERTICAL STICKER LAYOUT (DEFAULT): 25mm Width x 50mm Height
-                   Upright text, stacked vertically, centered QR code
-                   ======================================================== */
-                .label-box-vertical {
-                    width: 25mm;
-                    height: 49.8mm;
-                    max-height: 50mm;
-                    padding: 2.2mm 1.5mm 2.0mm 1.5mm;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: space-between;
-                    text-align: center;
-                    background: #ffffff;
-                    border: 0.5px solid #94a3b8;
+                *, *::before, *::after {
                     box-sizing: border-box;
-                    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
-                    border-radius: 3px;
-                    overflow: hidden;
-                    page-break-inside: avoid;
-                    break-inside: avoid;
-                    page-break-after: avoid;
-                    break-after: avoid;
+                    margin: 0;
+                    padding: 0;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
                 }
-                .label-v-info {
-                    width: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    text-align: center;
-                }
-                .label-v-brand {
-                    font-size: 5.5pt;
-                    font-weight: 800;
-                    letter-spacing: 0.5px;
-                    text-transform: uppercase;
-                    color: #475569;
-                    line-height: 1;
-                    margin-bottom: 0.6mm;
-                    white-space: nowrap;
-                }
-                .label-v-prefix {
-                    font-size: 6.5pt;
-                    font-weight: 800;
-                    color: #334155;
-                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-                    line-height: 1;
-                    margin-bottom: 0.6mm;
-                    white-space: nowrap;
-                }
-                .label-v-code {
-                    font-size: 13.5pt;
-                    font-weight: 900;
-                    color: #020617;
-                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-                    line-height: 1.05;
-                    letter-spacing: -0.3px;
-                    margin-bottom: 0.8mm;
-                    white-space: nowrap;
-                }
-                .label-v-user {
-                    font-size: 6pt;
-                    font-weight: 800;
-                    color: #1e293b;
+                html, body {
+                    width: 50mm;
+                    height: 25mm;
+                    margin: 0;
+                    padding: 0;
+                    background: #ffffff;
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    text-transform: uppercase;
-                    white-space: nowrap;
                     overflow: hidden;
-                    text-overflow: ellipsis;
-                    line-height: 1.1;
-                    max-width: 22mm;
-                    margin-bottom: 1.5mm;
-                }
-                .label-v-qr {
-                    width: 18.5mm;
-                    height: 18.5mm;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    margin-top: auto;
                 }
-                .label-v-qr svg {
-                    width: 18.5mm;
-                    height: 18.5mm;
-                    display: block;
-                    background: transparent;
-                    border: none;
-                    padding: 0;
-                }
-
-                /* ========================================================
-                   HORIZONTAL STICKER LAYOUT (ALTERNATE): 50mm Width x 25mm Height
-                   ======================================================== */
-                .label-box-horizontal {
+                .label-box {
                     width: 50mm;
                     height: 25mm;
                     padding: 1.5mm 2.2mm;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    background: #ffffff;
-                    border: 0.5px solid #94a3b8;
+                    border: 0.5px solid #cbd5e1;
                     box-sizing: border-box;
-                    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
-                    border-radius: 3px;
+                    background: #ffffff;
                     overflow: hidden;
                 }
-                .label-h-info {
+                .label-info {
                     flex: 1;
                     min-width: 0;
                     display: flex;
@@ -592,7 +433,7 @@ function printSingleTag(assetId) {
                     justify-content: center;
                     padding-right: 1.5mm;
                 }
-                .label-h-brand {
+                .label-brand {
                     font-size: 5.5pt;
                     font-weight: 800;
                     letter-spacing: 0.4px;
@@ -601,22 +442,23 @@ function printSingleTag(assetId) {
                     line-height: 1;
                     margin-bottom: 0.3mm;
                 }
-                .label-h-prefix {
+                .label-prefix {
                     font-size: 6.5pt;
                     font-weight: 800;
                     color: #334155;
-                    font-family: ui-monospace, monospace;
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
                     line-height: 1;
                 }
-                .label-h-code {
+                .label-main-code {
                     font-size: 13pt;
                     font-weight: 900;
                     color: #020617;
-                    font-family: ui-monospace, monospace;
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
                     line-height: 1.05;
                     letter-spacing: -0.3px;
+                    word-break: break-all;
                 }
-                .label-h-user {
+                .label-full-tag {
                     font-size: 6pt;
                     font-weight: 800;
                     color: #1e293b;
@@ -628,7 +470,7 @@ function printSingleTag(assetId) {
                     line-height: 1.1;
                     margin-top: 0.3mm;
                 }
-                .label-h-qr {
+                .label-qr {
                     width: 17.5mm;
                     height: 17.5mm;
                     flex-shrink: 0;
@@ -636,147 +478,45 @@ function printSingleTag(assetId) {
                     align-items: center;
                     justify-content: center;
                 }
-                .label-h-qr svg {
+                .label-qr svg {
                     width: 17.5mm;
                     height: 17.5mm;
                     display: block;
                     border: none;
                     padding: 0;
+                    box-shadow: none;
                     background: transparent;
                 }
-
-                /* Show / Hide according to active mode */
-                body.mode-vertical .label-box-vertical { display: flex !important; }
-                body.mode-vertical .label-box-horizontal { display: none !important; }
-
-                body.mode-horizontal .label-box-vertical { display: none !important; }
-                body.mode-horizontal .label-box-horizontal { display: flex !important; }
-
                 @media print {
-                    .no-print, .no-print-toolbar, .stage-hint {
-                        display: none !important;
-                    }
                     html, body {
-                        background: #ffffff !important;
+                        width: 50mm !important;
+                        height: 25mm !important;
                         margin: 0 !important;
                         padding: 0 !important;
-                        width: 100% !important;
-                        height: 100% !important;
-                        overflow: hidden !important;
                     }
-                    .stage {
-                        padding: 0 !important;
-                        margin: 0 !important;
-                        min-height: 0 !important;
-                        display: block !important;
-                        width: 100% !important;
-                        height: 100% !important;
-                    }
-                    .label-box-vertical, .label-box-horizontal {
-                        box-shadow: none !important;
-                        border-radius: 0 !important;
-                        margin: 0 !important;
+                    .label-box {
+                        width: 50mm !important;
+                        height: 25mm !important;
                         border: 0.5px solid #94a3b8 !important;
-                        page-break-inside: avoid !important;
-                        break-inside: avoid !important;
                     }
                 }
             </style>
         </head>
-        <body class="mode-vertical">
-            <div class="no-print-toolbar">
-                <div class="toolbar-title">
-                    <span>Print Single Sticker:</span>
-                    <span class="toolbar-tag">${dev.assetId}</span>
+        <body>
+            <div class="label-box">
+                <div class="label-info">
+                    <div class="label-brand">PSM HOSPITAL</div>
+                    <div class="label-prefix">${parsed.prefix}</div>
+                    <div class="label-main-code">${parsed.code}</div>
+                    <div class="label-full-tag" title="${userName}">${userName}</div>
                 </div>
-                <div class="toolbar-buttons">
-                    <button type="button" class="btn btn-toggle" onclick="toggleOrientation()" id="toggle-orient-btn">
-                        🔄 Layout: Vertical Tag (2.5 cm × 5.0 cm)
-                    </button>
-                    <button type="button" class="btn btn-print" onclick="window.print()">
-                        🖨️ Print Sticker
-                    </button>
+                <div class="label-qr">
+                    ${qrSVG}
                 </div>
             </div>
-
-            <div class="stage">
-                <!-- 1. Vertical Tag (Default): 2.5cm width x 5.0cm height -->
-                <div class="label-box-vertical">
-                    <div class="label-v-info">
-                        <div class="label-v-brand">PSM HOSPITAL</div>
-                        <div class="label-v-prefix">${parsed.prefix}</div>
-                        <div class="label-v-code">${parsed.code}</div>
-                        <div class="label-v-user" title="${userName}">${userName}</div>
-                    </div>
-                    <div class="label-v-qr">
-                        ${qrSVG}
-                    </div>
-                </div>
-
-                <!-- 2. Horizontal Tag (Alternate): 5.0cm width x 2.5cm height -->
-                <div class="label-box-horizontal">
-                    <div class="label-h-info">
-                        <div class="label-h-brand">PSM HOSPITAL</div>
-                        <div class="label-h-prefix">${parsed.prefix}</div>
-                        <div class="label-h-code">${parsed.code}</div>
-                        <div class="label-h-user" title="${userName}">${userName}</div>
-                    </div>
-                    <div class="label-h-qr">
-                        ${qrSVG}
-                    </div>
-                </div>
-
-                <div class="stage-hint no-print" id="orient-hint">
-                    Current Layout: <strong>Vertical (Portrait: 2.5 cm Width × 5.0 cm Height)</strong>. Content is upright and stacked vertically to fit your single vertical sticker perfectly.
-                </div>
-            </div>
-
             <script>
-                let isVertical = true;
-                const saved = localStorage.getItem('psm_single_tag_vertical');
-                if (saved !== null) {
-                    isVertical = (saved === 'true');
-                }
-                applyOrientation();
-
-                function applyOrientation() {
-                    const body = document.body;
-                    const btn = document.getElementById('toggle-orient-btn');
-                    const hint = document.getElementById('orient-hint');
-
-                    if (isVertical) {
-                        body.classList.remove('mode-horizontal');
-                        body.classList.add('mode-vertical');
-                        if (btn) btn.innerHTML = '🔄 Layout: Vertical Tag (2.5 cm × 5.0 cm)';
-                        if (hint) hint.innerHTML = 'Current Layout: <strong>Vertical (Portrait: 2.5 cm Width × 5.0 cm Height)</strong>. Content is upright and stacked vertically to fit your single sticker without splitting.';
-                        updatePageSize('25mm 50mm');
-                    } else {
-                        body.classList.remove('mode-vertical');
-                        body.classList.add('mode-horizontal');
-                        if (btn) btn.innerHTML = '🔄 Layout: Horizontal Tag (5.0 cm × 2.5 cm)';
-                        if (hint) hint.innerHTML = 'Current Layout: <strong>Horizontal (Landscape: 5.0 cm Width × 2.5 cm Height)</strong>.';
-                        updatePageSize('50mm 25mm');
-                    }
-                    localStorage.setItem('psm_single_tag_vertical', isVertical);
-                }
-
-                function updatePageSize(sizeStr) {
-                    const styleTag = document.getElementById('print-style');
-                    if (!styleTag) return;
-                    let css = styleTag.innerHTML;
-                    css = css.replace(/@page\s*\{[^}]*\}/i, '@page { size: ' + sizeStr + '; margin: 0; }');
-                    styleTag.innerHTML = css;
-                }
-
-                function toggleOrientation() {
-                    isVertical = !isVertical;
-                    applyOrientation();
-                }
-
                 window.onload = function() {
-                    setTimeout(function() {
-                        window.print();
-                    }, 400);
+                    window.print();
                 };
             </script>
         </body>
