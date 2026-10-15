@@ -42,18 +42,18 @@
             display: none !important;
         }
         #qr-tags-grid {
-            width: 209.0mm !important;
-            margin: 0 auto !important;
+            width: 100% !important;
+            margin: 0 !important;
             padding: 0 !important;
         }
         #qr-stickers-grid {
             display: grid !important;
             grid-template-columns: repeat(4, 50.0mm) !important;
             grid-auto-rows: 24.15mm !important;
-            column-gap: 3.0mm !important;
+            column-gap: 1.0mm !important;
             row-gap: 0 !important;
-            width: 209.0mm !important;
-            margin: 0 auto !important;
+            width: 203.0mm !important;
+            margin: 0 !important; /* Locks column 1 to exact left page margin without shift */
             padding: 0 !important;
             box-sizing: border-box !important;
         }
@@ -78,7 +78,7 @@
             aspect-ratio: auto !important;
             overflow: hidden !important;
         }
-        /* First column only: inner margin/padding calibration to prevent left edge text clipping */
+        /* Column 1 only: locked left position with safe inner padding to prevent left edge clipping */
         .sticker-card:nth-child(4n+1) {
             padding-left: 3.8mm !important;
             padding-right: 1.2mm !important;
@@ -88,6 +88,24 @@
         }
         .sticker-card:nth-child(4n+1) .sticker-print-left {
             padding-right: 0.5mm !important;
+        }
+
+        /* Column 2: balanced alignment */
+        .sticker-card:nth-child(4n+2) {
+            padding-left: 2.0mm !important;
+            padding-right: 2.0mm !important;
+        }
+
+        /* Column 3: safe right margin so QR code stays comfortably inside the sticker */
+        .sticker-card:nth-child(4n+3) {
+            padding-left: 1.8mm !important;
+            padding-right: 2.6mm !important;
+        }
+
+        /* Column 4: safe right margin so QR code stays comfortably inside the sticker */
+        .sticker-card:nth-child(4n) {
+            padding-left: 1.4mm !important;
+            padding-right: 3.4mm !important;
         }
         /* Hide screen-only workstation metadata on print */
         .sticker-screen-only {
@@ -428,10 +446,10 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static 'js/data.js' %}?v=39.0_first_col_safe_margin"></script>
-<script src="{% static 'js/qrcode.min.js' %}?v=39.0_first_col_safe_margin"></script>
-<script src="{% static 'js/qr_generator.js' %}?v=39.0_first_col_safe_margin"></script>
-<script src="{% static 'js/app.js' %}?v=39.0_first_col_safe_margin"></script>
+<script src="{% static 'js/data.js' %}?v=40.0_cols_234_calibrated"></script>
+<script src="{% static 'js/qrcode.min.js' %}?v=40.0_cols_234_calibrated"></script>
+<script src="{% static 'js/qr_generator.js' %}?v=40.0_cols_234_calibrated"></script>
+<script src="{% static 'js/app.js' %}?v=40.0_cols_234_calibrated"></script>
 <script>
     function handleTagFilterSearch(e) {
         const val = (e && e.target ? e.target.value : '').toLowerCase().trim();
