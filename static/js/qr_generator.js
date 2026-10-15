@@ -359,7 +359,7 @@ function renderStickerCards(devices) {
     }
 }
 
-// Dedicated 1-Click Single Asset Tag Printer (Horizontal 50mm x 25mm physical sticker)
+// Dedicated 1-Click Single Asset Tag Printer (Zero-overflow calibrated to 1 physical sticker: 25mm x 50mm)
 function printSingleTag(assetId) {
     const rawDevs = (typeof appState !== 'undefined' && appState.devices) ? appState.devices : [];
     const dev = rawDevs.find(d => (d.assetId || '').toUpperCase() === (assetId || '').toUpperCase()) || { assetId };
@@ -377,7 +377,7 @@ function printSingleTag(assetId) {
     const reportUrl = `${window.location.origin}/report/${encodeURIComponent(dev.assetId)}/`;
     const qrSVG = generateQRSVG(reportUrl, 68);
 
-    const printWindow = window.open('', '_blank', 'width=560,height=340');
+    const printWindow = window.open('', '_blank', 'width=680,height=680');
     if (!printWindow) {
         window.print();
         return;
@@ -389,11 +389,13 @@ function printSingleTag(assetId) {
         <head>
             <meta charset="utf-8">
             <title>Asset Tag — ${dev.assetId}</title>
-            <style>
+            <style id="print-page-style">
                 @page {
-                    size: 50mm 25mm;
+                    size: 25mm 50mm;
                     margin: 0;
                 }
+            </style>
+            <style>
                 *, *::before, *::after {
                     box-sizing: border-box;
                     margin: 0;
@@ -402,30 +404,247 @@ function printSingleTag(assetId) {
                     print-color-adjust: exact !important;
                 }
                 html, body {
-                    width: 50mm;
-                    height: 25mm;
                     margin: 0;
                     padding: 0;
-                    background: #ffffff;
+                    background: #0b0f19;
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    overflow: hidden;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+                    color: #f1f5f9;
                 }
-                .label-box {
-                    width: 50mm;
-                    height: 25mm;
-                    padding: 1.5mm 2.2mm;
+
+                /* Top Navigation Toolbar (Screen view only) */
+                .no-print-toolbar {
+                    background: #111827;
+                    border-bottom: 1px solid #1f2937;
+                    padding: 10px 16px;
                     display: flex;
+                    flex-wrap: wrap;
                     align-items: center;
                     justify-content: space-between;
-                    border: 0.5px solid #cbd5e1;
-                    box-sizing: border-box;
+                    gap: 10px;
+                    position: sticky;
+                    top: 0;
+                    z-index: 100;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                }
+                .toolbar-brand {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .toolbar-brand-title {
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: #e2e8f0;
+                    letter-spacing: 0.3px;
+                }
+                .toolbar-asset-tag {
+                    font-size: 11px;
+                    font-family: ui-monospace, monospace;
+                    font-weight: 800;
+                    background: #1e293b;
+                    color: #38bdf8;
+                    border: 1px solid #0284c7;
+                    padding: 2px 7px;
+                    border-radius: 6px;
+                }
+                .toolbar-controls {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    flex-wrap: wrap;
+                }
+                .mode-btn {
+                    background: #1e293b;
+                    border: 1px solid #334155;
+                    color: #cbd5e1;
+                    padding: 6px 11px;
+                    border-radius: 7px;
+                    font-size: 11px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+                .mode-btn:hover {
+                    background: #334155;
+                    color: #ffffff;
+                }
+                .mode-btn.active {
+                    background: #0284c7;
+                    border-color: #38bdf8;
+                    color: #ffffff;
+                    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+                }
+                .btn-print {
+                    background: #16a34a;
+                    border: 1px solid #22c55e;
+                    color: #ffffff;
+                    padding: 6px 14px;
+                    border-radius: 7px;
+                    font-size: 12px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+                }
+                .btn-print:hover {
+                    background: #15803d;
+                }
+
+                /* Screen Stage & Preview */
+                .stage {
+                    padding: 24px 16px 40px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: calc(100vh - 65px);
+                }
+                .stage-info {
+                    max-width: 520px;
+                    width: 100%;
+                    background: #131d31;
+                    border: 1px solid #1e3a5f;
+                    border-radius: 10px;
+                    padding: 10px 14px;
+                    margin-bottom: 20px;
+                    font-size: 11px;
+                    line-height: 1.45;
+                    color: #94a3b8;
+                    text-align: center;
+                }
+                .stage-info strong {
+                    color: #38bdf8;
+                }
+                .stage-hint-accent {
+                    color: #4ade80;
+                    font-weight: 700;
+                }
+
+                /* Physical Sticker Preview Wrapper on Screen */
+                .sticker-mount {
+                    position: relative;
+                    padding: 14px;
+                    background: #1e293b;
+                    border: 1px dashed #475569;
+                    border-radius: 14px;
+                    display: inline-block;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                }
+                .sticker-dimension-label {
+                    position: absolute;
+                    font-size: 9px;
+                    font-weight: 700;
+                    color: #64748b;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                }
+                .dim-width {
+                    top: 2px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                }
+                .dim-height {
+                    right: -24px;
+                    top: 50%;
+                    transform: translateY(-50%) rotate(90deg);
+                }
+
+                /* Main Sticker Canvas (25mm x 50mm on roll, or 50mm x 25mm direct) */
+                .sticker-canvas {
                     background: #ffffff;
+                    position: relative;
+                    overflow: hidden;
+                    box-sizing: border-box;
+                    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+                }
+
+                /* Default: 25mm wide x 50mm tall (Standard Roll Orientation) */
+                body.mode-rot90 .sticker-canvas,
+                body.mode-rot270 .sticker-canvas,
+                body.mode-stacked .sticker-canvas {
+                    width: 25mm;
+                    height: 50mm;
+                    border-radius: 4px;
+                }
+
+                /* Alternate: 50mm wide x 25mm tall (Direct Horizontal) */
+                body.mode-direct .sticker-canvas {
+                    width: 50mm;
+                    height: 25mm;
+                    border-radius: 4px;
+                }
+
+                /* Mode: Rotated 90° (Standard Along Length - Side-by-side Text & QR on 1 sticker) */
+                body.mode-rot90 .label-box-horizontal {
+                    position: absolute;
+                    top: 1mm;
+                    left: 1mm;
+                    width: 48mm;
+                    height: 23mm;
+                    transform-origin: 0 0;
+                    transform: translate(23mm, 0) rotate(90deg);
+                    display: flex !important;
+                }
+                body.mode-rot90 .label-box-stacked { display: none !important; }
+
+                /* Mode: Rotated 270° (Reverse Along Length) */
+                body.mode-rot270 .label-box-horizontal {
+                    position: absolute;
+                    top: 1mm;
+                    left: 1mm;
+                    width: 48mm;
+                    height: 23mm;
+                    transform-origin: 0 0;
+                    transform: translate(0, 48mm) rotate(-90deg);
+                    display: flex !important;
+                }
+                body.mode-rot270 .label-box-stacked { display: none !important; }
+
+                /* Mode: Direct Horizontal (50mm x 25mm) */
+                body.mode-direct .label-box-horizontal {
+                    position: relative;
+                    top: 0;
+                    left: 0;
+                    width: 48mm;
+                    height: 23mm;
+                    margin: 1mm auto;
+                    transform: none;
+                    display: flex !important;
+                }
+                body.mode-direct .label-box-stacked { display: none !important; }
+
+                /* Mode: Upright Stacked (25mm x 50mm) */
+                body.mode-stacked .label-box-horizontal { display: none !important; }
+                body.mode-stacked .label-box-stacked {
+                    position: relative;
+                    top: 0;
+                    left: 0;
+                    width: 23mm;
+                    height: 48mm;
+                    margin: 1mm auto;
+                    transform: none;
+                    display: flex !important;
+                }
+
+                /* Inner Horizontal Label Card Structure (48mm x 23mm) */
+                .label-box-horizontal {
+                    box-sizing: border-box;
+                    padding: 1.2mm 1.8mm;
+                    align-items: center;
+                    justify-content: space-between;
+                    border: 0.5px solid #000000;
+                    border-radius: 1mm;
+                    background: #ffffff;
+                    color: #000000;
                     overflow: hidden;
                 }
-                .label-info {
+                .label-h-info {
                     flex: 1;
                     min-width: 0;
                     display: flex;
@@ -433,90 +652,302 @@ function printSingleTag(assetId) {
                     justify-content: center;
                     padding-right: 1.5mm;
                 }
-                .label-brand {
+                .label-h-brand {
                     font-size: 5.5pt;
                     font-weight: 800;
                     letter-spacing: 0.4px;
                     text-transform: uppercase;
-                    color: #475569;
+                    color: #334155;
                     line-height: 1;
-                    margin-bottom: 0.3mm;
+                    margin-bottom: 0.4mm;
                 }
-                .label-prefix {
+                .label-h-prefix {
                     font-size: 6.5pt;
                     font-weight: 800;
-                    color: #334155;
+                    color: #1e293b;
                     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
                     line-height: 1;
                 }
-                .label-main-code {
-                    font-size: 13pt;
+                .label-h-code {
+                    font-size: 12.5pt;
                     font-weight: 900;
-                    color: #020617;
+                    color: #000000;
                     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
                     line-height: 1.05;
                     letter-spacing: -0.3px;
                     word-break: break-all;
+                    margin: 0.2mm 0;
                 }
-                .label-full-tag {
+                .label-h-user {
                     font-size: 6pt;
                     font-weight: 800;
-                    color: #1e293b;
+                    color: #0f172a;
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                     text-transform: uppercase;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     line-height: 1.1;
-                    margin-top: 0.3mm;
                 }
-                .label-qr {
-                    width: 17.5mm;
-                    height: 17.5mm;
+                .label-h-qr {
+                    width: 16.5mm;
+                    height: 16.5mm;
                     flex-shrink: 0;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                 }
-                .label-qr svg {
-                    width: 17.5mm;
-                    height: 17.5mm;
+                .label-h-qr svg {
+                    width: 16.5mm;
+                    height: 16.5mm;
                     display: block;
-                    border: none;
-                    padding: 0;
-                    box-shadow: none;
                     background: transparent;
                 }
+
+                /* Inner Upright Stacked Card Structure (23mm x 48mm) */
+                .label-box-stacked {
+                    box-sizing: border-box;
+                    padding: 1.8mm 1.2mm;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: space-between;
+                    border: 0.5px solid #000000;
+                    border-radius: 1mm;
+                    background: #ffffff;
+                    color: #000000;
+                    overflow: hidden;
+                    text-align: center;
+                }
+                .label-s-brand {
+                    font-size: 5pt;
+                    font-weight: 800;
+                    letter-spacing: 0.3px;
+                    text-transform: uppercase;
+                    color: #334155;
+                    line-height: 1;
+                }
+                .label-s-prefix {
+                    font-size: 6pt;
+                    font-weight: 800;
+                    color: #1e293b;
+                    font-family: ui-monospace, monospace;
+                    line-height: 1.1;
+                    margin-top: 0.5mm;
+                }
+                .label-s-code {
+                    font-size: 11pt;
+                    font-weight: 900;
+                    color: #000000;
+                    font-family: ui-monospace, monospace;
+                    line-height: 1.05;
+                    letter-spacing: -0.3px;
+                }
+                .label-s-user {
+                    font-size: 5.5pt;
+                    font-weight: 800;
+                    color: #0f172a;
+                    text-transform: uppercase;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    max-width: 20mm;
+                    line-height: 1.1;
+                    margin-bottom: 0.8mm;
+                }
+                .label-s-qr {
+                    width: 17mm;
+                    height: 17mm;
+                    flex-shrink: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .label-s-qr svg {
+                    width: 17mm;
+                    height: 17mm;
+                    display: block;
+                    background: transparent;
+                }
+
+                /* Clean Print Media Output */
                 @media print {
+                    .no-print, .no-print-toolbar, .stage-info, .sticker-dimension-label {
+                        display: none !important;
+                    }
                     html, body {
-                        width: 50mm !important;
-                        height: 25mm !important;
+                        background: #ffffff !important;
                         margin: 0 !important;
                         padding: 0 !important;
+                        overflow: hidden !important;
+                        width: 100% !important;
+                        height: 100% !important;
                     }
-                    .label-box {
+                    .stage {
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        min-height: 0 !important;
+                        display: block !important;
+                        width: 100% !important;
+                        height: 100% !important;
+                    }
+                    .sticker-mount {
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        background: transparent !important;
+                        display: block !important;
+                    }
+                    .sticker-canvas {
+                        border-radius: 0 !important;
+                        box-shadow: none !important;
+                        margin: 0 !important;
+                    }
+                    body.mode-rot90 .sticker-canvas,
+                    body.mode-rot270 .sticker-canvas,
+                    body.mode-stacked .sticker-canvas {
+                        width: 25mm !important;
+                        height: 50mm !important;
+                    }
+                    body.mode-direct .sticker-canvas {
                         width: 50mm !important;
                         height: 25mm !important;
-                        border: 0.5px solid #94a3b8 !important;
+                    }
+                    .label-box-horizontal,
+                    .label-box-stacked {
+                        border: 0.5px solid #000000 !important;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                 }
             </style>
         </head>
-        <body>
-            <div class="label-box">
-                <div class="label-info">
-                    <div class="label-brand">PSM HOSPITAL</div>
-                    <div class="label-prefix">${parsed.prefix}</div>
-                    <div class="label-main-code">${parsed.code}</div>
-                    <div class="label-full-tag" title="${userName}">${userName}</div>
+        <body class="mode-rot90">
+            <!-- Screen Toolbar -->
+            <div class="no-print-toolbar no-print">
+                <div class="toolbar-brand">
+                    <span class="toolbar-brand-title">PSM Single Sticker Print</span>
+                    <span class="toolbar-asset-tag">${dev.assetId}</span>
                 </div>
-                <div class="label-qr">
-                    ${qrSVG}
+                <div class="toolbar-controls">
+                    <button type="button" class="mode-btn active" id="btn-rot90" onclick="setMode('rot90')">
+                        📐 90° Rotated (1 Sticker)
+                    </button>
+                    <button type="button" class="mode-btn" id="btn-rot270" onclick="setMode('rot270')">
+                        🔄 270° Rotated
+                    </button>
+                    <button type="button" class="mode-btn" id="btn-direct" onclick="setMode('direct')">
+                        📏 Direct (50×25mm)
+                    </button>
+                    <button type="button" class="mode-btn" id="btn-stacked" onclick="setMode('stacked')">
+                        📱 Upright Stacked
+                    </button>
+                    <button type="button" class="btn-print" onclick="window.print()">
+                        🖨️ Print Sticker
+                    </button>
                 </div>
             </div>
+
+            <!-- Stage Preview -->
+            <div class="stage">
+                <div class="stage-info no-print" id="stage-desc">
+                    <span class="stage-hint-accent">✅ Active Layout: Rotated 90°</span>. Both Text & QR code fit completely on <strong>1 single physical sticker (25mm × 50mm)</strong> without splitting onto sticker #2. When peeled, turn horizontal for a standard 5cm × 2.5cm tag.
+                </div>
+
+                <div class="sticker-mount">
+                    <span class="sticker-dimension-label dim-width" id="dim-w-text">25mm Width (Roll Feed)</span>
+                    <span class="sticker-dimension-label dim-height" id="dim-h-text">50mm Length</span>
+
+                    <div class="sticker-canvas" id="sticker-canvas">
+                        <!-- Horizontal Tag (used for rot90, rot270, and direct) -->
+                        <div class="label-box-horizontal">
+                            <div class="label-h-info">
+                                <div class="label-h-brand">PSM HOSPITAL</div>
+                                <div class="label-h-prefix">${parsed.prefix}</div>
+                                <div class="label-h-code">${parsed.code}</div>
+                                <div class="label-h-user" title="${userName}">${userName}</div>
+                            </div>
+                            <div class="label-h-qr">
+                                ${qrSVG}
+                            </div>
+                        </div>
+
+                        <!-- Stacked Tag (used for mode-stacked) -->
+                        <div class="label-box-stacked">
+                            <div>
+                                <div class="label-s-brand">PSM HOSPITAL</div>
+                                <div class="label-s-prefix">${parsed.prefix}</div>
+                                <div class="label-s-code">${parsed.code}</div>
+                                <div class="label-s-user" title="${userName}">${userName}</div>
+                            </div>
+                            <div class="label-s-qr">
+                                ${qrSVG}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stage-info no-print" style="margin-top: 20px; font-size: 10.5px; border-color: #334155; background: #0f172a;">
+                    💡 <strong>Print Dialog Tip:</strong> Ensure <em>Margins: None</em> and <em>Scale: 100%</em> in the Chrome print preview window.
+                </div>
+            </div>
+
             <script>
+                // Load preferred mode or default to calibrated rot90
+                let currentMode = localStorage.getItem('psm_single_tag_mode') || 'rot90';
+                applyMode(currentMode);
+
+                function setMode(mode) {
+                    currentMode = mode;
+                    localStorage.setItem('psm_single_tag_mode', mode);
+                    applyMode(mode);
+                }
+
+                function applyMode(mode) {
+                    const body = document.body;
+                    const pageStyle = document.getElementById('print-page-style');
+                    const desc = document.getElementById('stage-desc');
+                    const dimW = document.getElementById('dim-w-text');
+                    const dimH = document.getElementById('dim-h-text');
+
+                    ['rot90', 'rot270', 'direct', 'stacked'].forEach(m => {
+                        body.classList.remove('mode-' + m);
+                        const btn = document.getElementById('btn-' + m);
+                        if (btn) btn.classList.remove('active');
+                    });
+
+                    body.classList.add('mode-' + mode);
+                    const activeBtn = document.getElementById('btn-' + mode);
+                    if (activeBtn) activeBtn.classList.add('active');
+
+                    if (mode === 'rot90') {
+                        if (pageStyle) pageStyle.innerHTML = '@page { size: 25mm 50mm; margin: 0; }';
+                        if (desc) desc.innerHTML = '<span class="stage-hint-accent">✅ Active Layout: Rotated 90° (Recommended)</span>. Both Text & QR code fit completely on <strong>1 single physical sticker (25mm × 50mm)</strong> without splitting onto sticker #2. When peeled, turn horizontal for a standard 5cm × 2.5cm tag.';
+                        if (dimW) dimW.textContent = '25mm Width (Roll Feed)';
+                        if (dimH) dimH.textContent = '50mm Length';
+                    } else if (mode === 'rot270') {
+                        if (pageStyle) pageStyle.innerHTML = '@page { size: 25mm 50mm; margin: 0; }';
+                        if (desc) desc.innerHTML = '<span>🔄 Active Layout: Rotated 270° (Reverse Feed)</span>. QR code feeds first, followed by text along the 50mm length of <strong>1 single sticker</strong>.';
+                        if (dimW) dimW.textContent = '25mm Width (Roll Feed)';
+                        if (dimH) dimH.textContent = '50mm Length';
+                    } else if (mode === 'direct') {
+                        if (pageStyle) pageStyle.innerHTML = '@page { size: 50mm 25mm; margin: 0; }';
+                        if (desc) desc.innerHTML = '<span>📏 Active Layout: Direct Horizontal (50mm × 25mm)</span>. Use this only if your printer driver is configured for 50×25mm landscape paper.';
+                        if (dimW) dimW.textContent = '50mm Width';
+                        if (dimH) dimH.textContent = '25mm Height';
+                    } else if (mode === 'stacked') {
+                        if (pageStyle) pageStyle.innerHTML = '@page { size: 25mm 50mm; margin: 0; }';
+                        if (desc) desc.innerHTML = '<span>📱 Active Layout: Upright Stacked (25mm × 50mm)</span>. Text stacked upright above QR code on 1 single sticker.';
+                        if (dimW) dimW.textContent = '25mm Width (Roll Feed)';
+                        if (dimH) dimH.textContent = '50mm Length';
+                    }
+                }
+
+                // Auto-trigger print with safe rendering timeout
                 window.onload = function() {
-                    window.print();
+                    setTimeout(function() {
+                        window.print();
+                    }, 400);
                 };
             </script>
         </body>
