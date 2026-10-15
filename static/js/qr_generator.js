@@ -359,7 +359,7 @@ function renderStickerCards(devices) {
     }
 }
 
-// Dedicated 1-Click Single Asset Tag Printer (Calibrated for 50mm x 25mm physical sticker)
+// Dedicated 1-Click Single Asset Tag Printer (Calibrated for 25mm x 50mm Vertical Physical Sticker)
 function printSingleTag(assetId) {
     const rawDevs = (typeof appState !== 'undefined' && appState.devices) ? appState.devices : [];
     const dev = rawDevs.find(d => (d.assetId || '').toUpperCase() === (assetId || '').toUpperCase()) || { assetId };
@@ -377,7 +377,7 @@ function printSingleTag(assetId) {
     const reportUrl = `${window.location.origin}/report/${encodeURIComponent(dev.assetId)}/`;
     const qrSVG = generateQRSVG(reportUrl, 68);
 
-    const printWindow = window.open('', '_blank', 'width=580,height=440');
+    const printWindow = window.open('', '_blank', 'width=580,height=520');
     if (!printWindow) {
         window.print();
         return;
@@ -476,57 +476,115 @@ function printSingleTag(assetId) {
                     text-align: center;
                 }
 
-                /* Physical Sticker Container */
-                .print-canvas {
-                    background: #ffffff;
-                    position: relative;
-                    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
-                    border-radius: 4px;
-                }
-
-                /* Mode 1 (Default): Rotated 90° for Vertical Sheet Feed (25mm x 50mm canvas) */
-                body.mode-rotated .print-canvas {
+                /* ========================================================
+                   VERTICAL STICKER LAYOUT (DEFAULT): 25mm Width x 50mm Height
+                   Upright text, stacked vertically, centered QR code
+                   ======================================================== */
+                .label-box-vertical {
                     width: 25mm;
-                    height: 50mm;
+                    height: 49.8mm;
+                    max-height: 50mm;
+                    padding: 2.2mm 1.5mm 2.0mm 1.5mm;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: space-between;
+                    text-align: center;
+                    background: #ffffff;
+                    border: 0.5px solid #94a3b8;
+                    box-sizing: border-box;
+                    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
+                    border-radius: 3px;
+                    overflow: hidden;
+                    page-break-inside: avoid;
+                    break-inside: avoid;
+                    page-break-after: avoid;
+                    break-after: avoid;
+                }
+                .label-v-info {
+                    width: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                }
+                .label-v-brand {
+                    font-size: 5.5pt;
+                    font-weight: 800;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                    color: #475569;
+                    line-height: 1;
+                    margin-bottom: 0.6mm;
+                    white-space: nowrap;
+                }
+                .label-v-prefix {
+                    font-size: 6.5pt;
+                    font-weight: 800;
+                    color: #334155;
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                    line-height: 1;
+                    margin-bottom: 0.6mm;
+                    white-space: nowrap;
+                }
+                .label-v-code {
+                    font-size: 13.5pt;
+                    font-weight: 900;
+                    color: #020617;
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                    line-height: 1.05;
+                    letter-spacing: -0.3px;
+                    margin-bottom: 0.8mm;
+                    white-space: nowrap;
+                }
+                .label-v-user {
+                    font-size: 6pt;
+                    font-weight: 800;
+                    color: #1e293b;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    text-transform: uppercase;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    line-height: 1.1;
+                    max-width: 22mm;
+                    margin-bottom: 1.5mm;
+                }
+                .label-v-qr {
+                    width: 18.5mm;
+                    height: 18.5mm;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    margin-top: auto;
                 }
-                body.mode-rotated .label-box {
-                    width: 50mm;
-                    height: 25mm;
-                    transform: rotate(90deg);
-                    transform-origin: center center;
-                    position: absolute;
-                }
-
-                /* Mode 2: Unrotated 0° for Direct Horizontal Feed (50mm x 25mm canvas) */
-                body.mode-horizontal .print-canvas {
-                    width: 50mm;
-                    height: 25mm;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                body.mode-horizontal .label-box {
-                    width: 50mm;
-                    height: 25mm;
-                    transform: none;
-                    position: relative;
+                .label-v-qr svg {
+                    width: 18.5mm;
+                    height: 18.5mm;
+                    display: block;
+                    background: transparent;
+                    border: none;
+                    padding: 0;
                 }
 
-                /* Sticker Label Content */
-                .label-box {
+                /* ========================================================
+                   HORIZONTAL STICKER LAYOUT (ALTERNATE): 50mm Width x 25mm Height
+                   ======================================================== */
+                .label-box-horizontal {
+                    width: 50mm;
+                    height: 25mm;
                     padding: 1.5mm 2.2mm;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
+                    background: #ffffff;
                     border: 0.5px solid #94a3b8;
                     box-sizing: border-box;
-                    background: #ffffff;
+                    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
+                    border-radius: 3px;
                     overflow: hidden;
                 }
-                .label-info {
+                .label-h-info {
                     flex: 1;
                     min-width: 0;
                     display: flex;
@@ -534,7 +592,7 @@ function printSingleTag(assetId) {
                     justify-content: center;
                     padding-right: 1.5mm;
                 }
-                .label-brand {
+                .label-h-brand {
                     font-size: 5.5pt;
                     font-weight: 800;
                     letter-spacing: 0.4px;
@@ -543,22 +601,22 @@ function printSingleTag(assetId) {
                     line-height: 1;
                     margin-bottom: 0.3mm;
                 }
-                .label-prefix {
+                .label-h-prefix {
                     font-size: 6.5pt;
                     font-weight: 800;
                     color: #334155;
-                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                    font-family: ui-monospace, monospace;
                     line-height: 1;
                 }
-                .label-main-code {
+                .label-h-code {
                     font-size: 13pt;
                     font-weight: 900;
                     color: #020617;
-                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                    font-family: ui-monospace, monospace;
                     line-height: 1.05;
                     letter-spacing: -0.3px;
                 }
-                .label-full-tag {
+                .label-h-user {
                     font-size: 6pt;
                     font-weight: 800;
                     color: #1e293b;
@@ -570,7 +628,7 @@ function printSingleTag(assetId) {
                     line-height: 1.1;
                     margin-top: 0.3mm;
                 }
-                .label-qr {
+                .label-h-qr {
                     width: 17.5mm;
                     height: 17.5mm;
                     flex-shrink: 0;
@@ -578,15 +636,21 @@ function printSingleTag(assetId) {
                     align-items: center;
                     justify-content: center;
                 }
-                .label-qr svg {
+                .label-h-qr svg {
                     width: 17.5mm;
                     height: 17.5mm;
                     display: block;
                     border: none;
                     padding: 0;
-                    box-shadow: none;
                     background: transparent;
                 }
+
+                /* Show / Hide according to active mode */
+                body.mode-vertical .label-box-vertical { display: flex !important; }
+                body.mode-vertical .label-box-horizontal { display: none !important; }
+
+                body.mode-horizontal .label-box-vertical { display: none !important; }
+                body.mode-horizontal .label-box-horizontal { display: flex !important; }
 
                 @media print {
                     .no-print, .no-print-toolbar, .stage-hint {
@@ -596,35 +660,30 @@ function printSingleTag(assetId) {
                         background: #ffffff !important;
                         margin: 0 !important;
                         padding: 0 !important;
-                        width: auto !important;
-                        height: auto !important;
+                        width: 100% !important;
+                        height: 100% !important;
+                        overflow: hidden !important;
                     }
                     .stage {
                         padding: 0 !important;
                         margin: 0 !important;
                         min-height: 0 !important;
                         display: block !important;
+                        width: 100% !important;
+                        height: 100% !important;
                     }
-                    .print-canvas {
+                    .label-box-vertical, .label-box-horizontal {
                         box-shadow: none !important;
                         border-radius: 0 !important;
                         margin: 0 !important;
-                    }
-                    body.mode-rotated .print-canvas {
-                        width: 25mm !important;
-                        height: 50mm !important;
-                    }
-                    body.mode-horizontal .print-canvas {
-                        width: 50mm !important;
-                        height: 25mm !important;
-                    }
-                    .label-box {
                         border: 0.5px solid #94a3b8 !important;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                 }
             </style>
         </head>
-        <body class="mode-rotated">
+        <body class="mode-vertical">
             <div class="no-print-toolbar">
                 <div class="toolbar-title">
                     <span>Print Single Sticker:</span>
@@ -632,7 +691,7 @@ function printSingleTag(assetId) {
                 </div>
                 <div class="toolbar-buttons">
                     <button type="button" class="btn btn-toggle" onclick="toggleOrientation()" id="toggle-orient-btn">
-                        🔄 Orientation: Rotated 90° (Along Sticker)
+                        🔄 Layout: Vertical Tag (2.5 cm × 5.0 cm)
                     </button>
                     <button type="button" class="btn btn-print" onclick="window.print()">
                         🖨️ Print Sticker
@@ -641,29 +700,42 @@ function printSingleTag(assetId) {
             </div>
 
             <div class="stage">
-                <div class="print-canvas">
-                    <div class="label-box">
-                        <div class="label-info">
-                            <div class="label-brand">PSM HOSPITAL</div>
-                            <div class="label-prefix">${parsed.prefix}</div>
-                            <div class="label-main-code">${parsed.code}</div>
-                            <div class="label-full-tag" title="${userName}">${userName}</div>
-                        </div>
-                        <div class="label-qr">
-                            ${qrSVG}
-                        </div>
+                <!-- 1. Vertical Tag (Default): 2.5cm width x 5.0cm height -->
+                <div class="label-box-vertical">
+                    <div class="label-v-info">
+                        <div class="label-v-brand">PSM HOSPITAL</div>
+                        <div class="label-v-prefix">${parsed.prefix}</div>
+                        <div class="label-v-code">${parsed.code}</div>
+                        <div class="label-v-user" title="${userName}">${userName}</div>
+                    </div>
+                    <div class="label-v-qr">
+                        ${qrSVG}
                     </div>
                 </div>
+
+                <!-- 2. Horizontal Tag (Alternate): 5.0cm width x 2.5cm height -->
+                <div class="label-box-horizontal">
+                    <div class="label-h-info">
+                        <div class="label-h-brand">PSM HOSPITAL</div>
+                        <div class="label-h-prefix">${parsed.prefix}</div>
+                        <div class="label-h-code">${parsed.code}</div>
+                        <div class="label-h-user" title="${userName}">${userName}</div>
+                    </div>
+                    <div class="label-h-qr">
+                        ${qrSVG}
+                    </div>
+                </div>
+
                 <div class="stage-hint no-print" id="orient-hint">
-                    Current Mode: <strong>Rotated 90°</strong> (Calibrated so text prints horizontally along the 5.0 cm length of your sticker instead of spilling across 2 stickers).
+                    Current Layout: <strong>Vertical (Portrait: 2.5 cm Width × 5.0 cm Height)</strong>. Content is upright and stacked vertically to fit your single vertical sticker perfectly.
                 </div>
             </div>
 
             <script>
-                let isRotated = true;
-                const saved = localStorage.getItem('psm_single_tag_rotated');
+                let isVertical = true;
+                const saved = localStorage.getItem('psm_single_tag_vertical');
                 if (saved !== null) {
-                    isRotated = (saved === 'true');
+                    isVertical = (saved === 'true');
                 }
                 applyOrientation();
 
@@ -672,20 +744,20 @@ function printSingleTag(assetId) {
                     const btn = document.getElementById('toggle-orient-btn');
                     const hint = document.getElementById('orient-hint');
 
-                    if (isRotated) {
+                    if (isVertical) {
                         body.classList.remove('mode-horizontal');
-                        body.classList.add('mode-rotated');
-                        if (btn) btn.innerHTML = '🔄 Orientation: Rotated 90° (Along Sticker)';
-                        if (hint) hint.innerHTML = 'Current Mode: <strong>Rotated 90°</strong> (Calibrated so text prints along the 5.0 cm length of your sticker without splitting).';
+                        body.classList.add('mode-vertical');
+                        if (btn) btn.innerHTML = '🔄 Layout: Vertical Tag (2.5 cm × 5.0 cm)';
+                        if (hint) hint.innerHTML = 'Current Layout: <strong>Vertical (Portrait: 2.5 cm Width × 5.0 cm Height)</strong>. Content is upright and stacked vertically to fit your single sticker without splitting.';
                         updatePageSize('25mm 50mm');
                     } else {
-                        body.classList.remove('mode-rotated');
+                        body.classList.remove('mode-vertical');
                         body.classList.add('mode-horizontal');
-                        if (btn) btn.innerHTML = '🔄 Orientation: Direct Horizontal (50x25mm)';
-                        if (hint) hint.innerHTML = 'Current Mode: <strong>Direct Horizontal</strong> (50mm width x 25mm height).';
+                        if (btn) btn.innerHTML = '🔄 Layout: Horizontal Tag (5.0 cm × 2.5 cm)';
+                        if (hint) hint.innerHTML = 'Current Layout: <strong>Horizontal (Landscape: 5.0 cm Width × 2.5 cm Height)</strong>.';
                         updatePageSize('50mm 25mm');
                     }
-                    localStorage.setItem('psm_single_tag_rotated', isRotated);
+                    localStorage.setItem('psm_single_tag_vertical', isVertical);
                 }
 
                 function updatePageSize(sizeStr) {
@@ -697,7 +769,7 @@ function printSingleTag(assetId) {
                 }
 
                 function toggleOrientation() {
-                    isRotated = !isRotated;
+                    isVertical = !isVertical;
                     applyOrientation();
                 }
 
