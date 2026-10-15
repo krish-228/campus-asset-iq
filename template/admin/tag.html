@@ -96,16 +96,13 @@
             padding-right: 2.0mm !important;
         }
 
-        /* Column 3: safe right margin so QR code stays comfortably inside the sticker */
-        .sticker-card:nth-child(4n+3) {
-            padding-left: 1.8mm !important;
-            padding-right: 2.6mm !important;
-        }
-
-        /* Column 4: safe right margin so QR code stays comfortably inside the sticker */
+        /* 3rd and 4th columns: shift left by 2.0mm to align precisely with physical sticker columns */
+        .sticker-card:nth-child(4n+3),
         .sticker-card:nth-child(4n) {
-            padding-left: 1.4mm !important;
-            padding-right: 3.4mm !important;
+            position: relative !important;
+            left: -2.0mm !important;
+            padding-left: 1.8mm !important;
+            padding-right: 2.2mm !important;
         }
         /* Hide screen-only workstation metadata on print */
         .sticker-screen-only {
@@ -446,10 +443,10 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static 'js/data.js' %}?v=40.0_cols_234_calibrated"></script>
-<script src="{% static 'js/qrcode.min.js' %}?v=40.0_cols_234_calibrated"></script>
-<script src="{% static 'js/qr_generator.js' %}?v=40.0_cols_234_calibrated"></script>
-<script src="{% static 'js/app.js' %}?v=40.0_cols_234_calibrated"></script>
+<script src="{% static 'js/data.js' %}?v=41.0_col3_col4_move_left_2mm"></script>
+<script src="{% static 'js/qrcode.min.js' %}?v=41.0_col3_col4_move_left_2mm"></script>
+<script src="{% static 'js/qr_generator.js' %}?v=41.0_col3_col4_move_left_2mm"></script>
+<script src="{% static 'js/app.js' %}?v=41.0_col3_col4_move_left_2mm"></script>
 <script>
     function handleTagFilterSearch(e) {
         const val = (e && e.target ? e.target.value : '').toLowerCase().trim();
