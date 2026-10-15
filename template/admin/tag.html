@@ -100,18 +100,18 @@
             padding-right: 2.0mm !important;
         }
 
-        /* Column 3: 3mm margin after Column 2 (2mm + 3mm = 5mm total offset) */
+        /* Column 3: moved 1mm left (from 5.0mm to 4.0mm) */
         .sticker-card:nth-child(4n+3) {
             position: relative !important;
-            left: 5.0mm !important;
+            left: 4.0mm !important;
             padding-left: 2.0mm !important;
             padding-right: 2.0mm !important;
         }
 
-        /* Column 4: 3mm margin after Column 3 (5mm + 3mm = 8mm total offset) */
+        /* Column 4: moved 2mm left (from 8.0mm to 6.0mm) */
         .sticker-card:nth-child(4n) {
             position: relative !important;
-            left: 8.0mm !important;
+            left: 6.0mm !important;
             padding-left: 2.0mm !important;
             padding-right: 2.0mm !important;
         }
@@ -454,10 +454,10 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static 'js/data.js' %}?v=42.0_exact_gaps_2mm_3mm_3mm"></script>
-<script src="{% static 'js/qrcode.min.js' %}?v=42.0_exact_gaps_2mm_3mm_3mm"></script>
-<script src="{% static 'js/qr_generator.js' %}?v=42.0_exact_gaps_2mm_3mm_3mm"></script>
-<script src="{% static 'js/app.js' %}?v=42.0_exact_gaps_2mm_3mm_3mm"></script>
+<script src="{% static 'js/data.js' %}?v=43.0_col3_1mm_col4_2mm_left"></script>
+<script src="{% static 'js/qrcode.min.js' %}?v=43.0_col3_1mm_col4_2mm_left"></script>
+<script src="{% static 'js/qr_generator.js' %}?v=43.0_col3_1mm_col4_2mm_left"></script>
+<script src="{% static 'js/app.js' %}?v=43.0_col3_1mm_col4_2mm_left"></script>
 <script>
     function handleTagFilterSearch(e) {
         const val = (e && e.target ? e.target.value : '').toLowerCase().trim();
