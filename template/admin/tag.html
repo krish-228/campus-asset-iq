@@ -14,7 +14,7 @@
     @media print {
         @page {
             size: A4 portrait;
-            margin: 3.6mm 5.0mm; /* 5.0mm side margin centers 4x50mm=200mm on 210mm A4; 3.6mm top margin centers 12x24.15mm=289.8mm on 297mm A4 */
+            margin: 3.6mm 0.5mm; /* 0.5mm side margin centers 4x50mm + 3x3mm column-gap = 209.0mm on 210mm A4; 3.6mm top margin centers 12x24.15mm=289.8mm on 297mm A4 */
         }
         *, *::before, *::after {
             -webkit-print-color-adjust: exact !important;
@@ -42,7 +42,7 @@
             display: none !important;
         }
         #qr-tags-grid {
-            width: 200mm !important;
+            width: 209.0mm !important;
             margin: 0 auto !important;
             padding: 0 !important;
         }
@@ -50,8 +50,9 @@
             display: grid !important;
             grid-template-columns: repeat(4, 50.0mm) !important;
             grid-auto-rows: 24.15mm !important;
-            gap: 0 !important;
-            width: 200mm !important;
+            column-gap: 3.0mm !important;
+            row-gap: 0 !important;
+            width: 209.0mm !important;
             margin: 0 auto !important;
             padding: 0 !important;
             box-sizing: border-box !important;
@@ -416,10 +417,10 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static 'js/data.js' %}?v=37.0_single_tag_25x50_rot90"></script>
-<script src="{% static 'js/qrcode.min.js' %}?v=37.0_single_tag_25x50_rot90"></script>
-<script src="{% static 'js/qr_generator.js' %}?v=37.0_single_tag_25x50_rot90"></script>
-<script src="{% static 'js/app.js' %}?v=37.0_single_tag_25x50_rot90"></script>
+<script src="{% static 'js/data.js' %}?v=38.0_a4_3mm_col_gap"></script>
+<script src="{% static 'js/qrcode.min.js' %}?v=38.0_a4_3mm_col_gap"></script>
+<script src="{% static 'js/qr_generator.js' %}?v=38.0_a4_3mm_col_gap"></script>
+<script src="{% static 'js/app.js' %}?v=38.0_a4_3mm_col_gap"></script>
 <script>
     function handleTagFilterSearch(e) {
         const val = (e && e.target ? e.target.value : '').toLowerCase().trim();
