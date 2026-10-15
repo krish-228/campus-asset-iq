@@ -1,21 +1,11 @@
 // CampusAssetIQ — High-Precision Vector QR & Asset Sticker Card Generator
-// Standardized Layout: PSM Hospital Brand + Asset Code + Scannable QR Code (No 1D Barcode Bars)
+// Screen: Rich Workstation Cards (User, Category, Location, Status & QR)
+// Print: Strict A4 Sticker Engine (5.0 cm x 2.5 cm, 4 Columns x 12 Rows = 48 Stickers/Page)
 
-let currentStickerLayout = 'standard'; // 'standard' | 'pure' | 'detailed'
+let currentStickerLayout = 'standard';
 
 function setStickerLayout(mode) {
     currentStickerLayout = mode;
-    // Update active button state in tag.html if present
-    document.querySelectorAll('.sticker-layout-btn').forEach(btn => {
-        if (btn.dataset.mode === mode) {
-            btn.classList.add('bg-indigo-600', 'text-white', 'shadow-xs');
-            btn.classList.remove('bg-white', 'text-slate-700', 'hover:bg-slate-50');
-        } else {
-            btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-xs');
-            btn.classList.add('bg-white', 'text-slate-700', 'hover:bg-slate-50');
-        }
-    });
-
     if (typeof getFilteredDevices === 'function') {
         renderStickerCards(getFilteredDevices());
     } else if (typeof appState !== 'undefined' && appState.devices) {
@@ -23,8 +13,41 @@ function setStickerLayout(mode) {
     }
 }
 
-function generateQRSVG(dataString, size = 84) {
-    // 1. Standard ISO 18004 Compliant Vector QR Code Matrix (Scannable on all iOS / Android cameras)
+// Helper to parse Asset Tag into readable components
+// e.g. "PSM/IT/0826/001" -> prefix: "PSM/IT", code: "0826/001", full: "PSM/IT/0826/001"
+function parseAssetIdParts(assetId) {
+    const raw = (assetId || '').trim();
+    if (!raw) return { prefix: 'PSM/IT', code: '000', full: 'PSM/IT/000', isSplit: true };
+    
+    const parts = raw.split('/');
+    if (parts.length === 4 && /^\d{4}$/.test(parts[2])) {
+        // Standard PSM / IT / MMYY / XXX -> Prefix: PSM/IT, Code: MMYY/XXX (e.g. 0826/001)
+        return {
+            prefix: parts[0] + '/' + parts[1],
+            code: parts[2] + '/' + parts[3],
+            full: raw,
+            isSplit: true
+        };
+    } else if (parts.length >= 3) {
+        return {
+            prefix: parts.slice(0, parts.length - 1).join('/'),
+            code: parts[parts.length - 1],
+            full: raw,
+            isSplit: true
+        };
+    } else if (parts.length === 2) {
+        return {
+            prefix: parts[0],
+            code: parts[1],
+            full: raw,
+            isSplit: true
+        };
+    }
+    return { prefix: 'TAG', code: raw, full: raw, isSplit: false };
+}
+
+// Standard ISO 18004 Vector QR Code Generator (Pure SVG, 100% vector scalability)
+function generateQRSVG(dataString, size = 70, extraClass = '') {
     if (typeof qrcode !== 'undefined') {
         try {
             // Type 0 auto-detects minimum Version (v1 to v40) to fit URL size; 'M' error correction
@@ -45,7 +68,8 @@ function generateQRSVG(dataString, size = 84) {
                 }
             }
 
-            return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" class="rounded-lg bg-white p-1 border border-slate-200 shadow-2xs">
+            const cls = extraClass || 'sticker-qr-svg rounded-lg bg-white p-1 border border-slate-200 shadow-2xs';
+            return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" class="${cls}">
                 ${rects}
             </svg>`;
         } catch (err) {
@@ -53,7 +77,7 @@ function generateQRSVG(dataString, size = 84) {
         }
     }
 
-    // 2. High-contrast fallback vector matrix
+    // High-contrast fallback vector matrix
     const gridSize = 21;
     const cellSize = size / gridSize;
     let rects = "";
@@ -98,11 +122,13 @@ function generateQRSVG(dataString, size = 84) {
         }
     }
 
-    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" class="rounded-lg bg-white p-1 border border-slate-200 shadow-2xs">
+    const cls = extraClass || 'sticker-qr-svg rounded-lg bg-white p-1 border border-slate-200 shadow-2xs';
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" class="${cls}">
         ${rects}
     </svg>`;
 }
 
+// Group devices by unique asset tag so multiple components sharing an asset ID render as ONE single tag card
 function groupDevicesByAssetId(devices) {
     if (!devices || !Array.isArray(devices) || devices.length === 0) return [];
 
@@ -125,7 +151,6 @@ function groupDevicesByAssetId(devices) {
         const entry = groups.get(key);
         entry.all.push(dev);
 
-        // Normalize and collect component name (strip any "Workstation" wording)
         let rawType = (dev.deviceType || '').trim();
         if (rawType) {
             rawType = rawType.replace(/workstation/gi, '').trim();
@@ -142,11 +167,9 @@ function groupDevicesByAssetId(devices) {
 
     const result = [];
     groups.forEach(entry => {
-        // Prefer CPU or primary item as base
         const cpuDev = entry.all.find(d => (d.deviceType || '').toUpperCase().includes('CPU'));
         const primary = { ...(cpuDev || entry.primary) };
 
-        // Sort components according to canonical order
         const comps = entry.components.sort((a, b) => {
             const idxA = order.indexOf(a) !== -1 ? order.indexOf(a) : 99;
             const idxB = order.indexOf(b) !== -1 ? order.indexOf(b) : 99;
@@ -161,7 +184,6 @@ function groupDevicesByAssetId(devices) {
             primary.deviceType = 'CPU';
         }
 
-        // If primary has no serial, find first available serial in group
         if (!primary.serialNumber || primary.serialNumber === 'N/A') {
             const snDev = entry.all.find(d => d.serialNumber && d.serialNumber !== 'N/A');
             if (snDev) primary.serialNumber = snDev.serialNumber;
@@ -173,19 +195,20 @@ function groupDevicesByAssetId(devices) {
     return result;
 }
 
+// Master Render Function: Displays previous spacious cards on screen, while strictly formatting into 5cm x 2.5cm (4x12) on print
 function renderStickerCards(devices) {
     const container = document.getElementById("qr-stickers-grid");
     if (!container) return;
 
-    // Group devices by unique asset tag so multiple components sharing an asset ID render as ONE single tag card
+    // Group devices by unique asset tag
     const uniqueDevices = groupDevicesByAssetId(devices);
 
     if (!uniqueDevices || uniqueDevices.length === 0) {
         container.innerHTML = `
-            <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-2xs p-8">
-                <i data-lucide="inbox" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
-                <div class="text-sm font-bold text-slate-700">No hardware assets found</div>
-                <p class="text-xs text-slate-400 mt-1">Try clearing your search query or organization filter.</p>
+            <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-2xs p-8 max-w-2xl mx-auto my-6">
+                <i data-lucide="inbox" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+                <div class="text-base font-bold text-slate-700">No hardware assets found</div>
+                <p class="text-xs text-slate-400 mt-1">Try clearing your search query or organization filter to view and print stickers.</p>
             </div>
         `;
         if (window.lucide && typeof window.lucide.createIcons === 'function') {
@@ -208,10 +231,10 @@ function renderStickerCards(devices) {
 
     container.innerHTML = uniqueDevices.map(dev => {
         // 1. Resolve Location text cleanly from device directly or appState
-        const room = (appState && appState.rooms) ? appState.rooms.find(r => r.id === dev.roomId) : null;
-        const floor = (room && appState && appState.floors) ? appState.floors.find(f => f.id === room.floorId) : null;
-        const org = (appState && appState.organizations) ? appState.organizations.find(o => o.id === dev.orgId) : null;
-        const user = (appState && appState.users) ? appState.users.find(u => u.id === dev.assignedUserId) : null;
+        const room = (typeof appState !== 'undefined' && appState.rooms) ? appState.rooms.find(r => r.id === dev.roomId) : null;
+        const floor = (room && typeof appState !== 'undefined' && appState.floors) ? appState.floors.find(f => f.id === room.floorId) : null;
+        const org = (typeof appState !== 'undefined' && appState.organizations) ? appState.organizations.find(o => o.id === dev.orgId) : null;
+        const user = (typeof appState !== 'undefined' && appState.users) ? appState.users.find(u => u.id === dev.assignedUserId) : null;
 
         const floorText = dev.floorName || (floor ? (floor.shortName || floor.name) : (dev.buildingName || "Hospital Wing"));
         const roomText = dev.roomName || (room ? room.name : "Medical Complex");
@@ -250,7 +273,6 @@ function renderStickerCards(devices) {
             typeCode = (typeMatch ? typeMatch[1] : 'C').toUpperCase();
             typeLabel = typeLabels[typeCode] || 'CPU';
         }
-        const typeBadgeClass = typeColors[typeCode] || 'bg-slate-50 text-slate-700 border-slate-200';
 
         // 3. Resolve Assigned User / Custodian
         let userName = "Hospital Spare / General";
@@ -261,73 +283,13 @@ function renderStickerCards(devices) {
         }
 
         // 4. Resolve Direct mobile report URL for smartphone QR code scanning
+        const parsed = parseAssetIdParts(dev.assetId);
         const reportUrl = `${window.location.origin}/report/${encodeURIComponent(dev.assetId)}/`;
         const qrSVG = generateQRSVG(reportUrl, 70);
 
-        // --- MODE 1: PURE CODE & QR ONLY (Literal Minimalist - ID & QR Only) ---
-        if (currentStickerLayout === 'pure') {
-            return `
-                <div class="sticker-card bg-white border-2 border-slate-900 rounded-xl p-3 shadow-xs text-slate-900 flex items-center justify-between select-none relative transition-all hover:shadow-md w-full min-h-[76px]">
-                    <div class="flex-1 min-w-0 pr-3">
-                        <div class="text-base sm:text-lg font-black font-mono tracking-wider text-slate-950 select-all leading-tight break-all">
-                            ${dev.assetId}
-                        </div>
-                    </div>
-                    <div class="flex-shrink-0 flex items-center gap-2">
-                        ${qrSVG}
-                        <button onclick="printSingleTag('${dev.assetId}')" title="Print this tag" class="no-print p-1 text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer">
-                            <i data-lucide="printer" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // --- MODE 2: DETAILED STICKER (For Maintenance Audits) ---
-        if (currentStickerLayout === 'detailed') {
-            return `
-                <div class="sticker-card bg-white border-2 border-slate-900 rounded-2xl p-3.5 shadow-sm text-slate-900 flex flex-col justify-between select-none relative transition-all hover:shadow-md aspect-[1.95/1] min-h-[175px] w-full">
-                    <!-- Brand Top Header -->
-                    <div class="flex items-center justify-between border-b-2 border-slate-900 pb-2">
-                        <div class="flex items-center gap-1.5">
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                            <span class="text-xs font-black tracking-widest uppercase text-slate-950">${orgName}</span>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border ${typeBadgeClass} font-mono">${typeLabel}</span>
-                            <span class="text-[8px] font-bold bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded text-slate-700">${dev.status}</span>
-                        </div>
-                    </div>
-
-                    <!-- Body: Asset Code + User + S/N + QR -->
-                    <div class="flex items-start justify-between gap-3 my-1 flex-1">
-                        <div class="space-y-1 flex-1 min-w-0">
-                            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900 text-white shadow-2xs">
-                                <span class="text-[8px] uppercase font-bold text-slate-400 font-mono">ID:</span>
-                                <span class="text-xs font-black font-mono tracking-wide select-all">${dev.assetId}</span>
-                            </div>
-                            <div class="text-xs font-black text-slate-900 truncate">${userName}</div>
-                            <div class="text-[9.5px] text-slate-600 truncate font-mono">S/N: ${dev.serialNumber || 'N/A'}</div>
-                            <div class="text-[9px] text-slate-500 truncate">${floorText} &bull; ${roomText}</div>
-                        </div>
-                        <div class="flex-shrink-0 flex flex-col items-center">
-                            ${qrSVG}
-                            <span class="text-[7.5px] font-black uppercase tracking-wider text-slate-400 mt-0.5">SCAN TAG</span>
-                        </div>
-                    </div>
-
-                    <!-- Clean Bottom Line -->
-                    <div class="border-t border-slate-200 pt-1.5 flex items-center justify-between text-[8px] text-slate-400">
-                        <span>User: ${userName}</span>
-                        <span class="font-mono text-slate-500 font-bold">PSM-IQ</span>
-                    </div>
-                </div>
-            `;
-        }
-
-        // --- MODE 3: STANDARD STICKER (Spacious Upper Section + 65/35 Lower Tag & QR) ---
+        // Previous spacious card on screen + strict 50x25mm print layout when printing
         return `
-            <div class="sticker-card bg-white border-2 border-slate-900 rounded-2xl p-3.5 shadow-sm text-slate-900 flex flex-col justify-between select-none relative transition-all hover:shadow-md aspect-[1.9/1] min-h-[178px] w-full">
+            <div class="sticker-card bg-white border-2 border-slate-900 rounded-2xl p-3.5 shadow-sm text-slate-900 flex flex-col justify-between select-none relative transition-all hover:shadow-md aspect-[1.9/1] min-h-[178px] w-full" data-asset-id="${dev.assetId}">
                 <!-- 1. UPPER SECTION (Visible on Screen, Hidden on Print): Brand, User, Device Type & Location -->
                 <div class="sticker-screen-only print:hidden space-y-1.5 pb-2.5 border-b-2 border-slate-900 flex-1 flex flex-col justify-between">
                     <!-- Row 1: Brand & Status & 1-Click Print Tag -->
@@ -337,11 +299,11 @@ function renderStickerCards(devices) {
                             <span class="text-xs font-black tracking-wider uppercase text-slate-950 truncate">${orgName}</span>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
-                            <button onclick="printSingleTag('${dev.assetId}')" title="Print this tag only (ID & QR only)" class="no-print p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1 text-[9px] font-bold">
+                            <button type="button" onclick="printSingleTag('${dev.assetId}')" title="Print this tag only (5cm x 2.5cm)" class="no-print p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1 text-[9px] font-bold">
                                 <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                                 <span class="hidden sm:inline">Print Tag</span>
                             </button>
-                            <span class="text-[8.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 px-2 py-0.5 rounded-md font-mono shrink-0">${dev.status}</span>
+                            <span class="text-[8.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 px-2 py-0.5 rounded-md font-mono shrink-0">${dev.status || 'Active'}</span>
                         </div>
                     </div>
 
@@ -365,17 +327,26 @@ function renderStickerCards(devices) {
                     </div>
                 </div>
 
-                <!-- 2. LOWER SECTION (PRINT CONTENT - ID & QR CODE ONLY): Big Text, No Inner Border -->
-                <div class="sticker-print-content pt-2 flex items-center justify-between gap-2.5 print:p-0 print:w-full print:gap-3">
-                    <!-- Expanded Inner Left Column for Full Asset Tag (No Inner Border on Print) -->
-                    <div class="w-[65%] min-w-0 print:w-[73%] print:pl-1">
-                        <div class="bg-slate-900 text-white rounded-lg px-2.5 py-2 shadow-2xs print:bg-transparent print:text-slate-950 print:border-0 print:p-0 print:shadow-none flex items-center">
-                            <span class="text-sm sm:text-base print:text-[20px] font-black font-mono tracking-wide print:tracking-normal text-white print:text-slate-950 select-all block whitespace-nowrap leading-none">${dev.assetId}</span>
+                <!-- 2. LOWER SECTION: On Screen shows dark asset box + QR; On Print fills 5cm x 2.5cm sticker with Asset ID & QR -->
+                <div class="sticker-print-content pt-2 flex items-center justify-between gap-2.5 print:p-0 print:w-full print:h-full print:gap-1.5">
+                    <!-- Left Column: Asset ID Details -->
+                    <div class="sticker-print-left w-[65%] min-w-0 print:w-auto print:flex-1">
+                        <!-- Screen Display: Dark Pill -->
+                        <div class="bg-slate-900 text-white rounded-lg px-2.5 py-2 shadow-2xs print:hidden flex items-center">
+                            <span class="text-sm sm:text-base font-black font-mono tracking-wide text-white select-all block whitespace-nowrap leading-none">${dev.assetId}</span>
+                        </div>
+
+                        <!-- Print Display: Calibrated 50mm x 25mm High-Contrast Layout -->
+                        <div class="hidden print:flex flex-col justify-center">
+                            <div class="sticker-print-brand">PSM HOSPITAL</div>
+                            <div class="sticker-print-prefix">${parsed.prefix}</div>
+                            <div class="sticker-print-code">${parsed.code}</div>
+                            <div class="sticker-print-full" title="${userName}">${userName}</div>
                         </div>
                     </div>
 
-                    <!-- Inner Right Column: Framed Scannable Vector QR Code -->
-                    <div class="w-[35%] print:w-[27%] flex items-center justify-end shrink-0">
+                    <!-- Right Column: Scannable Vector QR Code -->
+                    <div class="sticker-print-qr w-[35%] flex items-center justify-end shrink-0 print:w-[17.5mm] print:h-[17.5mm]">
                         ${qrSVG}
                     </div>
                 </div>
@@ -388,13 +359,25 @@ function renderStickerCards(devices) {
     }
 }
 
-// Dedicated 1-Click Single Asset Tag Printer (ID and QR Code ONLY)
+// Dedicated 1-Click Single Asset Tag Printer (50mm x 25mm label size)
 function printSingleTag(assetId) {
-    const dev = (appState.devices || []).find(d => d.assetId === assetId);
-    if (!dev) return;
+    const rawDevs = (typeof appState !== 'undefined' && appState.devices) ? appState.devices : [];
+    const dev = rawDevs.find(d => (d.assetId || '').toUpperCase() === (assetId || '').toUpperCase()) || { assetId };
+    
+    // Resolve Assigned User / Custodian
+    const user = (typeof appState !== 'undefined' && appState.users) ? appState.users.find(u => u.id === dev.assignedUserId) : null;
+    let userName = "Hospital Spare / General";
+    if (dev.assignedUserName && dev.assignedUserName.trim() && dev.assignedUserName !== 'Unassigned') {
+        userName = dev.assignedUserName.trim();
+    } else if (user && user.fullName) {
+        userName = user.fullName;
+    }
+
+    const parsed = parseAssetIdParts(dev.assetId);
     const reportUrl = `${window.location.origin}/report/${encodeURIComponent(dev.assetId)}/`;
-    const qrSVG = generateQRSVG(reportUrl, 70);
-    const printWindow = window.open('', '_blank', 'width=620,height=340');
+    const qrSVG = generateQRSVG(reportUrl, 68);
+
+    const printWindow = window.open('', '_blank', 'width=540,height=340');
     if (!printWindow) {
         window.print();
         return;
@@ -408,62 +391,111 @@ function printSingleTag(assetId) {
             <title>Asset Tag — ${dev.assetId}</title>
             <style>
                 @page {
-                    size: auto;
-                    margin: 4mm;
-                }
-                * { box-sizing: border-box; }
-                body {
+                    size: 50mm 25mm;
                     margin: 0;
-                    padding: 10px;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+                }
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                body {
+                    width: 50mm;
+                    height: 25mm;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    background: #f8fafc;
+                    background: #ffffff;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
                 }
                 .label-box {
-                    width: 88mm;
-                    height: 21mm;
-                    border: 1.8px solid #0f172a;
-                    border-radius: 5px;
-                    padding: 1.5mm 3.5mm;
+                    width: 50mm;
+                    height: 25mm;
+                    padding: 1.5mm 2.5mm;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
+                    border: 0.5px solid #cbd5e1;
+                    box-sizing: border-box;
+                    overflow: hidden;
                     background: #ffffff;
                 }
-                .label-left {
+                .label-info {
                     flex: 1;
-                    padding-right: 12px;
                     min-width: 0;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    padding-right: 1.5mm;
                 }
-                .label-id {
-                    font-size: 20px;
+                .label-brand {
+                    font-size: 6.5px;
+                    font-weight: 800;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                    color: #64748b;
+                    margin-bottom: 0.5mm;
+                    line-height: 1;
+                }
+                .label-prefix {
+                    font-size: 8px;
+                    font-weight: 800;
+                    color: #334155;
+                    font-family: ui-monospace, monospace;
+                    line-height: 1;
+                }
+                .label-main-code {
+                    font-size: 15px;
                     font-weight: 900;
-                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-                    color: #0f172a;
-                    letter-spacing: 0.2px;
+                    color: #020617;
+                    font-family: ui-monospace, monospace;
+                    line-height: 1.05;
+                    letter-spacing: -0.3px;
+                }
+                .label-full-tag {
+                    font-size: 7px;
+                    font-weight: 800;
+                    color: #1e293b;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    text-transform: uppercase;
                     white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    margin-top: 0.5mm;
                     line-height: 1;
                 }
                 .label-qr {
+                    width: 18mm;
+                    height: 18mm;
                     flex-shrink: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .label-qr svg {
+                    width: 18mm;
+                    height: 18mm;
+                    display: block;
+                    border: none;
+                    padding: 0;
+                    box-shadow: none;
                 }
                 @media print {
                     body {
-                        background: none;
+                        margin: 0;
                         padding: 0;
                     }
                     .label-box {
-                        border: 1.5px solid #000;
+                        border: 0.5px solid #94a3b8;
                     }
                 }
             </style>
         </head>
         <body>
             <div class="label-box">
-                <div class="label-left">
-                    <div class="label-id">${dev.assetId}</div>
+                <div class="label-info">
+                    <div class="label-brand">PSM HOSPITAL</div>
+                    <div class="label-prefix">${parsed.prefix}</div>
+                    <div class="label-main-code">${parsed.code}</div>
+                    <div class="label-full-tag" title="${userName}">${userName}</div>
                 </div>
                 <div class="label-qr">
                     ${qrSVG}
@@ -472,7 +504,7 @@ function printSingleTag(assetId) {
             <script>
                 window.onload = function() {
                     window.print();
-                    setTimeout(function() { window.close(); }, 600);
+                    setTimeout(function() { window.close(); }, 750);
                 };
             </script>
         </body>
@@ -480,4 +512,3 @@ function printSingleTag(assetId) {
     `);
     printWindow.document.close();
 }
-

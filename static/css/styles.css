@@ -262,32 +262,29 @@ input, select, textarea, button {
 }
 
 /* --------------------------------------------------------------------------
-   9. PRINT STYLES (Asset Tag Stickers)
+   9. PRINT STYLES (Asset Tag Stickers — A4 4x12 Sheet Engine)
    -------------------------------------------------------------------------- */
 @media print {
-    .no-print, header, aside, nav, #toast-container, .modal, button {
+    .no-print, header, aside, nav, footer, #toast-container, .modal, button, input, select {
         display: none !important;
     }
-    #qr-tags-grid {
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    main {
+        max-width: 100% !important;
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
     }
-    #qr-stickers-grid {
-        display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 16px !important;
-        width: 100% !important;
-    }
-    .sticker-card {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        border: 1.5px solid #0f172a !important;
-        box-shadow: none !important;
-        border-radius: 12px !important;
-        background: #ffffff !important;
-        print-color-adjust: exact !important;
-        -webkit-print-color-adjust: exact !important;
+    #qr-tags-grid {
+        width: 200mm !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
     }
 }
 

@@ -6,10 +6,27 @@
 
 {% block extra_head %}
 <style>
+    /* =========================================================================
+       PRINT ENGINE: Strict Physical A4 Calibration (4 Columns x 12 Rows = 48 Slots)
+       Sticker Dimension: 5.0 cm (50mm) Width x 2.415-2.5 cm (24.15-25mm) Height
+       ONLY APPLIES WHEN PRINTING (@media print)
+       ========================================================================= */
     @media print {
         @page {
             size: A4 portrait;
-            margin: 8mm 6mm;
+            margin: 3.6mm 5.0mm; /* 5.0mm side margin centers 4x50mm=200mm on 210mm A4; 3.6mm top margin centers 12x24.15mm=289.8mm on 297mm A4 */
+        }
+        *, *::before, *::after {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            box-sizing: border-box !important;
+        }
+        html, body {
+            width: 210mm !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
         }
         header, aside, footer, nav, button, input, select, .no-print, #toast-container, .modal {
             display: none !important;
@@ -19,80 +36,139 @@
             padding: 0 !important;
             margin: 0 !important;
             width: 100% !important;
+            display: block !important;
+        }
+        main > *:not(#qr-tags-grid) {
+            display: none !important;
         }
         #qr-tags-grid {
-            width: 100% !important;
-            margin: 0 !important;
+            width: 200mm !important;
+            margin: 0 auto !important;
             padding: 0 !important;
         }
         #qr-stickers-grid {
             display: grid !important;
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 6mm 6mm !important;
-            width: 100% !important;
+            grid-template-columns: repeat(4, 50.0mm) !important;
+            grid-auto-rows: 24.15mm !important;
+            gap: 0 !important;
+            width: 200mm !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
         }
         .sticker-card {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-            border: 1.5px solid #0f172a !important;
-            border-radius: 5px !important;
+            width: 50.0mm !important;
+            height: 24.15mm !important;
+            max-width: 50.0mm !important;
+            max-height: 24.15mm !important;
+            min-height: 24.15mm !important;
+            margin: 0 !important;
+            padding: 1.2mm 2.0mm !important;
+            border: 0.5px solid #cbd5e1 !important;
+            border-radius: 2px !important;
             box-shadow: none !important;
             background: #ffffff !important;
-            print-color-adjust: exact !important;
-            -webkit-print-color-adjust: exact !important;
-            max-width: 90mm !important;
-            height: 21mm !important;
-            min-height: 0 !important;
-            padding: 1.5mm 3.5mm !important;
-            margin: 0 auto !important;
+            box-sizing: border-box !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: center !important;
             aspect-ratio: auto !important;
+            overflow: hidden !important;
         }
+        /* Hide screen-only workstation metadata on print */
         .sticker-screen-only {
             display: none !important;
         }
+        /* Expand print sticker content to fill the physical label */
         .sticker-print-content {
             display: flex !important;
-            width: 100% !important;
             align-items: center !important;
             justify-content: space-between !important;
+            width: 100% !important;
+            height: 100% !important;
             padding: 0 !important;
             margin: 0 !important;
+            gap: 1.5mm !important;
         }
-        .sticker-print-content > div:first-child > div {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
+        .sticker-print-left {
+            flex: 1 !important;
+            min-width: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            line-height: 1 !important;
+            padding-right: 1mm !important;
         }
-        .sticker-print-content span {
-            font-size: 20px !important;
-            font-weight: 900 !important;
-            color: #0f172a !important;
-            white-space: nowrap !important;
-            letter-spacing: 0.2px !important;
+        .sticker-print-brand {
+            display: block !important;
+            font-size: 5.5pt !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.4px !important;
+            text-transform: uppercase !important;
+            color: #475569 !important;
+            line-height: 1 !important;
+            margin-bottom: 0.3mm !important;
+        }
+        .sticker-print-prefix {
+            display: block !important;
+            font-size: 6.5pt !important;
+            font-weight: 800 !important;
+            color: #334155 !important;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
             line-height: 1 !important;
         }
-        .sticker-print-content svg {
-            width: 70px !important;
-            height: 70px !important;
+        .sticker-print-code {
+            display: block !important;
+            font-size: 13pt !important;
+            font-weight: 900 !important;
+            color: #020617 !important;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+            line-height: 1.05 !important;
+            letter-spacing: -0.3px !important;
+            word-break: break-all !important;
+        }
+        .sticker-print-full {
+            display: block !important;
+            font-size: 6pt !important;
+            font-weight: 800 !important;
+            color: #1e293b !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            text-transform: uppercase !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            line-height: 1.1 !important;
+            margin-top: 0.3mm !important;
+        }
+        .sticker-print-qr {
+            width: 17.5mm !important;
+            height: 17.5mm !important;
+            flex-shrink: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .sticker-print-qr svg {
+            width: 17.5mm !important;
+            height: 17.5mm !important;
+            display: block !important;
             border: none !important;
             padding: 0 !important;
+            box-shadow: none !important;
+            background: transparent !important;
         }
     }
 </style>
 {% endblock %}
 
-
-
 {% block content %}
     <!-- Main Workspace Content: Asset Tag Center -->
     <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
 
-        <!-- Header Banner (Unified Gradient Theme) -->
-        <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <!-- Header Banner (Unified Blue Ribbon Theme - Screen Only) -->
+        <div class="no-print bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
                 <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-200 text-xs font-semibold border border-blue-400/30 mb-2">
                     <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span> Section 5 Hardware Identification
@@ -102,17 +178,17 @@
                     Asset Tag & QR Code Printing Center
                 </h1>
                 <p class="text-slate-300 text-xs sm:text-sm mt-1 max-w-2xl">
-                    High-density ISO-standard printable hardware tags featuring dynamic verification QR codes for physical equipment tracking.
+                    High-density ISO-standard printable hardware tags calibrated for <strong>5.0 cm × 2.5 cm</strong> physical labels (4 Columns × 12 Rows = 48 Stickers/Page).
                 </p>
             </div>
             <div class="flex items-center gap-2.5 flex-wrap no-print">
-                <button onclick="openAddDeviceModal()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 active:scale-95 cursor-pointer">
+                <button type="button" onclick="openAddDeviceModal()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 active:scale-95 cursor-pointer">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>
                     <span>+ Add Device</span>
                 </button>
-                <button onclick="window.print()" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/20 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer">
+                <button type="button" onclick="window.print()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 active:scale-95 cursor-pointer">
                     <i data-lucide="printer" class="w-4 h-4"></i>
-                    <span>Print Sheet</span>
+                    <span>Print All Sheets (A4)</span>
                 </button>
             </div>
         </div>
@@ -121,14 +197,20 @@
         <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex items-center justify-between no-print">
             <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                <input type="text" id="tag-search-input" onkeyup="handleTagFilterSearch(event)" placeholder="Search tag by Asset ID, System, S/N..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500 font-medium transition-all">
+                <input type="text" id="tag-search-input" onkeyup="handleTagFilterSearch(event)" placeholder="Search tag by Asset ID, Floor, Room, S/N, Custodian..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500 font-medium transition-all">
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="window.print()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    <span>Print All Sheets</span>
+                </button>
             </div>
         </div>
 
-        <!-- Printable QR Stickers Grid -->
+        <!-- Printable QR Stickers Grid (Spacious 3-Column Responsive Grid on Screen) -->
         <div id="qr-tags-grid">
-            <div id="qr-stickers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 print:grid-cols-2 print:gap-3">
-                <!-- Dynamically rendered by js/qr_generator.js and js/app.js -->
+            <div id="qr-stickers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Dynamically populated with spacious workstation cards by js/qr_generator.js -->
             </div>
         </div>
 
@@ -334,29 +416,40 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static 'js/data.js' %}?v=29.0_radheshyam_pharmacy_incharge_master"></script>
-<script src="{% static 'js/qrcode.min.js' %}?v=29.0_radheshyam_pharmacy_incharge_master"></script>
-<script src="{% static 'js/qr_generator.js' %}?v=29.0_radheshyam_pharmacy_incharge_master"></script>
-<script src="{% static 'js/app.js' %}?v=29.0_radheshyam_pharmacy_incharge_master"></script>
+<script src="{% static 'js/data.js' %}?v=34.0_user_name_fourth_line"></script>
+<script src="{% static 'js/qrcode.min.js' %}?v=34.0_user_name_fourth_line"></script>
+<script src="{% static 'js/qr_generator.js' %}?v=34.0_user_name_fourth_line"></script>
+<script src="{% static 'js/app.js' %}?v=34.0_user_name_fourth_line"></script>
 <script>
     function handleTagFilterSearch(e) {
         const val = (e && e.target ? e.target.value : '').toLowerCase().trim();
-        const cards = document.querySelectorAll('.sticker-card');
-        cards.forEach(card => {
-            const text = card.innerText.toLowerCase();
-            card.style.display = (!val || text.includes(val)) ? '' : 'none';
+        const allDevs = (typeof appState !== 'undefined' && appState.devices) ? appState.devices : [];
+        if (!val) {
+            if (typeof renderStickerCards === 'function') {
+                renderStickerCards(allDevs);
+            }
+            return;
+        }
+        const filtered = allDevs.filter(dev => {
+            const aid = (dev.assetId || dev.id || '').toLowerCase();
+            const sn = (dev.serialNumber || '').toLowerCase();
+            const room = (dev.roomName || '').toLowerCase();
+            const floor = (dev.floorName || '').toLowerCase();
+            const type = (dev.deviceType || '').toLowerCase();
+            const user = (dev.assignedUserName || '').toLowerCase();
+            return aid.includes(val) || sn.includes(val) || room.includes(val) || floor.includes(val) || type.includes(val) || user.includes(val);
         });
+        if (typeof renderStickerCards === 'function') {
+            renderStickerCards(filtered);
+        }
     }
 
     function handleTagOrgFilter(e) {
         const orgVal = e.target.value;
         if (typeof setOrganizationFilter === 'function') {
             setOrganizationFilter(orgVal);
-        } else {
-            const cards = document.querySelectorAll('.sticker-card');
-            cards.forEach(card => {
-                card.style.display = '';
-            });
+        } else if (typeof appState !== 'undefined' && appState.devices) {
+            renderStickerCards(appState.devices);
         }
     }
 
