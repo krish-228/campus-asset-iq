@@ -359,7 +359,7 @@ function renderStickerCards(devices) {
     }
 }
 
-// Dedicated 1-Click Single Asset Tag Printer (50mm x 25mm label size)
+// Dedicated 1-Click Single Asset Tag Printer (Calibrated for 50mm x 25mm physical sticker)
 function printSingleTag(assetId) {
     const rawDevs = (typeof appState !== 'undefined' && appState.devices) ? appState.devices : [];
     const dev = rawDevs.find(d => (d.assetId || '').toUpperCase() === (assetId || '').toUpperCase()) || { assetId };
@@ -377,7 +377,7 @@ function printSingleTag(assetId) {
     const reportUrl = `${window.location.origin}/report/${encodeURIComponent(dev.assetId)}/`;
     const qrSVG = generateQRSVG(reportUrl, 68);
 
-    const printWindow = window.open('', '_blank', 'width=540,height=340');
+    const printWindow = window.open('', '_blank', 'width=580,height=440');
     if (!printWindow) {
         window.print();
         return;
@@ -389,34 +389,142 @@ function printSingleTag(assetId) {
         <head>
             <meta charset="utf-8">
             <title>Asset Tag — ${dev.assetId}</title>
-            <style>
+            <style id="print-style">
                 @page {
-                    size: 50mm 25mm;
+                    size: 25mm 50mm;
                     margin: 0;
                 }
                 * { box-sizing: border-box; margin: 0; padding: 0; }
-                body {
+                html, body {
+                    width: 100%;
+                    height: 100%;
+                    background: #f1f5f9;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                
+                /* Screen Toolbar */
+                .no-print-toolbar {
+                    background: #0f172a;
+                    color: #ffffff;
+                    padding: 10px 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 10px;
+                    font-size: 12px;
+                    border-bottom: 1px solid #1e293b;
+                }
+                .toolbar-title {
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .toolbar-tag {
+                    background: #2563eb;
+                    color: #ffffff;
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    font-family: monospace;
+                    font-weight: 800;
+                }
+                .toolbar-buttons {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .btn {
+                    padding: 6px 12px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    border: none;
+                    transition: all 0.15s ease;
+                }
+                .btn-toggle {
+                    background: #334155;
+                    color: #f8fafc;
+                }
+                .btn-toggle:hover {
+                    background: #475569;
+                }
+                .btn-print {
+                    background: #16a34a;
+                    color: #ffffff;
+                }
+                .btn-print:hover {
+                    background: #15803d;
+                }
+
+                /* Center Preview Stage on Screen */
+                .stage {
+                    padding: 24px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: calc(100vh - 55px);
+                }
+                .stage-hint {
+                    margin-top: 14px;
+                    font-size: 11px;
+                    color: #64748b;
+                    font-weight: 600;
+                    text-align: center;
+                }
+
+                /* Physical Sticker Container */
+                .print-canvas {
+                    background: #ffffff;
+                    position: relative;
+                    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
+                    border-radius: 4px;
+                }
+
+                /* Mode 1 (Default): Rotated 90° for Vertical Sheet Feed (25mm x 50mm canvas) */
+                body.mode-rotated .print-canvas {
+                    width: 25mm;
+                    height: 50mm;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                body.mode-rotated .label-box {
+                    width: 50mm;
+                    height: 25mm;
+                    transform: rotate(90deg);
+                    transform-origin: center center;
+                    position: absolute;
+                }
+
+                /* Mode 2: Unrotated 0° for Direct Horizontal Feed (50mm x 25mm canvas) */
+                body.mode-horizontal .print-canvas {
                     width: 50mm;
                     height: 25mm;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    background: #ffffff;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
                 }
-                .label-box {
+                body.mode-horizontal .label-box {
                     width: 50mm;
                     height: 25mm;
-                    padding: 1.5mm 2.5mm;
+                    transform: none;
+                    position: relative;
+                }
+
+                /* Sticker Label Content */
+                .label-box {
+                    padding: 1.5mm 2.2mm;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    border: 0.5px solid #cbd5e1;
+                    border: 0.5px solid #94a3b8;
                     box-sizing: border-box;
-                    overflow: hidden;
                     background: #ffffff;
+                    overflow: hidden;
                 }
                 .label-info {
                     flex: 1;
@@ -427,31 +535,31 @@ function printSingleTag(assetId) {
                     padding-right: 1.5mm;
                 }
                 .label-brand {
-                    font-size: 6.5px;
+                    font-size: 5.5pt;
                     font-weight: 800;
-                    letter-spacing: 0.5px;
+                    letter-spacing: 0.4px;
                     text-transform: uppercase;
-                    color: #64748b;
-                    margin-bottom: 0.5mm;
+                    color: #475569;
                     line-height: 1;
+                    margin-bottom: 0.3mm;
                 }
                 .label-prefix {
-                    font-size: 8px;
+                    font-size: 6.5pt;
                     font-weight: 800;
                     color: #334155;
-                    font-family: ui-monospace, monospace;
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
                     line-height: 1;
                 }
                 .label-main-code {
-                    font-size: 15px;
+                    font-size: 13pt;
                     font-weight: 900;
                     color: #020617;
-                    font-family: ui-monospace, monospace;
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
                     line-height: 1.05;
                     letter-spacing: -0.3px;
                 }
                 .label-full-tag {
-                    font-size: 7px;
+                    font-size: 6pt;
                     font-weight: 800;
                     color: #1e293b;
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -459,52 +567,144 @@ function printSingleTag(assetId) {
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
-                    margin-top: 0.5mm;
-                    line-height: 1;
+                    line-height: 1.1;
+                    margin-top: 0.3mm;
                 }
                 .label-qr {
-                    width: 18mm;
-                    height: 18mm;
+                    width: 17.5mm;
+                    height: 17.5mm;
                     flex-shrink: 0;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                 }
                 .label-qr svg {
-                    width: 18mm;
-                    height: 18mm;
+                    width: 17.5mm;
+                    height: 17.5mm;
                     display: block;
                     border: none;
                     padding: 0;
                     box-shadow: none;
+                    background: transparent;
                 }
+
                 @media print {
-                    body {
-                        margin: 0;
-                        padding: 0;
+                    .no-print, .no-print-toolbar, .stage-hint {
+                        display: none !important;
+                    }
+                    html, body {
+                        background: #ffffff !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: auto !important;
+                        height: auto !important;
+                    }
+                    .stage {
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        min-height: 0 !important;
+                        display: block !important;
+                    }
+                    .print-canvas {
+                        box-shadow: none !important;
+                        border-radius: 0 !important;
+                        margin: 0 !important;
+                    }
+                    body.mode-rotated .print-canvas {
+                        width: 25mm !important;
+                        height: 50mm !important;
+                    }
+                    body.mode-horizontal .print-canvas {
+                        width: 50mm !important;
+                        height: 25mm !important;
                     }
                     .label-box {
-                        border: 0.5px solid #94a3b8;
+                        border: 0.5px solid #94a3b8 !important;
                     }
                 }
             </style>
         </head>
-        <body>
-            <div class="label-box">
-                <div class="label-info">
-                    <div class="label-brand">PSM HOSPITAL</div>
-                    <div class="label-prefix">${parsed.prefix}</div>
-                    <div class="label-main-code">${parsed.code}</div>
-                    <div class="label-full-tag" title="${userName}">${userName}</div>
+        <body class="mode-rotated">
+            <div class="no-print-toolbar">
+                <div class="toolbar-title">
+                    <span>Print Single Sticker:</span>
+                    <span class="toolbar-tag">${dev.assetId}</span>
                 </div>
-                <div class="label-qr">
-                    ${qrSVG}
+                <div class="toolbar-buttons">
+                    <button type="button" class="btn btn-toggle" onclick="toggleOrientation()" id="toggle-orient-btn">
+                        🔄 Orientation: Rotated 90° (Along Sticker)
+                    </button>
+                    <button type="button" class="btn btn-print" onclick="window.print()">
+                        🖨️ Print Sticker
+                    </button>
                 </div>
             </div>
+
+            <div class="stage">
+                <div class="print-canvas">
+                    <div class="label-box">
+                        <div class="label-info">
+                            <div class="label-brand">PSM HOSPITAL</div>
+                            <div class="label-prefix">${parsed.prefix}</div>
+                            <div class="label-main-code">${parsed.code}</div>
+                            <div class="label-full-tag" title="${userName}">${userName}</div>
+                        </div>
+                        <div class="label-qr">
+                            ${qrSVG}
+                        </div>
+                    </div>
+                </div>
+                <div class="stage-hint no-print" id="orient-hint">
+                    Current Mode: <strong>Rotated 90°</strong> (Calibrated so text prints horizontally along the 5.0 cm length of your sticker instead of spilling across 2 stickers).
+                </div>
+            </div>
+
             <script>
+                let isRotated = true;
+                const saved = localStorage.getItem('psm_single_tag_rotated');
+                if (saved !== null) {
+                    isRotated = (saved === 'true');
+                }
+                applyOrientation();
+
+                function applyOrientation() {
+                    const body = document.body;
+                    const btn = document.getElementById('toggle-orient-btn');
+                    const hint = document.getElementById('orient-hint');
+
+                    if (isRotated) {
+                        body.classList.remove('mode-horizontal');
+                        body.classList.add('mode-rotated');
+                        if (btn) btn.innerHTML = '🔄 Orientation: Rotated 90° (Along Sticker)';
+                        if (hint) hint.innerHTML = 'Current Mode: <strong>Rotated 90°</strong> (Calibrated so text prints along the 5.0 cm length of your sticker without splitting).';
+                        updatePageSize('25mm 50mm');
+                    } else {
+                        body.classList.remove('mode-rotated');
+                        body.classList.add('mode-horizontal');
+                        if (btn) btn.innerHTML = '🔄 Orientation: Direct Horizontal (50x25mm)';
+                        if (hint) hint.innerHTML = 'Current Mode: <strong>Direct Horizontal</strong> (50mm width x 25mm height).';
+                        updatePageSize('50mm 25mm');
+                    }
+                    localStorage.setItem('psm_single_tag_rotated', isRotated);
+                }
+
+                function updatePageSize(sizeStr) {
+                    const styleTag = document.getElementById('print-style');
+                    if (!styleTag) return;
+                    let css = styleTag.innerHTML;
+                    css = css.replace(/@page\s*\{[^}]*\}/i, '@page { size: ' + sizeStr + '; margin: 0; }');
+                    styleTag.innerHTML = css;
+                }
+
+                function toggleOrientation() {
+                    isRotated = !isRotated;
+                    applyOrientation();
+                }
+
                 window.onload = function() {
-                    window.print();
-                    setTimeout(function() { window.close(); }, 750);
+                    setTimeout(function() {
+                        window.print();
+                    }, 400);
                 };
             </script>
         </body>
