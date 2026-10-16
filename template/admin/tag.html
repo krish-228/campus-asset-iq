@@ -14,7 +14,7 @@
     @media print {
         @page {
             size: A4 portrait;
-            margin: 3.6mm 0.5mm; /* 0.5mm side margin perfectly centers 4x50mm + 3x3mm gaps = 209.0mm on 210mm A4 */
+            margin: 4.0mm 0.5mm; /* 21cm x 29.7cm A4 page: 4mm top/bottom margin, 0.5mm side margin centers 4x50mm + 3x3mm = 209mm */
         }
         *, *::before, *::after {
             -webkit-print-color-adjust: exact !important;
@@ -65,7 +65,7 @@
             min-height: 24.15mm !important;
             margin: 0 !important;
             padding: 1.2mm 2.0mm !important;
-            border: 0.5px solid #cbd5e1 !important;
+            border: none !important; /* skip border on print */
             border-radius: 2px !important;
             box-shadow: none !important;
             background: #ffffff !important;
